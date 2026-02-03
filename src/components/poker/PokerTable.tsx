@@ -4,6 +4,7 @@ import { PlayerSeat, getPositionColor } from './PlayerSeat';
 import { ChipStack, PlayerBet } from './ChipStack';
 import { CommunityCards } from './CommunityCards';
 import { CardType, HandDisplay } from './PlayingCard';
+import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 // Tipos de ação para o histórico
 export interface ActionEntry {
@@ -79,7 +80,12 @@ export function PokerTable({
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,hsl(var(--background)/0.3)_80%)]" />
 
         {/* Logo GTORei no centro */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] pointer-events-none flex items-center gap-2">
+          <img 
+            src={gtoreiLogo} 
+            alt="GTORei" 
+            className="w-8 h-8 sm:w-10 sm:h-10 opacity-15 object-contain"
+          />
           <span className="text-xl sm:text-2xl font-bold text-white/10 tracking-[0.2em] uppercase">
             GTORei
           </span>

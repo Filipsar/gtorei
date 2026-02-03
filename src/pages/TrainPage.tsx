@@ -11,6 +11,7 @@ import { ActionButtons } from '@/components/poker/ActionButtons';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard';
+import { toast } from '@/hooks/use-toast';
 import { 
   POSITIONS, SCENARIOS, STACK_SIZES, 
   Position, Scenario, ActionType, 
@@ -27,8 +28,15 @@ import {
   createSession, getCurrentSession, updateCurrentSession, 
   addHandToSession, endCurrentSession, getUserProfile, createUserProfile 
 } from '@/data/localStorage';
+import {
+  generateHandId,
+  isHandAlreadyPlayed,
+  getPlayedHandData,
+  markHandAsPlayed,
+  clearPlayedHandsSession,
+} from '@/data/playedHandsTracker';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw } from 'lucide-react';
 
 type GamePhase = 'config' | 'playing' | 'feedback';
 
@@ -46,6 +54,13 @@ export default function TrainPage() {
   const [handState, setHandState] = useState<HandState | null>(null);
   const [sessionScore, setSessionScore] = useState(0);
   const [handsPlayed, setHandsPlayed] = useState(0);
+  const [currentHandId, setCurrentHandId] = useState<string | null>(null);
+  const [isHandAlreadyPlayedState, setIsHandAlreadyPlayedState] = useState(false);
+  const [previousHandResult, setPreviousHandResult] = useState<{
+    action: ActionType;
+    feedback: string;
+    points: number;
+  } | null>(null);
   const [lastFeedback, setLastFeedback] = useState<{
     userAction: ActionType;
     handData: ReturnType<typeof getHandData>;
@@ -78,6 +93,11 @@ export default function TrainPage() {
     }
   }, []);
 
+  // Get cards string for hand ID
+  const getCardsString = (cards: CardType[]): string => {
+    return cards.map(c => `${c.rank}${c.suit}`).join('');
+  };
+
   // Start game
   const startGame = useCallback(() => {
     const pos = randomPosition 
@@ -100,10 +120,22 @@ export default function TrainPage() {
     // Inicializar estado da mão com o novo sistema
     const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
     
+    // Gerar ID da mão
+    const handId = generateHandId(scenario, pos, stk, getCardsString(cards));
+    const alreadyPlayed = isHandAlreadyPlayed(handId);
+    const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
+    
     setHandState({
       ...newHandState,
       heroStack: stk,
     });
+    setCurrentHandId(handId);
+    setIsHandAlreadyPlayedState(alreadyPlayed);
+    setPreviousHandResult(previousResult ? {
+      action: previousResult.action,
+      feedback: previousResult.feedback,
+      points: previousResult.points,
+    } : null);
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
@@ -111,7 +143,16 @@ export default function TrainPage() {
 
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
-    if (!handState) return;
+    if (!handState || !currentHandId) return;
+
+    // Verificar se mão já foi jogada
+    if (isHandAlreadyPlayedState) {
+      toast({
+        title: "Mão já jogada!",
+        description: "Esta mão já foi jogada nesta sessão. Você pode revisar, mas não ganhará pontos.",
+        variant: "destructive",
+      });
+    }
 
     // Extrair nome da mão a partir das cartas
     const heroCards = handState.heroCards;
@@ -138,23 +179,32 @@ export default function TrainPage() {
 
     const feedback = calculateFeedback(action, handData);
 
-    addHandToSession({
-      hand: handName,
-      scenario,
-      position: handState.heroPosition,
-      stack: handState.heroStack,
-      userAction: action,
-      correctAction: handData.primaryAction,
-      feedback: feedback.type,
-      points: feedback.points,
-      evLoss: feedback.evLoss,
-    });
+    // Só dar pontos se mão não foi jogada antes
+    const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
 
-    setSessionScore(prev => prev + feedback.points);
-    setHandsPlayed(prev => prev + 1);
+    // Registrar mão como jogada (se ainda não foi)
+    if (!isHandAlreadyPlayedState) {
+      markHandAsPlayed(currentHandId, action, feedback.points, feedback.type);
+      
+      addHandToSession({
+        hand: handName,
+        scenario,
+        position: handState.heroPosition,
+        stack: handState.heroStack,
+        userAction: action,
+        correctAction: handData.primaryAction,
+        feedback: feedback.type,
+        points: feedback.points,
+        evLoss: feedback.evLoss,
+      });
+
+      setSessionScore(prev => prev + pointsToAdd);
+      setHandsPlayed(prev => prev + 1);
+    }
+    
     setLastFeedback({ userAction: action, handData, feedback });
     setPhase('feedback');
-  }, [handState, scenario, finalTable]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState]);
 
   // Next hand
   const nextHand = useCallback(() => {
@@ -171,10 +221,22 @@ export default function TrainPage() {
 
     const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
     
+    // Gerar ID da mão
+    const handId = generateHandId(scenario, pos, stk, getCardsString(cards));
+    const alreadyPlayed = isHandAlreadyPlayed(handId);
+    const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
+    
     setHandState({
       ...newHandState,
       heroStack: stk,
     });
+    setCurrentHandId(handId);
+    setIsHandAlreadyPlayedState(alreadyPlayed);
+    setPreviousHandResult(previousResult ? {
+      action: previousResult.action,
+      feedback: previousResult.feedback,
+      points: previousResult.points,
+    } : null);
     setLastFeedback(null);
     setPhase('playing');
   }, [selectedPositions, selectedStacks, randomPosition, randomStack, generateRandomHand, scenario]);
@@ -185,6 +247,18 @@ export default function TrainPage() {
     setPhase('config');
     setHandState(null);
     setLastFeedback(null);
+    setCurrentHandId(null);
+    setIsHandAlreadyPlayedState(false);
+    setPreviousHandResult(null);
+  }, []);
+
+  // Clear played hands session
+  const handleClearSession = useCallback(() => {
+    clearPlayedHandsSession();
+    toast({
+      title: "Sessão limpa!",
+      description: "Todas as mãos podem ser jogadas novamente para ganhar pontos.",
+    });
   }, []);
 
   // Toggle position selection
@@ -341,6 +415,30 @@ export default function TrainPage() {
               </CardContent>
             </Card>
 
+            {/* Session reset button */}
+            <Card className="border-dashed border-muted-foreground/30">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-lg flex items-center gap-2">
+                      <RefreshCw className="h-5 w-5" />
+                      Limpar Sessão
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Permite jogar as mesmas mãos novamente para ganhar pontos
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearSession}
+                  >
+                    🔄 Limpar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Config summary */}
             <Card className="bg-muted/50">
               <CardContent className="p-4 sm:p-6">
@@ -413,6 +511,21 @@ export default function TrainPage() {
             className="h-2"
           />
         </div>
+
+        {/* Already played warning */}
+        {isHandAlreadyPlayedState && phase === 'playing' && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-amber-400 font-medium">
+                Mão já jogada nesta sessão
+              </p>
+              <p className="text-xs text-amber-400/80">
+                Você pode revisar, mas não ganhará pontos.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Game info */}
         {handState && (
@@ -499,7 +612,7 @@ export default function TrainPage() {
         )}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && (
+        {lastFeedback && lastFeedback.handData && handState && (
           <DecisionFeedback
             open={phase === 'feedback'}
             onClose={() => setPhase('playing')}
@@ -509,6 +622,16 @@ export default function TrainPage() {
             feedback={lastFeedback.feedback}
             sessionScore={sessionScore}
             handsPlayed={handsPlayed}
+            scenario={scenario}
+            position={handState.heroPosition}
+            stack={handState.heroStack}
+            finalTable={finalTable}
+            alreadyPlayed={isHandAlreadyPlayedState}
+            previousResult={previousHandResult ? {
+              action: previousHandResult.action,
+              feedback: previousHandResult.feedback as any,
+              points: previousHandResult.points,
+            } : undefined}
           />
         )}
       </div>
