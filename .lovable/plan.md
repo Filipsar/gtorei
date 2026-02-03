@@ -1,143 +1,376 @@
 
-# Plano de Implementação - GTORei 🎯
+# Plano de Implementação - Correções GTORei
 
-## 1. Fundação Visual e Layout
-- **Tema escuro personalizado** com a paleta definida (#1a1a1a fundo, #FFB800 dourado destaque, #4A90E2 azul secundário)
-- **Sidebar responsiva** com ícones e navegação para: Treinar ⚡, Tabelas 📊, Análise 📈, Autoanálise 🤖, Favoritos ⭐
-- **Design mobile-first** com menu colapsável em dispositivos móveis
-- **Tipografia moderna** usando Inter como fonte principal
+## Visao Geral
 
----
-
-## 2. Sistema de Treino (Prioridade Alta)
-
-### Página de Treino Rápido
-- Seletor de **Cenário** com botões: Open Raise, Vs Open Raise, vs 3-bet, Vs Open Shove
-- Grid de **Stack sizes**: 8BB a 100BB com opção "Aleatório"
-- Grid de **Posições**: UTG a BB com opção "Aleatório"
-- Toggle "Modo Mesa Final"
-- Painel de resumo das configurações
-- Botão destacado "JOGAR" em dourado
-
-### Interface de Jogo
-- **Mesa de poker visual** com posições claramente marcadas
-- Exibição das **cartas do herói** (2 cartas)
-- Informações de **pot, stack e posição**
-- **Botões de ação**: Fold (cinza), Call (azul), Raise (verde), All-in (vermelho)
-- Slider para sizing do raise
-
-### Sistema de Feedback
-- **Modal de resultado** após cada decisão mostrando:
-  - ✅ Best Move / ✔️ Correct / ⚠️ Inaccuracy / ❌ Mistake / 💥 Blunder
-  - Ação escolhida vs. Ação GTO
-  - Perda de EV (quando aplicável)
-  - Frequências corretas para cada ação
-- **Barra de progresso** com Score GTO da sessão (0-100)
-- Sistema de pontuação: +100 (Best) até -50 (Blunder)
+Este plano aborda 4 problemas principais identificados:
+1. Ações de oponentes não visíveis em cenários VS
+2. Layout e posicionamento da mesa
+3. Sistema de pontuação muito alto
+4. Fichas no pot não visíveis
 
 ---
 
-## 3. Visualização de Ranges (Prioridade Alta)
+## 1. Sistema de Estado de Mao (Hand State Machine)
 
-### Matriz de Ranges 13x13
-- Grid interativo mostrando todas as combinações (AA até 22)
-- **Código de cores por ação**:
-  - 🔴 Vermelho escuro: All-in
-  - 🔴 Vermelho claro: Raise
-  - 🟢 Verde: Call
-  - 🔵 Azul: Fold
-  - Gradientes para frequências mistas
-- **Hover tooltip** com: mão, ação recomendada, frequência (%)
+### Arquivos Novos
+- `src/data/handState.ts` - Gerenciador de estado da mao
 
-### Filtros e Controles
-- Dropdown de **Cenário**: Open Raise, vs Open Raise, vs 3-bet, etc.
-- Chips de seleção para **Stack** (8-100 BB)
-- Chips de seleção para **Posição** (UTG a BB)
-- Toggle "Mesa Final"
-- Legenda visual explicando as cores/ações
+### Funcionalidades
+```text
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   PREFLOP   │───>│    FLOP     │───>│    TURN     │───>│   RIVER     │
+│             │    │ 3 cartas    │    │ 1 carta     │    │ 1 carta     │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+       │                  │                  │                  │
+       ▼                  ▼                  ▼                  ▼
+   Fold = End        Continua          Continua           Showdown
+```
 
-### Painel de Detalhes
-- Ao clicar numa mão, exibir estatísticas detalhadas
-- EV por ação
-- Frequências recomendadas
+### Interface HandState
+- `street`: preflop | flop | turn | river | showdown
+- `pot`: valor atual do pot
+- `communityCards`: cartas comunitarias (0-5)
+- `actions`: historico de acoes da mao
+- `activePlayer`: quem deve agir
+- `villainCards`: cartas do oponente (reveladas no showdown)
+- `heroCards`: cartas do heroi
+- `villainPosition`: posicao do oponente que abriu
+- `heroPosition`: posicao do heroi
 
----
-
-## 4. Análise e Estatísticas
-
-### Dashboard Principal
-- **Score GTO médio** com gráfico de linha (evolução ao longo do tempo)
-- **Taxa de precisão** por tipo de decisão (Fold/Call/Raise/All-in)
-- **Distribuição de resultados** em gráfico de pizza (Best/Correct/Inaccuracy/Mistake/Blunder)
-- **Total de mãos treinadas** por categoria
-- **Identificação de tendências** e padrões de erro
-
-### Análise por Posição
-- Cards mostrando performance em cada posição (UTG, BTN, BB, etc.)
-- Heatmap visual de acertos/erros
-
-### Histórico de Sessões
-- Lista de sessões anteriores com:
-  - Data e duração
-  - Mãos jogadas
-  - Score obtido
-  - Principais erros cometidos
+### Logica de Continuacao
+1. Se Hero FOLD: Mostrar feedback GTO
+2. Se Hero CALL em cenarios VS:
+   - Lidar flop/turn/river
+   - Simular acoes do villain baseado em GTO
+   - Revelar cartas no showdown
+3. Se Hero RAISE/ALL-IN:
+   - Simular resposta do villain (call/fold/4-bet)
+   - Se call: runout completo + showdown
+   - Se fold: hero ganha pot
 
 ---
 
-## 5. Armazenamento Local (localStorage)
+## 2. Novo Componente PokerTable Melhorado
 
-### Dados Persistentes
-- **Perfil do usuário**: username, avatar, nível, pontuação total
-- **Histórico de sessões**: data, mãos, score, duração
-- **Mãos jogadas**: cenário, posição, stack, ação, resultado, EV
-- **Favoritos**: cenários salvos pelo usuário
-- **Configurações**: preferências de treino
+### Arquivo
+- `src/components/poker/PokerTable.tsx` - Refatoracao completa
 
-### Dados Mockados GTO
-- Ranges pré-calculados para cada combinação de cenário/posição/stack
-- Frequências e EVs para cada ação possível
-- Estruturados de forma que possam ser facilmente substituídos por dados reais futuramente
+### Novas Funcionalidades
+
+#### 2.1 Layout Fixo de Posicoes (8-max)
+Posicoes calculadas com coordenadas absolutas ao redor da elipse:
+
+```text
+              ┌─────────────────────────────┐
+              │     BB(25%)     UTG(35%)    │
+              │                             │
+         SB   │                             │  UTG+1
+        (15%) │       ┌─────────────┐       │  (50%)
+              │       │   GTORei    │       │
+              │       │     POT     │       │
+              │       └─────────────┘       │
+         BTN  │                             │   LJ
+        (85%) │                             │  (65%)
+              │                             │
+              │     CO(75%)       HJ(60%)   │
+              └─────────────────────────────┘
+```
+
+#### 2.2 Cores por Posicao
+- Vermelho (#E74C3C): UTG, UTG+1, LJ (Early Position)
+- Laranja (#F39C12): HJ (Middle Position)
+- Verde (#27AE60): CO, BTN (Late Position)
+- Azul (#4A90E2): SB, BB (Blinds)
+
+#### 2.3 Logo GTORei no Centro
+- Texto semi-transparente no centro da mesa
+- Acima do display do pot
+
+#### 2.4 Indicadores de Acao do Villain
+- Badge mostrando "Raise 2.5 BB" ou "3-bet 8 BB"
+- Fichas visuais proximas a posicao do villain
+- Jogadores foldados aparecem acinzentados
+
+#### 2.5 Cartas Comunitarias
+- Flop: 3 cartas centrais
+- Turn: +1 carta
+- River: +1 carta
+- Animacao de reveal
+
+### Props Adicionais
+```typescript
+interface PokerTableProps {
+  // Existentes
+  heroPosition: Position;
+  heroCards: Card[];
+  pot: number;
+  heroStack: number;
+  
+  // Novos
+  villainPosition?: Position;
+  villainCards?: Card[];
+  villainAction?: { action: string; amount: number };
+  communityCards?: Card[];
+  street?: 'preflop' | 'flop' | 'turn' | 'river';
+  actionHistory?: Action[];
+  foldedPositions?: Position[];
+}
+```
 
 ---
 
-## 6. Componentes Principais
+## 3. Componente de Fichas no Pot
 
-### Componente RangeMatrix
-- Grid 13x13 interativo e responsivo
-- Color coding dinâmico por frequência
-- Tooltips informativos
-- Adaptação para mobile (scroll horizontal ou view alternativa)
+### Arquivo Novo
+- `src/components/poker/ChipStack.tsx`
 
-### Componente PokerTable
-- Mesa oval visual
-- Indicadores de posição
-- Animações suaves para cartas
-- Display do pot e stacks
-
-### Componente DecisionFeedback
-- Modal overlay com animação
-- Comparação visual lado a lado
-- Gráfico de frequências
-- Botões "Próxima Mão" e "Rever"
-
-### Componente StatsDashboard
-- Cards de métricas com ícones
-- Gráficos interativos (Recharts)
-- Filtros por período
+### Funcionalidades
+- Pilhas de fichas visuais (circulos coloridos empilhados)
+- Cores por valor:
+  - Verde (#27AE60): 25 BB
+  - Vermelho (#E74C3C): 5 BB
+  - Branco (#FFFFFF): 1 BB
+  - Azul (#4A90E2): 0.5 BB
+- Posicionamento proximo ao jogador que apostou
+- Label com valor em BB
+- Animacao de slide ao colocar fichas
 
 ---
 
-## Resumo da Entrega
+## 4. Historico de Acoes
 
-| Feature | Descrição |
-|---------|-----------|
-| 🎨 UI/UX | Tema escuro profissional com cores da marca |
-| 📱 Responsivo | Mobile-first com sidebar colapsável |
-| 🎮 Treino | Configurador completo + jogo interativo |
-| 📊 Ranges | Matriz 13x13 com visualização detalhada |
-| 📈 Análise | Dashboard com gráficos e estatísticas |
-| 💾 Storage | localStorage para persistência |
-| 🎲 Dados | Ranges mockados realistas |
+### Arquivo Novo
+- `src/components/poker/ActionHistory.tsx`
 
-O sistema será totalmente funcional com dados mockados, permitindo que você teste a experiência completa antes de integrar dados GTO reais ou um backend.
+### Funcionalidades
+- Painel compacto mostrando acoes da mao
+- Formato:
+  ```text
+  Preflop:
+  - UTG raises 2.5BB
+  - Folds to BB
+  - BB 3-bets to 8BB
+  → Action on Hero (UTG)
+  ```
+- Posicionado no topo ou lateral da mesa
+- Scroll se necessario
+
+---
+
+## 5. Sistema de Pontuacao Balanceado
+
+### Arquivo
+- `src/data/gtoRanges.ts` - Modificar `calculateFeedback`
+
+### Nova Tabela de Pontuacao (Reducao de ~85%)
+
+| Categoria    | Pontos Antigos | Pontos Novos | Condicao              |
+|--------------|----------------|--------------|------------------------|
+| Best Move    | +100           | +15          | Acao GTO com freq >50% |
+| Correct Move | +80-99         | +8 a +12     | Freq. 20-50%           |
+| Inaccuracy   | +50            | +6           | Freq. 5-20%            |
+| Mistake      | +20            | +2 a +5      | Freq. <5%, EV loss <0.5|
+| Blunder      | -30            | -5 a -50     | Fora do range GTO      |
+
+### Logica de Calculo
+```typescript
+function calculateFeedback(heroAction, handData) {
+  const gtoFreq = getFrequency(heroAction);
+  const evLoss = calculateEVLoss();
+  
+  if (gtoFreq >= 0.5) return { type: 'best', points: 15 };
+  if (gtoFreq >= 0.2) return { type: 'correct', points: 8-12 };
+  if (evLoss < 0.1) return { type: 'inaccuracy', points: 6 };
+  if (evLoss < 0.5) return { type: 'mistake', points: 2-5 };
+  return { type: 'blunder', points: -(evLoss * 100) }; // -5 a -50
+}
+```
+
+### Progressao de Niveis Ajustada
+
+| Nivel        | Pontos Antigos | Pontos Novos |
+|--------------|----------------|--------------|
+| Iniciante    | 0              | 0            |
+| Amador       | 500            | 150          |
+| Intermediario| 1500           | 450          |
+| Avancado     | 3500           | 1000         |
+| Expert       | 7000           | 2000         |
+| Mestre       | 15000          | 4000         |
+| Lenda        | 30000          | 8000         |
+
+---
+
+## 6. Atualizacao do TrainPage
+
+### Arquivo
+- `src/pages/TrainPage.tsx`
+
+### Modificacoes
+
+#### 6.1 Estado Expandido
+```typescript
+interface GameState {
+  // Existentes
+  hand: string;
+  cards: Card[];
+  position: Position;
+  stack: number;
+  pot: number;
+  
+  // Novos
+  street: 'preflop' | 'flop' | 'turn' | 'river';
+  communityCards: Card[];
+  villainPosition: Position;
+  villainCards: Card[];
+  villainAction: { action: string; amount: number };
+  actionHistory: ActionEntry[];
+  foldedPositions: Position[];
+}
+```
+
+#### 6.2 Inicializacao de Cenarios VS
+Quando cenario for vsOpenRaise, vs3bet ou vsOpenShove:
+1. Determinar posicao do villain (aleatoria ou baseada em cenario)
+2. Calcular tamanho do raise/3-bet/shove
+3. Calcular pot inicial com as apostas
+4. Popular historico de acoes
+
+#### 6.3 Fluxo de Continuacao Pos-Acao
+```typescript
+async function handleAction(heroAction) {
+  if (heroAction === 'fold') {
+    showFeedback();
+    return;
+  }
+  
+  // Atualizar pot
+  updatePot(heroAction);
+  
+  if (street === 'preflop') {
+    // Simular resposta do villain se necessario
+    const villainResponse = simulateVillainResponse(heroAction);
+    
+    if (villainResponse === 'call' || heroAction === 'call') {
+      // Lidar flop
+      await dealFlop();
+      // Simular acao pos-flop do villain
+      await simulateVillainPostflop();
+    }
+  }
+  
+  // Continuar ate showdown ou fold
+}
+```
+
+---
+
+## 7. Componente DecisionFeedback Melhorado
+
+### Arquivo
+- `src/components/poker/DecisionFeedback.tsx`
+
+### Novas Funcionalidades
+
+#### 7.1 Barra de Frequencias com Todas as Acoes
+- Mostrar fold/call/raise/allin com barras coloridas
+- Destacar acao do usuario
+- Mostrar % para cada acao
+
+#### 7.2 Explicacoes Contextuais
+- Texto explicando por que a acao GTO e melhor
+- Dicas de aprendizado para blunders
+
+#### 7.3 Botao Revisar Mao
+- Permite voltar e ver a situacao novamente
+- Ver cartas comunitarias e cartas do villain
+
+---
+
+## 8. Resumo de Arquivos
+
+### Arquivos Novos
+1. `src/data/handState.ts` - Estado da mao
+2. `src/components/poker/ChipStack.tsx` - Fichas visuais
+3. `src/components/poker/ActionHistory.tsx` - Historico de acoes
+4. `src/components/poker/CommunityCards.tsx` - Cartas comunitarias
+5. `src/components/poker/PlayerSeat.tsx` - Componente de assento do jogador
+
+### Arquivos Modificados
+1. `src/components/poker/PokerTable.tsx` - Layout completo
+2. `src/data/gtoRanges.ts` - Pontuacao balanceada
+3. `src/data/localStorage.ts` - Thresholds de nivel
+4. `src/pages/TrainPage.tsx` - Logica de jogo expandida
+5. `src/components/poker/DecisionFeedback.tsx` - Feedback melhorado
+
+---
+
+## 9. Ordem de Implementacao
+
+```text
+Fase 1: Sistema de Pontuacao
+├── Ajustar calculateFeedback()
+├── Atualizar thresholds de nivel
+└── Testar feedback
+
+Fase 2: Layout da Mesa
+├── Criar PlayerSeat
+├── Refatorar PokerTable
+├── Adicionar logo central
+└── Implementar cores por posicao
+
+Fase 3: Visualizacao de Fichas e Acoes
+├── Criar ChipStack
+├── Criar ActionHistory
+└── Integrar com PokerTable
+
+Fase 4: Estado de Mao Completo
+├── Criar handState
+├── Criar CommunityCards
+├── Implementar logica de cenarios VS
+├── Simular respostas do villain
+└── Implementar runout completo
+
+Fase 5: Feedback Melhorado
+├── Atualizar DecisionFeedback
+├── Adicionar explicacoes
+└── Melhorar visualizacao de frequencias
+```
+
+---
+
+## 10. Secao Tecnica
+
+### Detalhes de Implementacao
+
+#### Calculo de Posicao do Villain
+Para cenarios VS, o villain e determinado assim:
+- **Vs Open Raise**: Villain em posicao anterior ao hero (ex: hero BB, villain CO)
+- **vs 3-bet**: Villain em posicao posterior (ex: hero UTG abre, villain BB 3-beta)
+- **Vs Open Shove**: Villain em posicao anterior com all-in
+
+#### Geracao de Cartas Comunitarias
+```typescript
+function dealBoard(): Card[] {
+  const deck = generateDeck();
+  const usedCards = [...heroCards, ...villainCards];
+  const available = deck.filter(c => !usedCards.includes(c));
+  return shuffleAndDraw(available, 5);
+}
+```
+
+#### Simulacao de Resposta do Villain
+Baseado em frequencias GTO mockadas:
+- Se hero raise e villain tem mao forte: call 60%, 4-bet 30%, fold 10%
+- Se hero raise e villain tem mao fraca: fold 90%, call 10%
+- Usar mesma estrutura de dados de frequencias
+
+#### Animacoes
+- Fichas: slide com duration 300ms
+- Cartas comunitarias: flip com duration 500ms
+- Reveal de cartas do villain: fade-in com delay
+
+### Compatibilidade Mobile
+- Scroll horizontal na mesa se necessario
+- Botoes de acao empilhados em 2x2
+- Historico colapsavel
