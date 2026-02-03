@@ -67,7 +67,7 @@ export function PlayingCard({
       {/* Bottom-right corner (upside down) */}
       <div className={cn('absolute bottom-1 right-1 flex flex-col items-center leading-none rotate-180', suitInfo.color)}>
         <span className="font-bold">{rank}</span>
-        <span className="text-[0.6em]">{suitInfo.symbol}</span>
+        
       </div>
     </div>;
 }
