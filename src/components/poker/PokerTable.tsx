@@ -200,7 +200,7 @@ export function PokerTable({
 
       {/* Cartas do herói destacadas na parte inferior */}
       {heroCards && heroCards.length > 0 && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2">
-          <div className="bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-primary/30 mx-0 my-[447px]">
+          <div className="bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-primary/30 mx-0 my-0">
             <HandDisplay cards={heroCards} size="md" />
           </div>
         </div>}
