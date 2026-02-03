@@ -12,34 +12,13 @@ import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard';
 import { toast } from '@/hooks/use-toast';
-import { 
-  POSITIONS, SCENARIOS, STACK_SIZES, 
-  Position, Scenario, ActionType, 
-  RANKS, getHandData, calculateFeedback 
-} from '@/data/gtoRanges';
-import { 
-  initializeHandState, 
-  getVillainPosition, 
-  getScenarioDescription,
-  HandState,
-  Street
-} from '@/data/handState';
-import { 
-  createSession, getCurrentSession, updateCurrentSession, 
-  addHandToSession, endCurrentSession, getUserProfile, createUserProfile 
-} from '@/data/localStorage';
-import {
-  generateHandId,
-  isHandAlreadyPlayed,
-  getPlayedHandData,
-  markHandAsPlayed,
-  clearPlayedHandsSession,
-} from '@/data/playedHandsTracker';
+import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback } from '@/data/gtoRanges';
+import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
+import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile } from '@/data/localStorage';
+import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw } from 'lucide-react';
-
 type GamePhase = 'config' | 'playing' | 'feedback';
-
 export default function TrainPage() {
   // Config state
   const [scenario, setScenario] = useState<Scenario>('openRaise');
@@ -66,7 +45,6 @@ export default function TrainPage() {
     handData: ReturnType<typeof getHandData>;
     feedback: ReturnType<typeof calculateFeedback>;
   } | null>(null);
-
   const navigate = useNavigate();
 
   // Ensure user profile exists
@@ -80,10 +58,8 @@ export default function TrainPage() {
   const generateRandomHand = useCallback((): string => {
     const rank1 = RANKS[Math.floor(Math.random() * RANKS.length)];
     const rank2 = RANKS[Math.floor(Math.random() * RANKS.length)];
-    
     const idx1 = RANKS.indexOf(rank1);
     const idx2 = RANKS.indexOf(rank2);
-    
     if (idx1 === idx2) {
       return `${rank1}${rank2}`;
     } else if (idx1 < idx2) {
@@ -100,41 +76,33 @@ export default function TrainPage() {
 
   // Start game
   const startGame = useCallback(() => {
-    const pos = randomPosition 
-      ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)]
-      : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
-    
-    const stk = randomStack
-      ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)]
-      : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
-
+    const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
+    const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-
     createSession({
       scenario,
       position: randomPosition ? 'random' : pos,
-      stack: randomStack ? 'random' : stk,
+      stack: randomStack ? 'random' : stk
     });
 
     // Inicializar estado da mão com o novo sistema
     const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
-    
+
     // Gerar ID da mão
     const handId = generateHandId(scenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
-    
     setHandState({
       ...newHandState,
-      heroStack: stk,
+      heroStack: stk
     });
     setCurrentHandId(handId);
     setIsHandAlreadyPlayedState(alreadyPlayed);
     setPreviousHandResult(previousResult ? {
       action: previousResult.action,
       feedback: previousResult.feedback,
-      points: previousResult.points,
+      points: previousResult.points
     } : null);
     setSessionScore(0);
     setHandsPlayed(0);
@@ -150,7 +118,7 @@ export default function TrainPage() {
       toast({
         title: "Mão já jogada!",
         description: "Esta mão já foi jogada nesta sessão. Você pode revisar, mas não ganhará pontos.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
 
@@ -160,7 +128,6 @@ export default function TrainPage() {
     const rank2 = heroCards[1]?.rank || '';
     const isSuited = heroCards[0]?.suit === heroCards[1]?.suit;
     const isPair = rank1 === rank2;
-    
     let handName: string;
     if (isPair) {
       handName = `${rank1}${rank2}`;
@@ -173,10 +140,8 @@ export default function TrainPage() {
         handName = `${rank2}${rank1}${isSuited ? 's' : 'o'}`;
       }
     }
-
     const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable);
     if (!handData) return;
-
     const feedback = calculateFeedback(action, handData);
 
     // Só dar pontos se mão não foi jogada antes
@@ -185,7 +150,6 @@ export default function TrainPage() {
     // Registrar mão como jogada (se ainda não foi)
     if (!isHandAlreadyPlayedState) {
       markHandAsPlayed(currentHandId, action, feedback.points, feedback.type);
-      
       addHandToSession({
         hand: handName,
         scenario,
@@ -195,47 +159,41 @@ export default function TrainPage() {
         correctAction: handData.primaryAction,
         feedback: feedback.type,
         points: feedback.points,
-        evLoss: feedback.evLoss,
+        evLoss: feedback.evLoss
       });
-
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
     }
-    
-    setLastFeedback({ userAction: action, handData, feedback });
+    setLastFeedback({
+      userAction: action,
+      handData,
+      feedback
+    });
     setPhase('feedback');
   }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState]);
 
   // Next hand
   const nextHand = useCallback(() => {
-    const pos = randomPosition 
-      ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)]
-      : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
-    
-    const stk = randomStack
-      ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)]
-      : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
-
+    const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
+    const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-
     const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
-    
+
     // Gerar ID da mão
     const handId = generateHandId(scenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
-    
     setHandState({
       ...newHandState,
-      heroStack: stk,
+      heroStack: stk
     });
     setCurrentHandId(handId);
     setIsHandAlreadyPlayedState(alreadyPlayed);
     setPreviousHandResult(previousResult ? {
       action: previousResult.action,
       feedback: previousResult.feedback,
-      points: previousResult.points,
+      points: previousResult.points
     } : null);
     setLastFeedback(null);
     setPhase('playing');
@@ -257,7 +215,7 @@ export default function TrainPage() {
     clearPlayedHandsSession();
     toast({
       title: "Sessão limpa!",
-      description: "Todas as mãos podem ser jogadas novamente para ganhar pontos.",
+      description: "Todas as mãos podem ser jogadas novamente para ganhar pontos."
     });
   }, []);
 
@@ -285,8 +243,7 @@ export default function TrainPage() {
 
   // Config phase
   if (phase === 'config') {
-    return (
-      <MainLayout>
+    return <MainLayout>
         <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -305,20 +262,10 @@ export default function TrainPage() {
               <CardContent className="p-4 sm:p-6">
                 <h2 className="font-semibold mb-4 text-lg">Cenário</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {SCENARIOS.map((s) => (
-                    <Button
-                      key={s.id}
-                      variant={scenario === s.id ? 'default' : 'outline'}
-                      onClick={() => setScenario(s.id)}
-                      className={cn(
-                        'h-auto py-3 flex flex-col items-center gap-1',
-                        scenario === s.id && 'bg-primary text-primary-foreground'
-                      )}
-                    >
+                  {SCENARIOS.map(s => <Button key={s.id} variant={scenario === s.id ? 'default' : 'outline'} onClick={() => setScenario(s.id)} className={cn('h-auto py-3 flex flex-col items-center gap-1', scenario === s.id && 'bg-primary text-primary-foreground')}>
                       <span className="font-medium">{s.label}</span>
-                      <span className="text-xs opacity-70">{s.description}</span>
-                    </Button>
-                  ))}
+                      
+                    </Button>)}
                 </div>
               </CardContent>
             </Card>
@@ -329,11 +276,7 @@ export default function TrainPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-lg">Posição</h2>
                   <div className="flex items-center gap-2">
-                    <Switch
-                      id="random-pos"
-                      checked={randomPosition}
-                      onCheckedChange={setRandomPosition}
-                    />
+                    <Switch id="random-pos" checked={randomPosition} onCheckedChange={setRandomPosition} />
                     <Label htmlFor="random-pos" className="text-sm flex items-center gap-1">
                       <Shuffle className="h-4 w-4" />
                       Aleatório
@@ -341,21 +284,9 @@ export default function TrainPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {POSITIONS.map((pos) => (
-                    <Button
-                      key={pos}
-                      variant={selectedPositions.includes(pos) && !randomPosition ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => togglePosition(pos)}
-                      disabled={randomPosition}
-                      className={cn(
-                        'min-w-[3.5rem]',
-                        selectedPositions.includes(pos) && !randomPosition && 'bg-primary text-primary-foreground'
-                      )}
-                    >
+                  {POSITIONS.map(pos => <Button key={pos} variant={selectedPositions.includes(pos) && !randomPosition ? 'default' : 'outline'} size="sm" onClick={() => togglePosition(pos)} disabled={randomPosition} className={cn('min-w-[3.5rem]', selectedPositions.includes(pos) && !randomPosition && 'bg-primary text-primary-foreground')}>
                       {pos}
-                    </Button>
-                  ))}
+                    </Button>)}
                 </div>
               </CardContent>
             </Card>
@@ -366,11 +297,7 @@ export default function TrainPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-lg">Stack (BB)</h2>
                   <div className="flex items-center gap-2">
-                    <Switch
-                      id="random-stack"
-                      checked={randomStack}
-                      onCheckedChange={setRandomStack}
-                    />
+                    <Switch id="random-stack" checked={randomStack} onCheckedChange={setRandomStack} />
                     <Label htmlFor="random-stack" className="text-sm flex items-center gap-1">
                       <Shuffle className="h-4 w-4" />
                       Aleatório
@@ -378,21 +305,9 @@ export default function TrainPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {STACK_SIZES.map((stk) => (
-                    <Button
-                      key={stk}
-                      variant={selectedStacks.includes(stk) && !randomStack ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => toggleStack(stk)}
-                      disabled={randomStack}
-                      className={cn(
-                        'min-w-[3rem]',
-                        selectedStacks.includes(stk) && !randomStack && 'bg-primary text-primary-foreground'
-                      )}
-                    >
+                  {STACK_SIZES.map(stk => <Button key={stk} variant={selectedStacks.includes(stk) && !randomStack ? 'default' : 'outline'} size="sm" onClick={() => toggleStack(stk)} disabled={randomStack} className={cn('min-w-[3rem]', selectedStacks.includes(stk) && !randomStack && 'bg-primary text-primary-foreground')}>
                       {stk}
-                    </Button>
-                  ))}
+                    </Button>)}
                 </div>
               </CardContent>
             </Card>
@@ -407,10 +322,7 @@ export default function TrainPage() {
                       Ativa ajustes ICM para final tables
                     </p>
                   </div>
-                  <Switch
-                    checked={finalTable}
-                    onCheckedChange={setFinalTable}
-                  />
+                  <Switch checked={finalTable} onCheckedChange={setFinalTable} />
                 </div>
               </CardContent>
             </Card>
@@ -428,11 +340,7 @@ export default function TrainPage() {
                       Permite jogar as mesmas mãos novamente para ganhar pontos
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearSession}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleClearSession}>
                     🔄 Limpar
                   </Button>
                 </div>
@@ -469,23 +377,17 @@ export default function TrainPage() {
             </Card>
 
             {/* Start button */}
-            <Button
-              onClick={startGame}
-              size="lg"
-              className="w-full h-16 text-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold"
-            >
+            <Button onClick={startGame} size="lg" className="w-full h-16 text-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold">
               <Play className="h-6 w-6 mr-2" />
               JOGAR
             </Button>
           </div>
         </div>
-      </MainLayout>
-    );
+      </MainLayout>;
   }
 
   // Playing/feedback phase
-  return (
-    <MainLayout>
+  return <MainLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Header with session info */}
         <div className="flex items-center justify-between mb-4">
@@ -506,15 +408,11 @@ export default function TrainPage() {
 
         {/* Progress bar */}
         <div className="mb-6">
-          <Progress 
-            value={Math.max(0, Math.min(100, sessionScore / 10))} 
-            className="h-2"
-          />
+          <Progress value={Math.max(0, Math.min(100, sessionScore / 10))} className="h-2" />
         </div>
 
         {/* Already played warning */}
-        {isHandAlreadyPlayedState && phase === 'playing' && (
-          <div className="mb-4 p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center gap-3">
+        {isHandAlreadyPlayedState && phase === 'playing' && <div className="mb-4 p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm text-amber-400 font-medium">
@@ -524,38 +422,24 @@ export default function TrainPage() {
                 Você pode revisar, mas não ganhará pontos.
               </p>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Game info */}
-        {handState && (
-          <div className="space-y-4">
+        {handState && <div className="space-y-4">
             {/* Scenario description */}
             <Card className="bg-muted/30 border-primary/20">
               <CardContent className="p-3">
                 <div className="flex items-start gap-2">
                   <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <p className="text-sm">
-                    {getScenarioDescription(
-                      scenario, 
-                      handState.heroPosition, 
-                      handState.villainPosition,
-                      handState.villainAction
-                    )}
+                    {getScenarioDescription(scenario, handState.heroPosition, handState.villainPosition, handState.villainAction)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Action history for VS scenarios */}
-            {scenario !== 'openRaise' && handState.actions.length > 0 && (
-              <ActionHistory
-                actions={handState.actions}
-                street={handState.street}
-                heroPosition={handState.heroPosition}
-                className="max-w-xs"
-              />
-            )}
+            {scenario !== 'openRaise' && handState.actions.length > 0 && <ActionHistory actions={handState.actions} street={handState.street} heroPosition={handState.heroPosition} className="max-w-xs" />}
 
             {/* Hand info compact */}
             <Card>
@@ -586,55 +470,18 @@ export default function TrainPage() {
             </Card>
 
             {/* Poker table */}
-            <PokerTable
-              heroPosition={handState.heroPosition}
-              heroCards={handState.heroCards}
-              pot={handState.pot}
-              heroStack={handState.heroStack}
-              villainPosition={handState.villainPosition}
-              villainAction={handState.villainAction}
-              villainStack={handState.villainStack}
-              communityCards={handState.communityCards}
-              street={handState.street}
-              foldedPositions={handState.foldedPositions}
-              activeBets={handState.activeBets}
-            />
+            <PokerTable heroPosition={handState.heroPosition} heroCards={handState.heroCards} pot={handState.pot} heroStack={handState.heroStack} villainPosition={handState.villainPosition} villainAction={handState.villainAction} villainStack={handState.villainStack} communityCards={handState.communityCards} street={handState.street} foldedPositions={handState.foldedPositions} activeBets={handState.activeBets} />
 
             {/* Action buttons */}
-            <ActionButtons
-              onAction={handleAction}
-              pot={handState.pot}
-              stack={handState.heroStack}
-              disabled={phase === 'feedback'}
-              showRaiseSlider={false}
-            />
-          </div>
-        )}
+            <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={phase === 'feedback'} showRaiseSlider={false} />
+          </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && (
-          <DecisionFeedback
-            open={phase === 'feedback'}
-            onClose={() => setPhase('playing')}
-            onNextHand={nextHand}
-            userAction={lastFeedback.userAction}
-            handData={lastFeedback.handData}
-            feedback={lastFeedback.feedback}
-            sessionScore={sessionScore}
-            handsPlayed={handsPlayed}
-            scenario={scenario}
-            position={handState.heroPosition}
-            stack={handState.heroStack}
-            finalTable={finalTable}
-            alreadyPlayed={isHandAlreadyPlayedState}
-            previousResult={previousHandResult ? {
-              action: previousHandResult.action,
-              feedback: previousHandResult.feedback as any,
-              points: previousHandResult.points,
-            } : undefined}
-          />
-        )}
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={() => setPhase('playing')} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
+        action: previousHandResult.action,
+        feedback: previousHandResult.feedback as any,
+        points: previousHandResult.points
+      } : undefined} />}
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 }
