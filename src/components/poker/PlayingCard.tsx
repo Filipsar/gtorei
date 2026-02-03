@@ -1,9 +1,12 @@
 import { cn } from '@/lib/utils';
 
+// Export CardType para uso em outros componentes
+export type CardType = { rank: string; suit: 's' | 'h' | 'd' | 'c' };
+
 interface PlayingCardProps {
   rank: string;
   suit: 's' | 'h' | 'd' | 'c';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   faceDown?: boolean;
   className?: string;
 }
@@ -16,6 +19,7 @@ const suitSymbols: Record<string, { symbol: string; color: string }> = {
 };
 
 const sizeClasses = {
+  xs: 'w-6 h-9 text-[8px]',
   sm: 'w-10 h-14 text-sm',
   md: 'w-14 h-20 text-lg',
   lg: 'w-20 h-28 text-2xl',
@@ -75,8 +79,8 @@ export function PlayingCard({ rank, suit, size = 'md', faceDown = false, classNa
 
 // Component for displaying a hand (2 cards)
 interface HandDisplayProps {
-  cards: Array<{ rank: string; suit: 's' | 'h' | 'd' | 'c' }>;
-  size?: 'sm' | 'md' | 'lg';
+  cards: CardType[];
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }
 

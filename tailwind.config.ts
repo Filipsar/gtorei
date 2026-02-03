@@ -62,10 +62,14 @@ export default {
         },
         // Poker action colors
         poker: {
-          fold: "hsl(var(--action-fold))",
-          call: "hsl(var(--action-call))",
-          raise: "hsl(var(--action-raise))",
-          allin: "hsl(var(--action-allin))",
+          fold: "hsl(var(--poker-fold))",
+          call: "hsl(var(--poker-call))",
+          raise: "hsl(var(--poker-raise))",
+          allin: "hsl(var(--poker-allin))",
+          early: "hsl(var(--poker-early))",
+          middle: "hsl(var(--poker-middle))",
+          late: "hsl(var(--poker-late))",
+          blinds: "hsl(var(--poker-blinds))",
         },
         // Feedback colors
         feedback: {

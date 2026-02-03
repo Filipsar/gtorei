@@ -48,10 +48,21 @@
     --radius: 0.75rem;
 
     /* Poker Action Colors */
-    --action-fold: 220 10% 40%; /* Cinza/Azulado */
-    --action-call: 210 79% 46%; /* Azul */
-    --action-raise: 142 71% 45%; /* Verde */
-    --action-allin: 0 72% 51%; /* Vermelho */
+    --poker-fold: 220 10% 40%; /* Cinza/Azulado */
+    --poker-call: 210 79% 46%; /* Azul */
+    --poker-raise: 142 71% 45%; /* Verde */
+    --poker-allin: 0 72% 51%; /* Vermelho */
+    
+    /* Position Colors */
+    --poker-early: 0 84% 60%; /* Vermelho para UTG, UTG+1, LJ */
+    --poker-middle: 33 90% 55%; /* Laranja para HJ */
+    --poker-late: 145 63% 42%; /* Verde para CO, BTN */
+    --poker-blinds: 210 80% 55%; /* Azul para SB, BB */
+    
+    /* Table felt colors */
+    --table-felt: 150 50% 22%;
+    --table-felt-dark: 150 60% 15%;
+    --table-border: 30 60% 30%;
 
     /* Feedback Colors */
     --feedback-best: 142 71% 45%; /* Verde */
@@ -136,36 +147,41 @@
 /* Utility classes for poker actions */
 @layer utilities {
   .action-fold {
-    @apply bg-[hsl(var(--action-fold))] text-foreground;
+    @apply bg-poker-fold text-foreground;
   }
 
   .action-call {
-    @apply bg-[hsl(var(--action-call))] text-white;
+    @apply bg-poker-call text-foreground;
   }
 
   .action-raise {
-    @apply bg-[hsl(var(--action-raise))] text-white;
+    @apply bg-poker-raise text-foreground;
   }
 
   .action-allin {
-    @apply bg-[hsl(var(--action-allin))] text-white;
+    @apply bg-poker-allin text-foreground;
   }
 
   /* Gradient for premium elements */
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(35 100% 45%) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(35 100% 45%) 100%);
   }
 
   .gradient-card {
-    background: linear-gradient(180deg, hsl(0 0% 15%) 0%, hsl(0 0% 12%) 100%);
+    background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
   }
 
   /* Glow effects */
   .glow-gold {
-    box-shadow: 0 0 20px hsl(45 100% 50% / 0.3);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
 
   .glow-blue {
-    box-shadow: 0 0 20px hsl(210 79% 46% / 0.3);
+    box-shadow: 0 0 20px hsl(var(--secondary) / 0.3);
+  }
+
+  /* Table felt gradient */
+  .table-felt {
+    background: linear-gradient(135deg, hsl(145 50% 25%) 0%, hsl(145 60% 18%) 100%);
   }
 }

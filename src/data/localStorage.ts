@@ -260,9 +260,11 @@ export function removeFavorite(id: string): void {
   setItem(STORAGE_KEYS.FAVORITES, favorites.filter(f => f.id !== id));
 }
 
-// Level calculation
+// Level calculation - Thresholds ajustados (redução de ~85%)
+// Iniciante: 0, Amador: 150, Intermediário: 450, Avançado: 1000,
+// Expert: 2000, Mestre: 4000, Lenda: 8000
 export function calculateLevel(score: number): number {
-  const thresholds = [0, 500, 1500, 3500, 7000, 15000, 30000];
+  const thresholds = [0, 150, 450, 1000, 2000, 4000, 8000];
   for (let i = thresholds.length - 1; i >= 0; i--) {
     if (score >= thresholds[i]) {
       return i + 1;
@@ -285,7 +287,7 @@ export function getLevelName(level: number): string {
 }
 
 export function getLevelProgress(score: number): { current: number; next: number; progress: number } {
-  const thresholds = [0, 500, 1500, 3500, 7000, 15000, 30000, Infinity];
+  const thresholds = [0, 150, 450, 1000, 2000, 4000, 8000, Infinity];
   for (let i = 0; i < thresholds.length - 1; i++) {
     if (score < thresholds[i + 1]) {
       const current = thresholds[i];
@@ -294,7 +296,7 @@ export function getLevelProgress(score: number): { current: number; next: number
       return { current, next, progress };
     }
   }
-  return { current: 30000, next: Infinity, progress: 100 };
+  return { current: 8000, next: Infinity, progress: 100 };
 }
 
 // Statistics

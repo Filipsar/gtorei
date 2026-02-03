@@ -9,28 +9,28 @@ import { Progress } from '@/components/ui/progress';
 import { PokerTable } from '@/components/poker/PokerTable';
 import { ActionButtons } from '@/components/poker/ActionButtons';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
-import { generateCardsFromHand } from '@/components/poker/PlayingCard';
+import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
+import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard';
 import { 
   POSITIONS, SCENARIOS, STACK_SIZES, 
   Position, Scenario, ActionType, 
   RANKS, getHandData, calculateFeedback 
 } from '@/data/gtoRanges';
 import { 
+  initializeHandState, 
+  getVillainPosition, 
+  getScenarioDescription,
+  HandState,
+  Street
+} from '@/data/handState';
+import { 
   createSession, getCurrentSession, updateCurrentSession, 
   addHandToSession, endCurrentSession, getUserProfile, createUserProfile 
 } from '@/data/localStorage';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info } from 'lucide-react';
 
 type GamePhase = 'config' | 'playing' | 'feedback';
-
-interface GameState {
-  hand: string;
-  cards: Array<{ rank: string; suit: 's' | 'h' | 'd' | 'c' }>;
-  position: Position;
-  stack: number;
-  pot: number;
-}
 
 export default function TrainPage() {
   // Config state
@@ -43,7 +43,7 @@ export default function TrainPage() {
 
   // Game state
   const [phase, setPhase] = useState<GamePhase>('config');
-  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [handState, setHandState] = useState<HandState | null>(null);
   const [sessionScore, setSessionScore] = useState(0);
   const [handsPlayed, setHandsPlayed] = useState(0);
   const [lastFeedback, setLastFeedback] = useState<{
@@ -97,12 +97,12 @@ export default function TrainPage() {
       stack: randomStack ? 'random' : stk,
     });
 
-    setGameState({
-      hand,
-      cards,
-      position: pos,
-      stack: stk,
-      pot: 1.5, // SB + BB
+    // Inicializar estado da mão com o novo sistema
+    const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
+    
+    setHandState({
+      ...newHandState,
+      heroStack: stk,
     });
     setSessionScore(0);
     setHandsPlayed(0);
@@ -111,18 +111,38 @@ export default function TrainPage() {
 
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
-    if (!gameState) return;
+    if (!handState) return;
 
-    const handData = getHandData(gameState.hand, scenario, gameState.position, gameState.stack, finalTable);
+    // Extrair nome da mão a partir das cartas
+    const heroCards = handState.heroCards;
+    const rank1 = heroCards[0]?.rank || '';
+    const rank2 = heroCards[1]?.rank || '';
+    const isSuited = heroCards[0]?.suit === heroCards[1]?.suit;
+    const isPair = rank1 === rank2;
+    
+    let handName: string;
+    if (isPair) {
+      handName = `${rank1}${rank2}`;
+    } else {
+      const idx1 = RANKS.indexOf(rank1 as any);
+      const idx2 = RANKS.indexOf(rank2 as any);
+      if (idx1 < idx2) {
+        handName = `${rank1}${rank2}${isSuited ? 's' : 'o'}`;
+      } else {
+        handName = `${rank2}${rank1}${isSuited ? 's' : 'o'}`;
+      }
+    }
+
+    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable);
     if (!handData) return;
 
     const feedback = calculateFeedback(action, handData);
 
     addHandToSession({
-      hand: gameState.hand,
+      hand: handName,
       scenario,
-      position: gameState.position,
-      stack: gameState.stack,
+      position: handState.heroPosition,
+      stack: handState.heroStack,
       userAction: action,
       correctAction: handData.primaryAction,
       feedback: feedback.type,
@@ -134,7 +154,7 @@ export default function TrainPage() {
     setHandsPlayed(prev => prev + 1);
     setLastFeedback({ userAction: action, handData, feedback });
     setPhase('feedback');
-  }, [gameState, scenario, finalTable]);
+  }, [handState, scenario, finalTable]);
 
   // Next hand
   const nextHand = useCallback(() => {
@@ -149,22 +169,21 @@ export default function TrainPage() {
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
 
-    setGameState({
-      hand,
-      cards,
-      position: pos,
-      stack: stk,
-      pot: 1.5,
+    const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
+    
+    setHandState({
+      ...newHandState,
+      heroStack: stk,
     });
     setLastFeedback(null);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, generateRandomHand]);
+  }, [selectedPositions, selectedStacks, randomPosition, randomStack, generateRandomHand, scenario]);
 
   // End session
   const endSession = useCallback(() => {
     endCurrentSession();
     setPhase('config');
-    setGameState(null);
+    setHandState(null);
     setLastFeedback(null);
   }, []);
 
@@ -396,24 +415,51 @@ export default function TrainPage() {
         </div>
 
         {/* Game info */}
-        {gameState && (
-          <div className="space-y-6">
-            {/* Hand info */}
+        {handState && (
+          <div className="space-y-4">
+            {/* Scenario description */}
+            <Card className="bg-muted/30 border-primary/20">
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-sm">
+                    {getScenarioDescription(
+                      scenario, 
+                      handState.heroPosition, 
+                      handState.villainPosition,
+                      handState.villainAction
+                    )}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Action history for VS scenarios */}
+            {scenario !== 'openRaise' && handState.actions.length > 0 && (
+              <ActionHistory
+                actions={handState.actions}
+                street={handState.street}
+                heroPosition={handState.heroPosition}
+                className="max-w-xs"
+              />
+            )}
+
+            {/* Hand info compact */}
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Sua Mão</p>
-                      <p className="text-2xl font-bold text-primary">{gameState.hand}</p>
-                    </div>
-                    <div className="text-center">
                       <p className="text-xs text-muted-foreground">Posição</p>
-                      <p className="text-lg font-semibold">{gameState.position}</p>
+                      <p className="text-lg font-semibold">{handState.heroPosition}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">Stack</p>
-                      <p className="text-lg font-semibold">{gameState.stack} BB</p>
+                      <p className="text-lg font-semibold">{handState.heroStack} BB</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Pot</p>
+                      <p className="text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
                     </div>
                   </div>
                   <div className="text-center">
@@ -428,17 +474,24 @@ export default function TrainPage() {
 
             {/* Poker table */}
             <PokerTable
-              heroPosition={gameState.position}
-              heroCards={gameState.cards}
-              pot={gameState.pot}
-              heroStack={gameState.stack}
+              heroPosition={handState.heroPosition}
+              heroCards={handState.heroCards}
+              pot={handState.pot}
+              heroStack={handState.heroStack}
+              villainPosition={handState.villainPosition}
+              villainAction={handState.villainAction}
+              villainStack={handState.villainStack}
+              communityCards={handState.communityCards}
+              street={handState.street}
+              foldedPositions={handState.foldedPositions}
+              activeBets={handState.activeBets}
             />
 
             {/* Action buttons */}
             <ActionButtons
               onAction={handleAction}
-              pot={gameState.pot}
-              stack={gameState.stack}
+              pot={handState.pot}
+              stack={handState.heroStack}
               disabled={phase === 'feedback'}
               showRaiseSlider={false}
             />

@@ -303,6 +303,7 @@ export function getFeedbackColor(feedback: FeedbackType): string {
 }
 
 // Calcular feedback baseado na ação do usuário vs GTO
+// Sistema de pontuação balanceado (redução de ~85%)
 export function calculateFeedback(
   userAction: ActionType,
   handData: HandData
@@ -314,20 +315,33 @@ export function calculateFeedback(
   const userEv = handData.actions.find(a => a.action === userAction)?.ev || 0;
   const evLoss = Math.max(0, gtoEv - userEv);
 
+  // BEST MOVE: Ação GTO primária com frequência >= 50%
+  if (userAction === gtoAction && gtoFrequency >= 50) {
+    return { type: 'best', points: 15, evLoss: 0, message: 'Jogada perfeita! 🎯' };
+  }
+
+  // CORRECT MOVE: Ação GTO ou frequência entre 20-50%
   if (userAction === gtoAction) {
-    if (gtoFrequency >= 90) {
-      return { type: 'best', points: 100, evLoss: 0, message: 'Jogada perfeita! 🎯' };
-    }
-    return { type: 'correct', points: 85, evLoss: 0, message: 'Boa jogada! ✓' };
+    return { type: 'correct', points: 12, evLoss: 0, message: 'Boa jogada! ✓' };
   }
 
-  if (userFrequency >= 30) {
-    return { type: 'inaccuracy', points: 50, evLoss, message: 'Jogada aceitável, mas não ótima.' };
+  if (userFrequency >= 20) {
+    const frequencyBonus = Math.min(12, Math.floor(userFrequency / 4));
+    return { type: 'correct', points: Math.max(8, frequencyBonus), evLoss, message: 'Jogada dentro do range GTO.' };
   }
 
-  if (userFrequency >= 10) {
-    return { type: 'mistake', points: 20, evLoss, message: 'Erro. Essa ação tem frequência baixa.' };
+  // INACCURACY: Frequência entre 5-20%
+  if (userFrequency >= 5) {
+    return { type: 'inaccuracy', points: 6, evLoss, message: 'Jogada aceitável, mas não ótima.' };
   }
 
-  return { type: 'blunder', points: -30, evLoss, message: 'Erro grave! Essa não é uma jogada GTO.' };
+  // MISTAKE: Frequência < 5% mas EV loss < 0.5 BB
+  if (evLoss < 0.5) {
+    const penalty = Math.floor(evLoss * 6);
+    return { type: 'mistake', points: Math.max(2, 5 - penalty), evLoss, message: 'Erro. Frequência baixa no GTO.' };
+  }
+
+  // BLUNDER: Erro grave com EV loss >= 0.5 BB
+  const severePenalty = Math.min(50, Math.floor(evLoss * 20));
+  return { type: 'blunder', points: -severePenalty, evLoss, message: 'Erro grave! Essa não é uma jogada GTO.' };
 }
