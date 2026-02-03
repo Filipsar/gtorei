@@ -83,7 +83,7 @@ export function PlayerSeat({
       'flex flex-col items-center gap-1 transition-all duration-300',
       isHero && 'scale-110',
       hasFolded && 'opacity-40',
-      isActive && 'animate-pulse',
+      // Removido animate-pulse para não piscar
       className
     )}>
       {/* Avatar do jogador */}

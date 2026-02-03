@@ -4,7 +4,7 @@
 
 Este documento registra as correções aplicadas ao GTORei.
 
----
+## ✅ Correções da Segunda Iteração (3 Fev 2026)
 
 ## ✅ 1. Sistema de Pontuação Balanceado (Redução de ~85%)
 
