@@ -2,95 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* GTORei Design System
+   Tema escuro profissional com dourado como destaque
+   Todas as cores em HSL
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Background colors - Tema escuro */
+    --background: 0 0% 10%; /* #1a1a1a */
+    --foreground: 45 10% 95%; /* Off-white */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card/Surface colors */
+    --card: 0 0% 13%; /* #212121 */
+    --card-foreground: 45 10% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 15%; /* #262626 */
+    --popover-foreground: 45 10% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Dourado/Amarelo */
+    --primary: 45 100% 50%; /* #FFB800 */
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Azul */
+    --secondary: 210 79% 46%; /* #4A90E2 */
+    --secondary-foreground: 45 10% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted */
+    --muted: 0 0% 17%; /* #2a2a2a */
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent */
+    --accent: 0 0% 20%;
+    --accent-foreground: 45 10% 95%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Vermelho para erros */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 45 10% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders and inputs */
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 45 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Poker Action Colors */
+    --action-fold: 220 10% 40%; /* Cinza/Azulado */
+    --action-call: 210 79% 46%; /* Azul */
+    --action-raise: 142 71% 45%; /* Verde */
+    --action-allin: 0 72% 51%; /* Vermelho */
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Feedback Colors */
+    --feedback-best: 142 71% 45%; /* Verde */
+    --feedback-correct: 142 50% 40%; /* Verde mais escuro */
+    --feedback-inaccuracy: 45 100% 50%; /* Amarelo */
+    --feedback-mistake: 25 95% 53%; /* Laranja */
+    --feedback-blunder: 0 72% 51%; /* Vermelho */
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Chart Colors */
+    --chart-1: 45 100% 50%;
+    --chart-2: 210 79% 46%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 0 72% 51%;
+    --chart-5: 280 65% 60%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 45 10% 85%;
+    --sidebar-primary: 45 100% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 45 10% 95%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 45 100% 50%;
   }
 
+  /* Dark mode is the default, but keeping for compatibility */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 0 0% 10%;
+    --foreground: 45 10% 95%;
+    --card: 0 0% 13%;
+    --card-foreground: 45 10% 95%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 45 10% 95%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 210 79% 46%;
+    --secondary-foreground: 45 10% 95%;
+    --muted: 0 0% 17%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 45 10% 95%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 45 10% 95%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 45 100% 50%;
   }
 }
 
@@ -100,6 +108,64 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+/* Utility classes for poker actions */
+@layer utilities {
+  .action-fold {
+    @apply bg-[hsl(var(--action-fold))] text-foreground;
+  }
+
+  .action-call {
+    @apply bg-[hsl(var(--action-call))] text-white;
+  }
+
+  .action-raise {
+    @apply bg-[hsl(var(--action-raise))] text-white;
+  }
+
+  .action-allin {
+    @apply bg-[hsl(var(--action-allin))] text-white;
+  }
+
+  /* Gradient for premium elements */
+  .gradient-gold {
+    background: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(35 100% 45%) 100%);
+  }
+
+  .gradient-card {
+    background: linear-gradient(180deg, hsl(0 0% 15%) 0%, hsl(0 0% 12%) 100%);
+  }
+
+  /* Glow effects */
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(45 100% 50% / 0.3);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px hsl(210 79% 46% / 0.3);
   }
 }
