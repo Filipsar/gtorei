@@ -10,6 +10,8 @@ import TablesPage from "./pages/TablesPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import AutoAnalysisPage from "./pages/AutoAnalysisPage";
 import FavoritesPage from "./pages/FavoritesPage";
+import AccessibilityPage from "./pages/AccessibilityPage";
+import UpdatesPage from "./pages/UpdatesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/analise" element={<AnalysisPage />} />
           <Route path="/autoanalise" element={<AutoAnalysisPage />} />
           <Route path="/favoritos" element={<FavoritesPage />} />
+          <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
+          <Route path="/atualizacoes" element={<UpdatesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

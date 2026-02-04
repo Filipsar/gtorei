@@ -17,7 +17,11 @@ import { initializeHandState, getVillainPosition, getScenarioDescription, HandSt
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock } from 'lucide-react';
+
+// Locked scenarios (under maintenance)
+const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
+
 type GamePhase = 'config' | 'playing' | 'feedback' | 'review';
 export default function TrainPage() {
   // Config state
@@ -77,8 +81,9 @@ export default function TrainPage() {
 
   // Start game
   const startGame = useCallback(() => {
-    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'];
-    const selectedScenario = randomScenario ? scenarioIds[Math.floor(Math.random() * scenarioIds.length)] : scenario;
+    // Filter out locked scenarios for random selection
+    const availableScenarios: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
     const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
@@ -183,8 +188,10 @@ export default function TrainPage() {
 
   // Next hand
   const nextHand = useCallback(() => {
-    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'];
-    const selectedScenario = randomScenario ? scenarioIds[Math.floor(Math.random() * scenarioIds.length)] : scenario;
+    // Filter out locked scenarios for random selection
+    const availableScenarios: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
+    
     const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
@@ -287,10 +294,31 @@ export default function TrainPage() {
                     </Label>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {SCENARIOS.map(s => <Button key={s.id} variant={scenario === s.id && !randomScenario ? 'default' : 'outline'} onClick={() => setScenario(s.id)} disabled={randomScenario} className={cn('h-auto py-3 flex flex-col items-center gap-1', scenario === s.id && !randomScenario && 'bg-primary text-primary-foreground')}>
-                      <span className="font-medium">{s.label}</span>
-                    </Button>)}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {SCENARIOS.map(s => {
+                    const isLocked = LOCKED_SCENARIOS.includes(s.id);
+                    return (
+                      <Button 
+                        key={s.id} 
+                        variant={scenario === s.id && !randomScenario && !isLocked ? 'default' : 'outline'} 
+                        onClick={() => !isLocked && setScenario(s.id)} 
+                        disabled={randomScenario || isLocked} 
+                        className={cn(
+                          'h-auto py-3 flex flex-col items-center gap-1 relative',
+                          scenario === s.id && !randomScenario && !isLocked && 'bg-primary text-primary-foreground',
+                          isLocked && 'opacity-50 cursor-not-allowed'
+                        )}
+                      >
+                        {isLocked && (
+                          <Lock className="absolute top-2 right-2 h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className="font-medium">{s.label}</span>
+                        {isLocked && (
+                          <span className="text-[10px] text-muted-foreground">Em manutenção</span>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

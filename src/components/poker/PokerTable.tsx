@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Position, POSITIONS } from '@/data/gtoRanges';
 import { PlayerSeat, getPositionColor } from './PlayerSeat';
@@ -128,6 +129,8 @@ export function PokerTable({
   activeBets = [],
   className
 }: PokerTableProps) {
+  const navigate = useNavigate();
+
   return <div className={cn('relative w-full max-w-2xl mx-auto aspect-[2/1]', className)}>
       {/* Mesa oval com feltro verde */}
       <div className="absolute inset-4 rounded-[50%] table-felt border-8 border-[hsl(var(--table-border))] shadow-2xl overflow-hidden">
@@ -137,11 +140,15 @@ export function PokerTable({
         {/* Padrão sutil do feltro */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,hsl(var(--background)/0.3)_80%)]" />
 
-        {/* Logo GTORei no centro */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] pointer-events-none flex items-center gap-2">
+        {/* Logo GTORei no centro - clickable */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] flex items-center gap-2 cursor-pointer hover:opacity-30 transition-opacity"
+          onClick={() => navigate('/')}
+          title="Voltar ao início"
+        >
           <img src={gtoreiCrown} alt="GTORei" className="w-10 h-10 sm:w-14 sm:h-14 opacity-20 object-contain" />
-          <span className="text-xl sm:text-2xl font-bold text-white/15 tracking-[0.2em] uppercase">
-            GTORei
+          <span className="text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase opacity-20">
+            <span className="text-primary">GTO</span><span className="text-white">Rei</span>
           </span>
         </div>
 

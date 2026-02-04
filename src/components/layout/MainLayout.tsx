@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
+import { MaintenanceBanner } from './MaintenanceBanner';
 import { Menu } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -13,6 +14,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0">
+          {/* Maintenance banner */}
+          <MaintenanceBanner />
+          
           {/* Mobile header */}
           <header className="lg:hidden flex items-center gap-3 p-4 border-b border-border">
             <SidebarTrigger className="p-2 hover:bg-accent rounded-lg">
