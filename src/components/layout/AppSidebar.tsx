@@ -1,4 +1,4 @@
-import { Zap, TableProperties, BarChart3, Bot, Star, Crown, Menu } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Bot, Star, Menu } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { getUserProfile, getLevelName } from '@/data/localStorage';
+import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 const navItems = [
   { title: 'Treinar', url: '/treinar', icon: Zap, description: 'Treino rápido' },
@@ -33,21 +34,20 @@ export function AppSidebar() {
   return (
     <Sidebar
       className={cn(
-        'border-r border-sidebar-border transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
+        'border-r border-sidebar-border transition-all duration-300'
       )}
       collapsible="icon"
     >
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <Crown className="h-7 w-7 text-primary" />
+              <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8 object-contain" />
               <span className="text-xl font-bold text-primary">GTORei</span>
             </div>
           )}
           {collapsed && (
-            <Crown className="h-7 w-7 text-primary mx-auto" />
+            <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8 object-contain mx-auto" />
           )}
         </div>
 

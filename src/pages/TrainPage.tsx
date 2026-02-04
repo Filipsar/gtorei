@@ -22,6 +22,7 @@ type GamePhase = 'config' | 'playing' | 'feedback';
 export default function TrainPage() {
   // Config state
   const [scenario, setScenario] = useState<Scenario>('openRaise');
+  const [randomScenario, setRandomScenario] = useState(false);
   const [selectedPositions, setSelectedPositions] = useState<Position[]>(['UTG']);
   const [selectedStacks, setSelectedStacks] = useState<number[]>([30]);
   const [randomPosition, setRandomPosition] = useState(false);
@@ -76,23 +77,31 @@ export default function TrainPage() {
 
   // Start game
   const startGame = useCallback(() => {
+    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const selectedScenario = randomScenario ? scenarioIds[Math.floor(Math.random() * scenarioIds.length)] : scenario;
     const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
     createSession({
-      scenario,
+      scenario: selectedScenario,
       position: randomPosition ? 'random' : pos,
       stack: randomStack ? 'random' : stk
     });
 
     // Inicializar estado da mão com o novo sistema
-    const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards);
 
     // Gerar ID da mão
-    const handId = generateHandId(scenario, pos, stk, getCardsString(cards));
+    const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
+    
+    // Atualizar o cenário exibido (para cenário aleatório)
+    if (randomScenario) {
+      setScenario(selectedScenario);
+    }
+    
     setHandState({
       ...newHandState,
       heroStack: stk
@@ -107,7 +116,7 @@ export default function TrainPage() {
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
-  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, generateRandomHand]);
+  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand]);
 
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
@@ -174,16 +183,24 @@ export default function TrainPage() {
 
   // Next hand
   const nextHand = useCallback(() => {
+    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const selectedScenario = randomScenario ? scenarioIds[Math.floor(Math.random() * scenarioIds.length)] : scenario;
     const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-    const newHandState = initializeHandState(scenario, pos, stk, hand, cards);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards);
 
     // Gerar ID da mão
-    const handId = generateHandId(scenario, pos, stk, getCardsString(cards));
+    const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
+    
+    // Atualizar o cenário exibido (para cenário aleatório)
+    if (randomScenario) {
+      setScenario(selectedScenario);
+    }
+    
     setHandState({
       ...newHandState,
       heroStack: stk
@@ -197,7 +214,7 @@ export default function TrainPage() {
     } : null);
     setLastFeedback(null);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, generateRandomHand, scenario]);
+  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand]);
 
   // End session
   const endSession = useCallback(() => {
@@ -260,11 +277,19 @@ export default function TrainPage() {
             {/* Scenario selection */}
             <Card>
               <CardContent className="p-4 sm:p-6">
-                <h2 className="font-semibold mb-4 text-lg">Cenário</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-lg">Cenário</h2>
+                  <div className="flex items-center gap-2">
+                    <Switch id="random-scenario" checked={randomScenario} onCheckedChange={setRandomScenario} />
+                    <Label htmlFor="random-scenario" className="text-sm flex items-center gap-1">
+                      <Shuffle className="h-4 w-4" />
+                      Aleatório
+                    </Label>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {SCENARIOS.map(s => <Button key={s.id} variant={scenario === s.id ? 'default' : 'outline'} onClick={() => setScenario(s.id)} className={cn('h-auto py-3 flex flex-col items-center gap-1', scenario === s.id && 'bg-primary text-primary-foreground')}>
+                  {SCENARIOS.map(s => <Button key={s.id} variant={scenario === s.id && !randomScenario ? 'default' : 'outline'} onClick={() => setScenario(s.id)} disabled={randomScenario} className={cn('h-auto py-3 flex flex-col items-center gap-1', scenario === s.id && !randomScenario && 'bg-primary text-primary-foreground')}>
                       <span className="font-medium">{s.label}</span>
-                      
                     </Button>)}
                 </div>
               </CardContent>
@@ -354,7 +379,9 @@ export default function TrainPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Cenário</p>
-                    <p className="font-medium">{SCENARIOS.find(s => s.id === scenario)?.label}</p>
+                    <p className="font-medium">
+                      {randomScenario ? 'Aleatório' : SCENARIOS.find(s => s.id === scenario)?.label}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Posição</p>
