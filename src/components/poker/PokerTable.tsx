@@ -5,6 +5,7 @@ import { ChipStack, PlayerBet } from './ChipStack';
 import { CommunityCards } from './CommunityCards';
 import { CardType, HandDisplay } from './PlayingCard';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
+import gtoreiCrown from '@/assets/gtorei-crown.png';
 
 // Tipos de ação para o histórico
 export interface ActionEntry {
@@ -138,8 +139,8 @@ export function PokerTable({
 
         {/* Logo GTORei no centro */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] pointer-events-none flex items-center gap-2">
-          <img src={gtoreiLogo} alt="GTORei" className="w-8 h-8 sm:w-10 sm:h-10 opacity-15 object-contain" />
-          <span className="text-xl sm:text-2xl font-bold text-white/10 tracking-[0.2em] uppercase">
+          <img src={gtoreiCrown} alt="GTORei" className="w-10 h-10 sm:w-14 sm:h-14 opacity-20 object-contain" />
+          <span className="text-xl sm:text-2xl font-bold text-white/15 tracking-[0.2em] uppercase">
             GTORei
           </span>
         </div>
