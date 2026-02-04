@@ -79,9 +79,7 @@ export default function HomePage() {
             <Accessibility className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Acessibilidade</h2>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            O GTORei apoia projetos para deficientes visuais e promove a inclusão no poker.
-          </p>
+          <p className="text-sm text-muted-foreground mb-4">O GTORei apoia projetos para deficientes e promove a inclusão no poker.</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/gtoreiacessibilidade')} className="gap-2">
             Saiba mais
             <ArrowRight className="h-4 w-4" />
