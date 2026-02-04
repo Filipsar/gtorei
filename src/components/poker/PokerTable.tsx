@@ -131,88 +131,115 @@ export function PokerTable({
 }: PokerTableProps) {
   const navigate = useNavigate();
 
-  return <div className={cn('relative w-full max-w-2xl mx-auto aspect-[2/1]', className)}>
-      {/* Mesa oval com feltro verde */}
-      <div className="absolute inset-4 rounded-[50%] table-felt border-8 border-[hsl(var(--table-border))] shadow-2xl overflow-hidden">
-        {/* Borda interna decorativa */}
-        <div className="absolute inset-3 rounded-[50%] border-2 border-foreground/10" />
-        
-        {/* Padrão sutil do feltro */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,hsl(var(--background)/0.3)_80%)]" />
+  return (
+    <div className={cn('flex flex-col items-center gap-4', className)}>
+      {/* Container da mesa */}
+      <div className="relative w-full max-w-2xl mx-auto aspect-[2/1]">
+        {/* Mesa oval com feltro verde */}
+        <div className="absolute inset-4 rounded-[50%] table-felt border-8 border-[hsl(var(--table-border))] shadow-2xl overflow-hidden">
+          {/* Borda interna decorativa */}
+          <div className="absolute inset-3 rounded-[50%] border-2 border-foreground/10" />
+          
+          {/* Padrão sutil do feltro */}
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,hsl(var(--background)/0.3)_80%)]" />
 
-        {/* Logo GTORei no centro - clickable */}
-        <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] flex items-center gap-2 cursor-pointer hover:opacity-30 transition-opacity"
-          onClick={() => navigate('/')}
-          title="Voltar ao início"
-        >
-          <img src={gtoreiCrown} alt="GTORei" className="w-10 h-10 sm:w-14 sm:h-14 opacity-20 object-contain" />
-          <span className="text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase opacity-20">
-            <span className="text-primary">GTO</span><span className="text-white">Rei</span>
-          </span>
+          {/* Logo GTORei no centro - clickable */}
+          <div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] flex items-center gap-2 cursor-pointer hover:opacity-30 transition-opacity"
+            onClick={() => navigate('/')}
+            title="Voltar ao início"
+          >
+            <img src={gtoreiCrown} alt="GTORei" className="w-10 h-10 sm:w-14 sm:h-14 opacity-20 object-contain" />
+            <span className="text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase opacity-20">
+              <span className="text-primary">GTO</span><span className="text-white">REI</span>
+            </span>
+          </div>
+
+          {/* Community Cards */}
+          {street !== 'preflop' && communityCards.length > 0 && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <CommunityCards cards={communityCards} street={street} />
+            </div>
+          )}
+
+          {/* Pot no centro */}
+          {pot > 0 && (
+            <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <ChipStack amount={pot} position="center" />
+            </div>
+          )}
         </div>
 
-        {/* Community Cards */}
-        {street !== 'preflop' && communityCards.length > 0 && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <CommunityCards cards={communityCards} street={street} />
-          </div>}
+        {/* Posições dos jogadores */}
+        {POSITIONS.map(pos => {
+          const isHero = pos === heroPosition;
+          const isVillain = pos === villainPosition;
+          const hasFolded = foldedPositions.includes(pos);
+          const layout = positionLayout[pos];
+          const activeBet = activeBets.find(b => b.position === pos);
 
-        {/* Pot no centro */}
-        {pot > 0 && <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <ChipStack amount={pot} position="center" />
-          </div>}
+          // Determinar cartas a mostrar (NÃO mostrar cartas do herói aqui)
+          let cardsToShow: CardType[] | undefined;
+          if (isVillain && villainCards && (street === 'showdown' || villainCards.length > 0)) {
+            cardsToShow = villainCards;
+          }
+
+          // Determinar stack a mostrar
+          let stackToShow: number | undefined;
+          if (isHero) {
+            stackToShow = heroStack;
+          } else if (isVillain && villainStack) {
+            stackToShow = villainStack;
+          }
+
+          return (
+            <div 
+              key={pos} 
+              className="absolute transform -translate-x-1/2 -translate-y-1/2" 
+              style={{
+                left: layout.left,
+                top: layout.top
+              }}
+            >
+              <PlayerSeat 
+                position={pos} 
+                isHero={isHero} 
+                isActive={isHero && street === 'preflop'} 
+                hasFolded={hasFolded} 
+                cards={cardsToShow} 
+                stack={stackToShow} 
+                showCards={isVillain && street === 'showdown'} 
+                lastAction={isVillain && villainAction ? villainAction : undefined} 
+              />
+            </div>
+          );
+        })}
+
+        {/* Fichas de apostas ativas */}
+        {activeBets.map(bet => {
+          const betPos = betPositions[bet.position];
+          if (!betPos) return null;
+          return (
+            <div 
+              key={`bet-${bet.position}`} 
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" 
+              style={{
+                left: betPos.left,
+                top: betPos.top
+              }}
+            >
+              <PlayerBet amount={bet.amount} />
+            </div>
+          );
+        })}
       </div>
 
-      {/* Posições dos jogadores */}
-      {POSITIONS.map(pos => {
-      const isHero = pos === heroPosition;
-      const isVillain = pos === villainPosition;
-      const hasFolded = foldedPositions.includes(pos);
-      const layout = positionLayout[pos];
-      const activeBet = activeBets.find(b => b.position === pos);
-
-      // Determinar cartas a mostrar
-      let cardsToShow: CardType[] | undefined;
-      if (isHero && heroCards) {
-        cardsToShow = heroCards;
-      } else if (isVillain && villainCards && (street === 'showdown' || villainCards.length > 0)) {
-        cardsToShow = villainCards;
-      }
-
-      // Determinar stack a mostrar
-      let stackToShow: number | undefined;
-      if (isHero) {
-        stackToShow = heroStack;
-      } else if (isVillain && villainStack) {
-        stackToShow = villainStack;
-      }
-      return <div key={pos} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{
-        left: layout.left,
-        top: layout.top
-      }}>
-            <PlayerSeat position={pos} isHero={isHero} isActive={isHero && street === 'preflop'} hasFolded={hasFolded} cards={cardsToShow} stack={stackToShow} showCards={isHero || isVillain && street === 'showdown'} lastAction={isVillain && villainAction ? villainAction : undefined} />
-          </div>;
-    })}
-
-      {/* Fichas de apostas ativas */}
-      {activeBets.map(bet => {
-      const betPos = betPositions[bet.position];
-      if (!betPos) return null;
-      return <div key={`bet-${bet.position}`} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={{
-        left: betPos.left,
-        top: betPos.top
-      }}>
-            <PlayerBet amount={bet.amount} />
-          </div>;
-    })}
-
-      {/* Cartas do herói destacadas abaixo da mesa */}
+      {/* Cartas do herói - FORA da mesa */}
       {heroCards && heroCards.length > 0 && (
-        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2">
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-primary/30">
-            <HandDisplay cards={heroCards} size="md" />
-          </div>
+        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-primary/30">
+          <HandDisplay cards={heroCards} size="md" />
         </div>
       )}
-    </div>;
+    </div>
+  );
 }
