@@ -18,7 +18,7 @@ import { createSession, getCurrentSession, updateCurrentSession, addHandToSessio
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw } from 'lucide-react';
-type GamePhase = 'config' | 'playing' | 'feedback';
+type GamePhase = 'config' | 'playing' | 'feedback' | 'review';
 export default function TrainPage() {
   // Config state
   const [scenario, setScenario] = useState<Scenario>('openRaise');
@@ -77,7 +77,7 @@ export default function TrainPage() {
 
   // Start game
   const startGame = useCallback(() => {
-    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'];
     const selectedScenario = randomScenario ? scenarioIds[Math.floor(Math.random() * scenarioIds.length)] : scenario;
     const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
@@ -183,7 +183,7 @@ export default function TrainPage() {
 
   // Next hand
   const nextHand = useCallback(() => {
-    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const scenarioIds: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'];
     const selectedScenario = randomScenario ? scenarioIds[Math.floor(Math.random() * scenarioIds.length)] : scenario;
     const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
@@ -439,14 +439,27 @@ export default function TrainPage() {
         </div>
 
         {/* Already played warning */}
-        {isHandAlreadyPlayedState && phase === 'playing' && <div className="mb-4 p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+        {isHandAlreadyPlayedState && phase === 'playing' && <div className="mb-4 p-3 rounded-lg bg-primary/20 border border-primary/30 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-primary flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm text-amber-400 font-medium">
+              <p className="text-sm text-primary font-medium">
                 Mão já jogada nesta sessão
               </p>
-              <p className="text-xs text-amber-400/80">
+              <p className="text-xs text-primary/80">
                 Você pode revisar, mas não ganhará pontos.
+              </p>
+            </div>
+          </div>}
+
+        {/* Review mode indicator */}
+        {phase === 'review' && <div className="mb-4 p-3 rounded-lg bg-secondary/20 border border-secondary/30 flex items-center gap-3">
+            <Info className="h-5 w-5 text-secondary flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-secondary font-medium">
+                Modo Revisão
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Você está revisando a mão. Clique em "Próxima Mão" para continuar.
               </p>
             </div>
           </div>}
@@ -499,12 +512,27 @@ export default function TrainPage() {
             {/* Poker table */}
             <PokerTable heroPosition={handState.heroPosition} heroCards={handState.heroCards} pot={handState.pot} heroStack={handState.heroStack} villainPosition={handState.villainPosition} villainAction={handState.villainAction} villainStack={handState.villainStack} communityCards={handState.communityCards} street={handState.street} foldedPositions={handState.foldedPositions} activeBets={handState.activeBets} />
 
-            {/* Action buttons */}
-            <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={phase === 'feedback'} showRaiseSlider={false} />
+            {/* Action buttons - hidden in review mode */}
+            {phase !== 'review' && (
+              <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={phase === 'feedback'} showRaiseSlider={false} />
+            )}
+            
+            {/* Review mode - only show next hand button */}
+            {phase === 'review' && (
+              <div className="flex justify-center gap-4 mt-4">
+                <Button
+                  onClick={nextHand}
+                  size="lg"
+                  className="px-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Próxima Mão
+                </Button>
+              </div>
+            )}
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={() => setPhase('playing')} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={() => setPhase('review')} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points

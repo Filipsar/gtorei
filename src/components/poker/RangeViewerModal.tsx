@@ -43,6 +43,8 @@ const scenarioLabels: Record<Scenario, string> = {
   vsOpenRaise: 'Vs Open Raise',
   vs3bet: 'vs 3-bet',
   vsOpenShove: 'Vs Open Shove',
+  simulation: 'Simulação',
+  multiway: 'Multiway',
 };
 
 export function RangeViewerModal({

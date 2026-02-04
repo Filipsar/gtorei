@@ -33,6 +33,8 @@ interface DecisionFeedbackProps {
     feedback: FeedbackType;
     points: number;
   };
+  // Flag para modo de revisão (após clicar em "Rever")
+  isReviewMode?: boolean;
 }
 
 const feedbackConfig: Record<FeedbackType, {
@@ -95,6 +97,7 @@ export function DecisionFeedback({
   finalTable = false,
   alreadyPlayed = false,
   previousResult,
+  isReviewMode = false,
 }: DecisionFeedbackProps) {
   const [showRangeModal, setShowRangeModal] = useState(false);
   
@@ -116,11 +119,11 @@ export function DecisionFeedback({
           <div className="space-y-6">
             {/* Banner de mão já jogada */}
             {alreadyPlayed && (
-              <div className="p-3 rounded-lg bg-yellow-500/20 border border-yellow-500/30 text-center">
-                <p className="text-sm text-yellow-400 font-medium">
+              <div className="p-3 rounded-lg bg-primary/20 border border-primary/30 text-center">
+                <p className="text-sm text-primary font-medium">
                   ⚠️ Mão já jogada nesta sessão
                 </p>
-                <p className="text-xs text-yellow-400/80 mt-1">
+                <p className="text-xs text-primary/80 mt-1">
                   Você pode revisar, mas não ganhará pontos.
                 </p>
                 {previousResult && (
@@ -173,7 +176,7 @@ export function DecisionFeedback({
                       <div
                         className={cn(
                           'h-full rounded-full transition-all',
-                          action.action === 'fold' && 'bg-slate-500',
+                          action.action === 'fold' && 'bg-muted-foreground',
                           action.action === 'call' && 'bg-secondary',
                           action.action === 'raise' && 'bg-poker-raise',
                           action.action === 'allin' && 'bg-poker-allin'
@@ -209,7 +212,7 @@ export function DecisionFeedback({
               </span>
               <span className="text-muted-foreground">pontos</span>
               {alreadyPlayed && (
-                <span className="text-xs text-yellow-500 ml-2">(já jogada)</span>
+                <span className="text-xs text-primary ml-2">(já jogada)</span>
               )}
             </div>
 
