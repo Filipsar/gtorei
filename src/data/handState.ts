@@ -65,6 +65,7 @@ export function getVillainPosition(
   
   switch (scenario) {
     case 'vsOpenRaise':
+    case 'simulation':
       // Villain abriu de uma posição anterior
       // Escolher uma posição aleatória antes do herói
       const earlierPositions = positionOrder.filter((_, i) => i < heroIndex && i >= 0);
@@ -89,6 +90,14 @@ export function getVillainPosition(
         return priorPositions[Math.floor(Math.random() * priorPositions.length)];
       }
       return 'UTG';
+    
+    case 'multiway':
+      // Multiway - retorna uma posição anterior aleatória
+      const multiPositions = positionOrder.filter((_, i) => i < heroIndex && i >= 0);
+      if (multiPositions.length > 0) {
+        return multiPositions[Math.floor(Math.random() * multiPositions.length)];
+      }
+      return 'CO';
       
     default:
       return undefined;
@@ -131,7 +140,7 @@ export function initializeHandState(
   const positionOrder = POSITIONS;
   const heroIndex = positionOrder.indexOf(heroPosition);
   
-  if (scenario === 'vsOpenRaise' && villainPosition) {
+  if ((scenario === 'vsOpenRaise' || scenario === 'simulation') && villainPosition) {
     const villainIndex = positionOrder.indexOf(villainPosition);
     const openSize = calculateOpenSize(heroStack);
     
@@ -185,6 +194,35 @@ export function initializeHandState(
       if (pos !== 'SB' && pos !== 'BB') {
         actions.push({ position: pos, action: 'fold' });
         foldedPositions.push(pos);
+      }
+    }
+  } else if (scenario === 'multiway' && villainPosition) {
+    const villainIndex = positionOrder.indexOf(villainPosition);
+    const openSize = calculateOpenSize(heroStack);
+    
+    // Villain abre
+    actions.push({ position: villainPosition, action: 'open', amount: openSize });
+    activeBets.push({ position: villainPosition, amount: openSize });
+    villainAction = { action: 'Raise', amount: openSize };
+    pot += openSize;
+    
+    // Adiciona 1-2 callers (multiway)
+    const possibleCallers = positionOrder.filter((pos, i) => 
+      i > villainIndex && i < heroIndex && pos !== 'SB' && pos !== 'BB'
+    );
+    const numCallers = Math.min(Math.floor(Math.random() * 2) + 1, possibleCallers.length);
+    const callers = possibleCallers.slice(0, numCallers);
+    
+    for (let i = villainIndex + 1; i < heroIndex; i++) {
+      const pos = positionOrder[i];
+      if (pos !== 'SB' && pos !== 'BB') {
+        if (callers.includes(pos)) {
+          actions.push({ position: pos, action: 'call', amount: openSize });
+          pot += openSize;
+        } else {
+          actions.push({ position: pos, action: 'fold' });
+          foldedPositions.push(pos);
+        }
       }
     }
   }
@@ -361,6 +399,10 @@ export function getScenarioDescription(
       return `Você abriu em ${heroPosition}. ${villainPosition} fez 3-bet para ${villainAction?.amount}BB.`;
     case 'vsOpenShove':
       return `${villainPosition} foi all-in com ${villainAction?.amount}BB. Você está em ${heroPosition}.`;
+    case 'simulation':
+      return `Simulação completa. ${villainPosition} abriu com ${villainAction?.amount}BB. Jogue até o showdown!`;
+    case 'multiway':
+      return `Pote Multiway. ${villainPosition} abriu e há callers. Você está em ${heroPosition}.`;
     default:
       return '';
   }

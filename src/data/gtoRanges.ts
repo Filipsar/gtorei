@@ -6,7 +6,7 @@ export type Rank = 'A' | 'K' | 'Q' | 'J' | 'T' | '9' | '8' | '7' | '6' | '5' | '
 
 export type ActionType = 'fold' | 'call' | 'raise' | 'allin';
 export type Position = 'UTG' | 'UTG1' | 'LJ' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB';
-export type Scenario = 'openRaise' | 'vsOpenRaise' | 'vs3bet' | 'vsOpenShove';
+export type Scenario = 'openRaise' | 'vsOpenRaise' | 'vs3bet' | 'vsOpenShove' | 'simulation' | 'multiway';
 
 export interface ActionFrequency {
   action: ActionType;
@@ -42,6 +42,8 @@ export const SCENARIOS: { id: Scenario; label: string; description: string }[] =
   { id: 'vsOpenRaise', label: 'Vs Open Raise', description: 'Enfrentando um open raise' },
   { id: 'vs3bet', label: 'vs 3-bet', description: 'Enfrentando uma 3-bet após seu raise' },
   { id: 'vsOpenShove', label: 'Vs Open Shove', description: 'Enfrentando um all-in' },
+  { id: 'simulation', label: 'Simulação', description: 'Jogue a mão até o final (flop, turn, river)' },
+  { id: 'multiway', label: 'Multiway', description: 'Pote com múltiplos jogadores' },
 ];
 
 // Stack sizes disponíveis
