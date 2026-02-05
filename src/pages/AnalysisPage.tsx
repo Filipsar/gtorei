@@ -1,11 +1,12 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { getUserStats, getUserProfile, getLevelName, getLevelProgress, getSessions } from '@/data/localStorage';
 import { POSITIONS } from '@/data/gtoRanges';
+import { useNavigate } from 'react-router-dom';
 import { 
-  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, 
-  Zap, CheckCircle2, AlertTriangle, XCircle, Skull 
+  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function AnalysisPage() {
+  const navigate = useNavigate();
   const stats = getUserStats();
   const profile = getUserProfile();
   const sessions = getSessions().slice(0, 10);
@@ -47,7 +49,7 @@ export default function AnalysisPage() {
 
   return (
     <MainLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
@@ -68,7 +70,7 @@ export default function AnalysisPage() {
                   <Trophy className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Score Total</p>
+                  <p className="text-sm text-muted-foreground">XP Total</p>
                   <p className="text-2xl font-bold">{stats.totalScore}</p>
                 </div>
               </div>
@@ -129,15 +131,28 @@ export default function AnalysisPage() {
           <Card className="mb-6">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold">{getLevelName(profile.level)}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {stats.totalHands} mãos treinadas
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <h2 className="text-xl font-bold">{getLevelName(profile.level)}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {stats.totalHands} mãos treinadas
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/ranking')}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline">Ver Ranking</span>
+                  </Button>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-primary">{profile.totalScore}</p>
-                  <p className="text-sm text-muted-foreground">pontos totais</p>
+                  <p className="text-sm text-muted-foreground">
+                    XP Total
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -145,11 +160,16 @@ export default function AnalysisPage() {
                   <span>Nível {profile.level}</span>
                   <span>{levelProgress.progress}%</span>
                 </div>
-                <Progress value={levelProgress.progress} className="h-3" />
+                <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full progress-animated transition-all duration-700 ease-out"
+                    style={{ width: `${levelProgress.progress}%` }}
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground text-center">
                   {levelProgress.next === Infinity 
                     ? 'Nível máximo atingido!' 
-                    : `${levelProgress.next - profile.totalScore} pontos para o próximo nível`}
+                    : `${levelProgress.next - profile.totalScore} XP para o próximo nível`}
                 </p>
               </div>
             </CardContent>
@@ -201,15 +221,16 @@ export default function AnalysisPage() {
             </CardHeader>
             <CardContent>
               {feedbackChartData.length > 0 ? (
-                <div className="flex items-center gap-4">
-                  <ResponsiveContainer width="60%" height={250}>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="w-full sm:w-1/2 h-[200px] sm:h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={feedbackChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
+                        innerRadius={40}
+                        outerRadius={70}
                         paddingAngle={2}
                         dataKey="value"
                       >
@@ -225,8 +246,9 @@ export default function AnalysisPage() {
                         }}
                       />
                     </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex-1 space-y-2">
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full sm:flex-1 space-y-2">
                     {feedbackChartData.map((item) => (
                       <div key={item.name} className="flex items-center gap-2">
                         <div 
@@ -309,7 +331,7 @@ export default function AnalysisPage() {
                       )}>
                         {session.score > 0 ? '+' : ''}{session.score}
                       </p>
-                      <p className="text-xs text-muted-foreground">pontos</p>
+                      <p className="text-xs text-muted-foreground">XP</p>
                     </div>
                   </div>
                 ))}

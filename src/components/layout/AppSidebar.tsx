@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, TableProperties, BarChart3, Bot, Star, Menu, Settings, Bell, MessageSquare, Lock } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Bot, Star, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -15,14 +15,16 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { getUserProfile, getLevelName } from '@/data/localStorage';
+import { getLevelName } from '@/data/localStorage';
 import { SettingsModal } from './SettingsModal';
+import { useAuth } from '@/contexts/AuthContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 const navItems = [
   { title: 'Treinar', url: '/treinar', icon: Zap, description: 'Treino rápido', locked: false },
   { title: 'Tabelas', url: '/tabelas', icon: TableProperties, description: 'Ranges GTO', locked: false },
   { title: 'Análise', url: '/analise', icon: BarChart3, description: 'Estatísticas', locked: false },
+  { title: 'Ranking', url: '/ranking', icon: Trophy, description: 'Top jogadores', locked: false },
   { title: 'Autoanálise', url: '/autoanalise', icon: Bot, description: 'Em manutenção', locked: true },
   { title: 'Favoritos', url: '/favoritos', icon: Star, description: 'Salvos', locked: false },
   { title: 'Atualizações', url: '/atualizacoes', icon: Bell, description: 'Novidades', locked: false },
@@ -32,7 +34,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
-  const profile = getUserProfile();
+  const { user, signOut } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -57,18 +59,20 @@ export function AppSidebar() {
           </div>
 
           {/* User info */}
-          {!collapsed && profile && (
+          {!collapsed && user && (
             <div className="mt-4 p-3 rounded-lg bg-sidebar-accent">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-primary font-semibold">
-                    {profile.username.charAt(0).toUpperCase()}
+                    {(user.user_metadata?.full_name || user.email || 'U').charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{profile.username}</p>
+                  <p className="text-sm font-medium truncate">
+                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Jogador'}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {getLevelName(profile.level)} • {profile.totalScore} pts
+                    {user.email}
                   </p>
                 </div>
               </div>
@@ -168,6 +172,27 @@ export function AppSidebar() {
                     )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {/* Logout button */}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip={collapsed ? 'Sair' : undefined}
+                      onClick={signOut}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-destructive/10 cursor-pointer text-destructive"
+                    >
+                      <LogOut className="h-5 w-5 shrink-0" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span className="text-sm">Sair</span>
+                          <span className="text-xs opacity-70">
+                            Encerrar sessão
+                          </span>
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

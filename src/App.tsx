@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import DonatePage from "./pages/DonatePage";
 import TrainPage from "./pages/TrainPage";
@@ -12,6 +14,8 @@ import AutoAnalysisPage from "./pages/AutoAnalysisPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import AccessibilityPage from "./pages/AccessibilityPage";
 import UpdatesPage from "./pages/UpdatesPage";
+import AuthPage from "./pages/AuthPage";
+import RankingPage from "./pages/RankingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,18 +26,22 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/apoiar" element={<DonatePage />} />
-          <Route path="/treinar" element={<TrainPage />} />
-          <Route path="/tabelas" element={<TablesPage />} />
-          <Route path="/analise" element={<AnalysisPage />} />
-          <Route path="/autoanalise" element={<AutoAnalysisPage />} />
-          <Route path="/favoritos" element={<FavoritesPage />} />
-          <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
-          <Route path="/atualizacoes" element={<UpdatesPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/apoiar" element={<DonatePage />} />
+            <Route path="/treinar" element={<ProtectedRoute><TrainPage /></ProtectedRoute>} />
+            <Route path="/tabelas" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
+            <Route path="/analise" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
+            <Route path="/autoanalise" element={<ProtectedRoute><AutoAnalysisPage /></ProtectedRoute>} />
+            <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
+            <Route path="/ranking" element={<ProtectedRoute><RankingPage /></ProtectedRoute>} />
+            <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
+            <Route path="/atualizacoes" element={<UpdatesPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

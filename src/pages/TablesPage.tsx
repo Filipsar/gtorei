@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, HandData } from '@/data/gtoRanges';
 import { cn } from '@/lib/utils';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function TablesPage() {
   const [scenario, setScenario] = useState<Scenario>('openRaise');
@@ -18,7 +19,7 @@ export default function TablesPage() {
 
   return (
     <MainLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
@@ -31,7 +32,7 @@ export default function TablesPage() {
 
         <div className="grid lg:grid-cols-[1fr_320px] gap-6">
           {/* Main content */}
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             {/* Filters */}
             <Card>
               <CardContent className="p-4 sm:p-6">
@@ -125,7 +126,9 @@ export default function TablesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <RangeMatrix
+                <ScrollArea className="w-full">
+                  <div className="min-w-[320px]">
+                    <RangeMatrix
                   scenario={scenario}
                   position={position}
                   stack={stack}
@@ -133,11 +136,14 @@ export default function TablesPage() {
                   selectedHand={selectedHand?.hand}
                   onHandClick={setSelectedHand}
                 />
+                  </div>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
 
                 {/* Legend */}
                 <div className="mt-6 flex flex-wrap gap-4 justify-center">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-slate-600" />
+                    <div className="w-4 h-4 rounded bg-muted-foreground/50" />
                     <span className="text-sm text-muted-foreground">Fold</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -145,7 +151,7 @@ export default function TablesPage() {
                     <span className="text-sm text-muted-foreground">Call</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-emerald-600" />
+                    <div className="w-4 h-4 rounded bg-feedback-best" />
                     <span className="text-sm text-muted-foreground">Raise</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -192,9 +198,9 @@ export default function TablesPage() {
                               <div
                                 className={cn(
                                   'h-full rounded-full',
-                                  action.action === 'fold' && 'bg-slate-500',
+                                  action.action === 'fold' && 'bg-muted-foreground/50',
                                   action.action === 'call' && 'bg-secondary',
-                                  action.action === 'raise' && 'bg-emerald-600',
+                                  action.action === 'raise' && 'bg-feedback-best',
                                   action.action === 'allin' && 'bg-destructive'
                                 )}
                                 style={{ width: `${action.frequency}%` }}

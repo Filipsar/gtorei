@@ -14,13 +14,218 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorites: {
+        Row: {
+          created_at: string
+          final_table: boolean
+          id: string
+          name: string
+          position: string
+          scenario: string
+          stack: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          final_table?: boolean
+          id?: string
+          name: string
+          position: string
+          scenario: string
+          stack: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          final_table?: boolean
+          id?: string
+          name?: string
+          position?: string
+          scenario?: string
+          stack?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      played_hands: {
+        Row: {
+          correct_action: string
+          ev_loss: number
+          feedback: string
+          hand: string
+          id: string
+          played_at: string
+          points: number
+          position: string
+          scenario: string
+          session_id: string
+          stack: number
+          user_action: string
+          user_id: string
+        }
+        Insert: {
+          correct_action: string
+          ev_loss?: number
+          feedback: string
+          hand: string
+          id?: string
+          played_at?: string
+          points: number
+          position: string
+          scenario: string
+          session_id: string
+          stack: number
+          user_action: string
+          user_id: string
+        }
+        Update: {
+          correct_action?: string
+          ev_loss?: number
+          feedback?: string
+          hand?: string
+          id?: string
+          played_at?: string
+          points?: number
+          position?: string
+          scenario?: string
+          session_id?: string
+          stack?: number
+          user_action?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "played_hands_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          consecutive_errors: number
+          created_at: string
+          hands_played: number
+          id: string
+          level: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          consecutive_errors?: number
+          created_at?: string
+          hands_played?: number
+          id?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          consecutive_errors?: number
+          created_at?: string
+          hands_played?: number
+          id?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      rankings: {
+        Row: {
+          accuracy: number
+          created_at: string
+          hands_played: number
+          id: string
+          period_start: string
+          period_type: string
+          updated_at: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          accuracy?: number
+          created_at?: string
+          hands_played?: number
+          id?: string
+          period_start: string
+          period_type: string
+          updated_at?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          accuracy?: number
+          created_at?: string
+          hands_played?: number
+          id?: string
+          period_start?: string
+          period_type?: string
+          updated_at?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
+      training_sessions: {
+        Row: {
+          accuracy: number
+          created_at: string
+          ended_at: string | null
+          hands_played: number
+          id: string
+          position: string
+          scenario: string
+          score: number
+          stack: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          created_at?: string
+          ended_at?: string | null
+          hands_played?: number
+          id?: string
+          position: string
+          scenario: string
+          score?: number
+          stack: number
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          created_at?: string
+          ended_at?: string | null
+          hands_played?: number
+          id?: string
+          position?: string
+          scenario?: string
+          score?: number
+          stack?: number
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_period_start: { Args: { period_type: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
