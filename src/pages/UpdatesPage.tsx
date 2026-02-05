@@ -13,6 +13,13 @@ interface UpdateNote {
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.2.1',
+    date: '05/02/2026',
+    type: 'improvement',
+    title: 'Melhorias de Interface',
+    description: 'Menu lateral simplificado, sistema de avatares personalizados e possibilidade de favoritar mãos durante o treino.',
+  },
+  {
     version: '1.2.0',
     date: '04/02/2026',
     type: 'feature',

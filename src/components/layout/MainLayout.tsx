@@ -22,7 +22,10 @@ export function MainLayout({ children }: MainLayoutProps) {
             <SidebarTrigger className="p-2 hover:bg-accent rounded-lg">
               <Menu className="h-5 w-5" />
             </SidebarTrigger>
-            <span className="text-lg font-bold text-primary">GTORei</span>
+            <span className="text-lg font-bold">
+              <span className="text-primary">GTO</span>
+              <span className="text-foreground">Rei</span>
+            </span>
           </header>
 
           {/* Page content */}
