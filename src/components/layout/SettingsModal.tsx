@@ -27,7 +27,7 @@ interface SettingsModalProps {
 type Theme = 'light' | 'dark' | 'system';
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [nickname, setNickname] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
@@ -203,12 +203,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           .eq('user_id', user.id);
 
         if (error) throw error;
+
+        // Refresh the profile in AuthContext
+        await refreshProfile();
       }
 
       toast({
         title: 'Perfil atualizado!',
         description: 'Suas alterações foram salvas.',
       });
+      
+      // Close modal after successful save
+      onOpenChange(false);
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({

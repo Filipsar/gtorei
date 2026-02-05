@@ -9,6 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, HandData } from '@/data/gtoRanges';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Lock } from 'lucide-react';
+
+// Locked scenarios (under maintenance)
+const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
 
 export default function TablesPage() {
   const [scenario, setScenario] = useState<Scenario>('openRaise');
@@ -45,14 +49,27 @@ export default function TablesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {SCENARIOS.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            <div className="flex flex-col">
-                              <span>{s.label}</span>
-                              <span className="text-xs text-muted-foreground">{s.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {SCENARIOS.map((s) => {
+                          const isLocked = LOCKED_SCENARIOS.includes(s.id);
+                          return (
+                            <SelectItem 
+                              key={s.id} 
+                              value={s.id} 
+                              disabled={isLocked}
+                              className={cn(isLocked && 'opacity-50')}
+                            >
+                              <div className="flex flex-col">
+                                <span className="flex items-center gap-2">
+                                  {s.label}
+                                  {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {isLocked ? 'Em manutenção' : s.description}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

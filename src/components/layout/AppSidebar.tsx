@@ -33,7 +33,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -66,14 +66,28 @@ export function AppSidebar() {
           {!collapsed && user && (
             <div className="mt-4 p-3 rounded-lg bg-sidebar-accent">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-primary font-semibold">
-                    {(user.user_metadata?.full_name || user.email || 'U').charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                {profile?.avatar_url ? (
+                  profile.avatar_url.length <= 4 ? (
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl">
+                      {profile.avatar_url}
+                    </div>
+                  ) : (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt="Avatar" 
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  )
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-primary font-semibold">
+                      {(profile?.username || user.email || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Jogador'}
+                    {profile?.username || user.email?.split('@')[0] || 'Jogador'}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {user.email}
