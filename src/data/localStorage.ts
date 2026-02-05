@@ -60,6 +60,17 @@ export interface FavoriteScenario {
   createdAt: string;
 }
 
+export interface FavoriteHand {
+  id: string;
+  hand: string;
+  scenario: Scenario;
+  position: Position;
+  stack: number;
+  finalTable: boolean;
+  correctAction: ActionType;
+  createdAt: string;
+}
+
 // Keys do localStorage
 const STORAGE_KEYS = {
   USER_PROFILE: 'gtorei_user_profile',
@@ -67,6 +78,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'gtorei_settings',
   FAVORITES: 'gtorei_favorites',
   CURRENT_SESSION: 'gtorei_current_session',
+  FAVORITE_HANDS: 'gtorei_favorite_hands',
 } as const;
 
 // Helpers para localStorage
@@ -258,6 +270,53 @@ export function addFavorite(favorite: Omit<FavoriteScenario, 'id' | 'createdAt'>
 export function removeFavorite(id: string): void {
   const favorites = getFavorites();
   setItem(STORAGE_KEYS.FAVORITES, favorites.filter(f => f.id !== id));
+}
+
+// Favorite Hands
+export function getFavoriteHands(): FavoriteHand[] {
+  return getItem<FavoriteHand[]>(STORAGE_KEYS.FAVORITE_HANDS, []);
+}
+
+export function addFavoriteHand(hand: Omit<FavoriteHand, 'id' | 'createdAt'>): FavoriteHand {
+  const favorites = getFavoriteHands();
+  // Check if already exists
+  const exists = favorites.some(f => 
+    f.hand === hand.hand && 
+    f.scenario === hand.scenario && 
+    f.position === hand.position && 
+    f.stack === hand.stack
+  );
+  if (exists) {
+    return favorites.find(f => 
+      f.hand === hand.hand && 
+      f.scenario === hand.scenario && 
+      f.position === hand.position && 
+      f.stack === hand.stack
+    )!;
+  }
+  
+  const newFavorite: FavoriteHand = {
+    ...hand,
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+  };
+  setItem(STORAGE_KEYS.FAVORITE_HANDS, [newFavorite, ...favorites]);
+  return newFavorite;
+}
+
+export function removeFavoriteHand(id: string): void {
+  const favorites = getFavoriteHands();
+  setItem(STORAGE_KEYS.FAVORITE_HANDS, favorites.filter(f => f.id !== id));
+}
+
+export function isHandFavorited(hand: string, scenario: Scenario, position: Position, stack: number): boolean {
+  const favorites = getFavoriteHands();
+  return favorites.some(f => 
+    f.hand === hand && 
+    f.scenario === scenario && 
+    f.position === position && 
+    f.stack === stack
+  );
 }
 
 // Level calculation - Thresholds ajustados (redução de ~85%)

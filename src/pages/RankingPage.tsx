@@ -64,7 +64,7 @@
            xp_earned,
            hands_played,
            accuracy,
-           profiles!rankings_user_id_fkey (
+          profiles (
              username,
              avatar_url,
              level,

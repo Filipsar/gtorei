@@ -6,10 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { Sun, Moon, Monitor, User, Palette, Save } from 'lucide-react';
-import { getUserProfile, updateUserProfile } from '@/data/localStorage';
+import { Sun, Moon, Monitor, User, Palette, Save, Upload, Check } from 'lucide-react';
+import { getUserProfile, updateUserProfile, UserProfile } from '@/data/localStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+
+// Predefined avatar icons (emoji-based avatars)
+const PREDEFINED_AVATARS = [
+  '🃏', '♠️', '♥️', '♦️', '♣️', '👑', '🎰', '🎲', 
+  '🦁', '🐺', '🦅', '🐉', '🔥', '⚡', '💎', '🌟'
+];
 
 interface SettingsModalProps {
   open: boolean;
@@ -19,14 +27,34 @@ interface SettingsModalProps {
 type Theme = 'light' | 'dark' | 'system';
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+  const { user } = useAuth();
   const [nickname, setNickname] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>('dark');
   const [screenReaderEnabled, setScreenReaderEnabled] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const profile = getUserProfile();
     if (profile) {
       setNickname(profile.username);
+      if (profile.avatar) {
+        // Check if it's an emoji or URL
+        if (PREDEFINED_AVATARS.includes(profile.avatar)) {
+          setSelectedEmoji(profile.avatar);
+          setAvatarUrl(null);
+        } else {
+          setAvatarUrl(profile.avatar);
+          setSelectedEmoji(null);
+        }
+      }
+    }
+
+    // Also fetch from Supabase if logged in
+    if (user) {
+      fetchProfile();
     }
 
     // Load theme from localStorage
@@ -38,7 +66,87 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     // Load screen reader preference
     const screenReader = localStorage.getItem('gtorei_screen_reader') === 'true';
     setScreenReaderEnabled(screenReader);
-  }, [open]);
+  }, [open, user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setNickname(data.username || '');
+      if (data.avatar_url) {
+        if (PREDEFINED_AVATARS.includes(data.avatar_url)) {
+          setSelectedEmoji(data.avatar_url);
+          setAvatarUrl(null);
+        } else {
+          setAvatarUrl(data.avatar_url);
+          setSelectedEmoji(null);
+        }
+      }
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Por favor, selecione uma imagem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'A imagem deve ter no máximo 2MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Convert to base64 for local storage (simpler approach without storage bucket)
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setAvatarUrl(base64);
+        setSelectedEmoji(null);
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        toast({
+          title: 'Erro ao carregar imagem',
+          description: 'Tente novamente.',
+          variant: 'destructive',
+        });
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setUploading(false);
+      toast({
+        title: 'Erro ao carregar imagem',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSelectEmoji = (emoji: string) => {
+    setSelectedEmoji(emoji);
+    setAvatarUrl(null);
+  };
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
@@ -67,7 +175,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (nickname.trim().length < 2) {
       toast({
         title: 'Nome muito curto',
@@ -77,18 +185,49 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       return;
     }
 
-    updateUserProfile({ username: nickname.trim() });
-    toast({
-      title: 'Perfil atualizado!',
-      description: 'Suas alterações foram salvas.',
-    });
+    setSaving(true);
+    const newAvatar = selectedEmoji || avatarUrl || null;
+
+    try {
+      // Update local storage
+      updateUserProfile({ username: nickname.trim(), avatar: newAvatar || undefined });
+
+      // Update Supabase if logged in
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ 
+            username: nickname.trim(),
+            avatar_url: newAvatar
+          })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'Perfil atualizado!',
+        description: 'Suas alterações foram salvas.',
+      });
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const profile = getUserProfile();
+  const displayAvatar = selectedEmoji || avatarUrl || profile?.avatar;
+  const isEmojiAvatar = selectedEmoji || (displayAvatar && PREDEFINED_AVATARS.includes(displayAvatar));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configurações</DialogTitle>
         </DialogHeader>
@@ -109,14 +248,57 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {/* Avatar */}
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={profile?.avatar} />
-                <AvatarFallback className="text-2xl bg-primary/20 text-primary">
-                  {nickname.charAt(0).toUpperCase()}
-                </AvatarFallback>
+                {isEmojiAvatar ? (
+                  <AvatarFallback className="text-3xl bg-primary/20">
+                    {selectedEmoji || displayAvatar}
+                  </AvatarFallback>
+                ) : (
+                  <>
+                    <AvatarImage src={displayAvatar || undefined} />
+                    <AvatarFallback className="text-2xl bg-primary/20 text-primary">
+                      {nickname.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </>
+                )}
               </Avatar>
-              <p className="text-xs text-muted-foreground">
-                Avatar gerado automaticamente
-              </p>
+              
+              {/* Upload button */}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" asChild disabled={uploading}>
+                  <label className="cursor-pointer">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading ? 'Carregando...' : 'Enviar foto'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                </Button>
+              </div>
+            </div>
+
+            {/* Predefined avatars */}
+            <div className="space-y-2">
+              <Label>Ou escolha um ícone</Label>
+              <div className="grid grid-cols-8 gap-2">
+                {PREDEFINED_AVATARS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleSelectEmoji(emoji)}
+                    className={cn(
+                      'h-10 w-10 rounded-lg flex items-center justify-center text-xl transition-all',
+                      'hover:bg-primary/20 hover:scale-110',
+                      selectedEmoji === emoji && 'bg-primary/30 ring-2 ring-primary'
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Nickname */}
@@ -131,9 +313,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               />
             </div>
 
-            <Button onClick={handleSaveProfile} className="w-full gap-2">
-              <Save className="h-4 w-4" />
-              Salvar Alterações
+            <Button onClick={handleSaveProfile} className="w-full gap-2" disabled={saving}>
+              {saving ? (
+                <>Salvando...</>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Salvar Alterações
+                </>
+              )}
             </Button>
           </TabsContent>
 

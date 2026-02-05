@@ -14,10 +14,10 @@ import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard'
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback } from '@/data/gtoRanges';
 import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
-import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile } from '@/data/localStorage';
+import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart } from 'lucide-react';
 
 // Locked scenarios (under maintenance)
 const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
@@ -50,6 +50,7 @@ export default function TrainPage() {
     handData: ReturnType<typeof getHandData>;
     feedback: ReturnType<typeof calculateFeedback>;
   } | null>(null);
+  const [isCurrentHandFavorited, setIsCurrentHandFavorited] = useState(false);
   const navigate = useNavigate();
 
   // Ensure user profile exists
@@ -118,6 +119,7 @@ export default function TrainPage() {
       feedback: previousResult.feedback,
       points: previousResult.points
     } : null);
+    setIsCurrentHandFavorited(isHandFavorited(hand, selectedScenario, pos, stk));
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
@@ -219,9 +221,68 @@ export default function TrainPage() {
       feedback: previousResult.feedback,
       points: previousResult.points
     } : null);
+    setIsCurrentHandFavorited(isHandFavorited(hand, selectedScenario, pos, stk));
     setLastFeedback(null);
     setPhase('playing');
   }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand]);
+
+  // Toggle favorite hand
+  const toggleFavoriteHand = useCallback(() => {
+    if (!handState) return;
+    
+    const heroCards = handState.heroCards;
+    const rank1 = heroCards[0]?.rank || '';
+    const rank2 = heroCards[1]?.rank || '';
+    const isSuited = heroCards[0]?.suit === heroCards[1]?.suit;
+    const isPair = rank1 === rank2;
+    let handName: string;
+    if (isPair) {
+      handName = `${rank1}${rank2}`;
+    } else {
+      const idx1 = RANKS.indexOf(rank1 as any);
+      const idx2 = RANKS.indexOf(rank2 as any);
+      if (idx1 < idx2) {
+        handName = `${rank1}${rank2}${isSuited ? 's' : 'o'}`;
+      } else {
+        handName = `${rank2}${rank1}${isSuited ? 's' : 'o'}`;
+      }
+    }
+    
+    if (isCurrentHandFavorited) {
+      // Find and remove
+      const favorites = getFavoriteHands();
+      const fav = favorites.find(f => 
+        f.hand === handName && 
+        f.scenario === scenario && 
+        f.position === handState.heroPosition && 
+        f.stack === handState.heroStack
+      );
+      if (fav) {
+        removeFavoriteHand(fav.id);
+        setIsCurrentHandFavorited(false);
+        toast({
+          title: 'Removido dos favoritos',
+          description: `${handName} foi removido.`,
+        });
+      }
+    } else {
+      // Get correct action
+      const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable);
+      addFavoriteHand({
+        hand: handName,
+        scenario,
+        position: handState.heroPosition,
+        stack: handState.heroStack,
+        finalTable,
+        correctAction: handData?.primaryAction || 'fold',
+      });
+      setIsCurrentHandFavorited(true);
+      toast({
+        title: 'Adicionado aos favoritos!',
+        description: `${handName} em ${handState.heroPosition} foi salvo.`,
+      });
+    }
+  }, [handState, scenario, finalTable, isCurrentHandFavorited]);
 
   // End session
   const endSession = useCallback(() => {
@@ -456,9 +517,23 @@ export default function TrainPage() {
               <span>{handsPlayed} mãos</span>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={endSession}>
-            Encerrar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFavoriteHand}
+              className={cn(
+                'h-9 w-9',
+                isCurrentHandFavorited && 'text-destructive'
+              )}
+              title={isCurrentHandFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+            >
+              <Heart className={cn('h-5 w-5', isCurrentHandFavorited && 'fill-current')} />
+            </Button>
+            <Button variant="outline" size="sm" onClick={endSession}>
+              Encerrar
+            </Button>
+          </div>
         </div>
 
         {/* Progress bar */}

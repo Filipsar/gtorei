@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, TableProperties, BarChart3, Bot, Star, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -21,13 +21,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 const navItems = [
-  { title: 'Treinar', url: '/treinar', icon: Zap, description: 'Treino rápido', locked: false },
-  { title: 'Tabelas', url: '/tabelas', icon: TableProperties, description: 'Ranges GTO', locked: false },
-  { title: 'Análise', url: '/analise', icon: BarChart3, description: 'Estatísticas', locked: false },
-  { title: 'Ranking', url: '/ranking', icon: Trophy, description: 'Top jogadores', locked: false },
-  { title: 'Autoanálise', url: '/autoanalise', icon: Bot, description: 'Em manutenção', locked: true },
-  { title: 'Favoritos', url: '/favoritos', icon: Star, description: 'Salvos', locked: false },
-  { title: 'Atualizações', url: '/atualizacoes', icon: Bell, description: 'Novidades', locked: false },
+  { title: 'Treinar', url: '/treinar', icon: Zap, locked: false },
+  { title: 'Tabelas', url: '/tabelas', icon: TableProperties, locked: false },
+  { title: 'Análise', url: '/analise', icon: BarChart3, locked: false },
+  { title: 'Ranking', url: '/ranking', icon: Trophy, locked: false },
+  { title: 'Favoritos', url: '/favoritos', icon: Heart, locked: false },
+  { title: 'Atualizações', url: '/atualizacoes', icon: Bell, locked: false },
 ];
 
 export function AppSidebar() {
@@ -115,14 +114,7 @@ export function AppSidebar() {
                               <Lock className="h-3 w-3 absolute -top-1 -right-1 text-muted-foreground" />
                             )}
                           </div>
-                          {!collapsed && (
-                            <div className="flex flex-col">
-                              <span className="text-sm">{item.title}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {item.description}
-                              </span>
-                            </div>
-                          )}
+                          {!collapsed && <span className="text-sm">{item.title}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -142,14 +134,7 @@ export function AppSidebar() {
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-sidebar-accent"
                     >
                       <MessageSquare className="h-5 w-5 shrink-0 text-sidebar-foreground" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span className="text-sm">Dê sua opinião</span>
-                          <span className="text-xs text-muted-foreground">
-                            Feedback
-                          </span>
-                        </div>
-                      )}
+                      {!collapsed && <span className="text-sm">Feedback</span>}
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -162,14 +147,7 @@ export function AppSidebar() {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-sidebar-accent cursor-pointer"
                   >
                     <Settings className="h-5 w-5 shrink-0 text-sidebar-foreground" />
-                    {!collapsed && (
-                      <div className="flex flex-col">
-                        <span className="text-sm">Configurações</span>
-                        <span className="text-xs text-muted-foreground">
-                          Tema e perfil
-                        </span>
-                      </div>
-                    )}
+                    {!collapsed && <span className="text-sm">Configurações</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
@@ -182,14 +160,7 @@ export function AppSidebar() {
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-destructive/10 cursor-pointer text-destructive"
                     >
                       <LogOut className="h-5 w-5 shrink-0" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span className="text-sm">Sair</span>
-                          <span className="text-xs opacity-70">
-                            Encerrar sessão
-                          </span>
-                        </div>
-                      )}
+                      {!collapsed && <span className="text-sm">Sair</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
