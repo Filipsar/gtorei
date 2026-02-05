@@ -47,13 +47,18 @@ export function AppSidebar() {
         <SidebarHeader className="border-b border-sidebar-border p-4">
           <div className="flex items-center justify-between w-full">
             {!collapsed && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8 object-contain" />
-                <span className="text-xl font-bold text-primary">GTORei</span>
+                <span className="text-xl font-bold">
+                  <span className="text-primary">GTO</span>
+                  <span className="text-white">Rei</span>
+                </span>
               </div>
             )}
             {collapsed && (
-              <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8 object-contain mx-auto" />
+              <div className="w-full flex justify-center px-1">
+                <img src={gtoreiLogo} alt="GTORei" className="h-7 w-7 object-contain" />
+              </div>
             )}
           </div>
 
