@@ -176,7 +176,15 @@ export type Database = {
           user_id?: string
           xp_earned?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rankings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       training_sessions: {
         Row: {
