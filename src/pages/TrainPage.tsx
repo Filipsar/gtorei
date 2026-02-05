@@ -16,6 +16,8 @@ import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANK
 import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
+import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart } from 'lucide-react';
 
@@ -51,7 +53,9 @@ export default function TrainPage() {
     feedback: ReturnType<typeof calculateFeedback>;
   } | null>(null);
   const [isCurrentHandFavorited, setIsCurrentHandFavorited] = useState(false);
+  const [correctHandsCount, setCorrectHandsCount] = useState(0);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Ensure user profile exists
   useEffect(() => {
@@ -162,6 +166,7 @@ export default function TrainPage() {
 
     // Só dar pontos se mão não foi jogada antes
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
+    const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 
     // Registrar mão como jogada (se ainda não foi)
     if (!isHandAlreadyPlayedState) {
@@ -179,6 +184,20 @@ export default function TrainPage() {
       });
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
+      if (isCorrect) {
+        setCorrectHandsCount(prev => prev + 1);
+      }
+
+      // Update ranking in Supabase
+      if (user && pointsToAdd > 0) {
+        updateUserRanking({
+          userId: user.id,
+          xpEarned: pointsToAdd,
+          handsPlayed: 1,
+          correctHands: isCorrect ? 1 : 0,
+        });
+        updateSupabaseProfile(user.id, pointsToAdd, 1);
+      }
     }
     setLastFeedback({
       userAction: action,

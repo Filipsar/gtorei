@@ -3,15 +3,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getFavorites, removeFavorite, FavoriteScenario, getFavoriteHands, removeFavoriteHand, FavoriteHand } from '@/data/localStorage';
 import { SCENARIOS } from '@/data/gtoRanges';
-import { Heart, Trash2, Play, Layers } from 'lucide-react';
+import { Heart, Trash2, Play, Layers, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { FavoriteHandReview } from '@/components/poker/FavoriteHandReview';
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteScenario[]>(getFavorites());
   const [favoriteHands, setFavoriteHands] = useState<FavoriteHand[]>(getFavoriteHands());
+  const [reviewHand, setReviewHand] = useState<FavoriteHand | null>(null);
   const navigate = useNavigate();
 
   const handleRemove = (id: string) => {
@@ -94,7 +96,7 @@ export default function FavoritesPage() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex flex-wrap gap-1.5 text-xs">
+                      <div className="flex flex-wrap gap-1.5 text-xs mb-3">
                         <span className="px-2 py-0.5 rounded bg-muted">{fav.position}</span>
                         <span className="px-2 py-0.5 rounded bg-muted">{fav.stack} BB</span>
                         <span className="px-2 py-0.5 rounded bg-muted">
@@ -104,6 +106,15 @@ export default function FavoritesPage() {
                           <span className="px-2 py-0.5 rounded bg-primary/20 text-primary">FT</span>
                         )}
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                        onClick={() => setReviewHand(fav)}
+                      >
+                        <Eye className="h-4 w-4" />
+                        Revisar Mão
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -194,6 +205,13 @@ export default function FavoritesPage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Review Modal */}
+        <FavoriteHandReview
+          open={reviewHand !== null}
+          onClose={() => setReviewHand(null)}
+          hand={reviewHand}
+        />
       </div>
     </MainLayout>
   );
