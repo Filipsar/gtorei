@@ -3,6 +3,7 @@ import { AlertTriangle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MAINTENANCE_MESSAGES = [
+  '🎓 Aulas gratuitas de poker GTO chegando em breve!',
   '🔧 Cenários "Simulação" e "Multiway" estão em manutenção',
   '🤖 Autoanálise com IA em desenvolvimento - em breve!',
   '⚡ Novas funcionalidades chegando em breve',
