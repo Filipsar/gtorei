@@ -84,12 +84,27 @@ export default function TrainPage() {
     return cards.map(c => `${c.rank}${c.suit}`).join('');
   };
 
+  // Auto-remove invalid positions when scenario changes
+  const handleScenarioChange = (newScenario: Scenario) => {
+    setScenario(newScenario);
+    const invalid = getInvalidPositions(newScenario);
+    if (invalid.length > 0) {
+      setSelectedPositions(prev => {
+        const filtered = prev.filter(p => !invalid.includes(p));
+        return filtered.length > 0 ? filtered : POSITIONS.filter(p => !invalid.includes(p)).slice(0, 1);
+      });
+    }
+  };
+
   // Start game
   const startGame = useCallback(() => {
     // Filter out locked scenarios for random selection
     const availableScenarios: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
     const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
-    const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
+    const scenarioInvalid = getInvalidPositions(selectedScenario);
+    const validPositions = POSITIONS.filter(p => !scenarioInvalid.includes(p));
+    const validSelected = selectedPositions.filter(p => !scenarioInvalid.includes(p));
+    const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
@@ -213,7 +228,10 @@ export default function TrainPage() {
     const availableScenarios: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
     const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
     
-    const pos = randomPosition ? POSITIONS[Math.floor(Math.random() * POSITIONS.length)] : selectedPositions[Math.floor(Math.random() * selectedPositions.length)];
+    const scenarioInvalid = getInvalidPositions(selectedScenario);
+    const validPositions = POSITIONS.filter(p => !scenarioInvalid.includes(p));
+    const validSelected = selectedPositions.filter(p => !scenarioInvalid.includes(p));
+    const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
@@ -323,8 +341,24 @@ export default function TrainPage() {
     });
   }, []);
 
+  // Get invalid positions for current scenario
+  const getInvalidPositions = (sc: Scenario): Position[] => {
+    switch (sc) {
+      case 'vsOpenRaise':
+      case 'vsOpenShove':
+        return ['UTG']; // No one acts before UTG
+      case 'vs3bet':
+        return ['BB']; // No one acts after BB
+      default:
+        return [];
+    }
+  };
+
+  const invalidPositions = getInvalidPositions(scenario);
+
   // Toggle position selection
   const togglePosition = (pos: Position) => {
+    if (invalidPositions.includes(pos)) return;
     if (selectedPositions.includes(pos)) {
       if (selectedPositions.length > 1) {
         setSelectedPositions(prev => prev.filter(p => p !== pos));
@@ -381,7 +415,7 @@ export default function TrainPage() {
                       <Button 
                         key={s.id} 
                         variant={scenario === s.id && !randomScenario && !isLocked ? 'default' : 'outline'} 
-                        onClick={() => !isLocked && setScenario(s.id)} 
+                        onClick={() => !isLocked && handleScenarioChange(s.id)} 
                         disabled={randomScenario || isLocked} 
                         className={cn(
                           'h-auto py-3 flex flex-col items-center gap-1 relative',
@@ -417,9 +451,14 @@ export default function TrainPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {POSITIONS.map(pos => <Button key={pos} variant={selectedPositions.includes(pos) && !randomPosition ? 'default' : 'outline'} size="sm" onClick={() => togglePosition(pos)} disabled={randomPosition} className={cn('min-w-[3.5rem]', selectedPositions.includes(pos) && !randomPosition && 'bg-primary text-primary-foreground')}>
-                      {pos}
-                    </Button>)}
+                {POSITIONS.map(pos => {
+                    const isInvalid = invalidPositions.includes(pos);
+                    return (
+                      <Button key={pos} variant={selectedPositions.includes(pos) && !randomPosition && !isInvalid ? 'default' : 'outline'} size="sm" onClick={() => togglePosition(pos)} disabled={randomPosition || isInvalid} className={cn('min-w-[3.5rem]', selectedPositions.includes(pos) && !randomPosition && !isInvalid && 'bg-primary text-primary-foreground', isInvalid && 'opacity-40 cursor-not-allowed')}>
+                        {pos}
+                      </Button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
