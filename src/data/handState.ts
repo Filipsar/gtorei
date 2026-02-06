@@ -56,6 +56,9 @@ function shuffle<T>(array: T[]): T[] {
 }
 
 // Determinar posição do villain baseado no cenário
+// IMPORTANTE: Respeita a ordem de ação pré-flop:
+// UTG -> UTG1 -> LJ -> HJ -> CO -> BTN -> SB -> BB
+// "Antes" = age antes (índice menor), "Depois" = age depois (índice maior)
 export function getVillainPosition(
   scenario: Scenario,
   heroPosition: Position
@@ -65,39 +68,43 @@ export function getVillainPosition(
   
   switch (scenario) {
     case 'vsOpenRaise':
-    case 'simulation':
-      // Villain abriu de uma posição anterior
-      // Escolher uma posição aleatória antes do herói
-      const earlierPositions = positionOrder.filter((_, i) => i < heroIndex && i >= 0);
-      if (earlierPositions.length > 0) {
-        return earlierPositions[Math.floor(Math.random() * earlierPositions.length)];
+    case 'simulation': {
+      // Villain abriu de uma posição que age ANTES do herói (índice menor)
+      // Se herói é UTG (índice 0), NÃO há ninguém que age antes — cenário impossível
+      const earlierPositions = positionOrder.filter((_, i) => i < heroIndex);
+      if (earlierPositions.length === 0) {
+        return undefined; // Cenário impossível para esta posição
       }
-      // Se herói está em UTG, não há posição anterior, usar CO
-      return 'CO';
+      return earlierPositions[Math.floor(Math.random() * earlierPositions.length)];
+    }
       
-    case 'vs3bet':
-      // Herói abriu, villain 3-betou de uma posição posterior
+    case 'vs3bet': {
+      // Herói abriu, villain 3-betou de uma posição que age DEPOIS (índice maior)
+      // Se herói é BB (último), NÃO há ninguém depois — cenário impossível
       const laterPositions = positionOrder.filter((_, i) => i > heroIndex);
-      if (laterPositions.length > 0) {
-        return laterPositions[Math.floor(Math.random() * laterPositions.length)];
+      if (laterPositions.length === 0) {
+        return undefined; // Cenário impossível para esta posição
       }
-      return 'BB';
+      return laterPositions[Math.floor(Math.random() * laterPositions.length)];
+    }
       
-    case 'vsOpenShove':
-      // Villain shovou de uma posição anterior
+    case 'vsOpenShove': {
+      // Villain shovou de uma posição que age ANTES do herói (índice menor)
       const priorPositions = positionOrder.filter((_, i) => i < heroIndex);
-      if (priorPositions.length > 0) {
-        return priorPositions[Math.floor(Math.random() * priorPositions.length)];
+      if (priorPositions.length === 0) {
+        return undefined; // Cenário impossível para esta posição
       }
-      return 'UTG';
+      return priorPositions[Math.floor(Math.random() * priorPositions.length)];
+    }
     
-    case 'multiway':
-      // Multiway - retorna uma posição anterior aleatória
-      const multiPositions = positionOrder.filter((_, i) => i < heroIndex && i >= 0);
-      if (multiPositions.length > 0) {
-        return multiPositions[Math.floor(Math.random() * multiPositions.length)];
+    case 'multiway': {
+      // Multiway - villain abre de posição anterior
+      const multiPositions = positionOrder.filter((_, i) => i < heroIndex);
+      if (multiPositions.length === 0) {
+        return undefined;
       }
-      return 'CO';
+      return multiPositions[Math.floor(Math.random() * multiPositions.length)];
+    }
       
     default:
       return undefined;
