@@ -7,8 +7,16 @@
  import { supabase } from '@/integrations/supabase/client';
  import { useAuth } from '@/contexts/AuthContext';
  import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange } from 'lucide-react';
- import { cn } from '@/lib/utils';
- import { getLevelName } from '@/data/localStorage';
+import { cn } from '@/lib/utils';
+import { getLevelName } from '@/data/localStorage';
+
+import levelIniciante from '@/assets/levels/Iniciante.png';
+import levelAmador from '@/assets/levels/Amador.png';
+import levelIntermediario from '@/assets/levels/Intermediario.png';
+import levelAvancado from '@/assets/levels/Avancado.png';
+import levelExpert from '@/assets/levels/Expert.png';
+import levelMestre from '@/assets/levels/Mestre.png';
+import levelLenda from '@/assets/levels/Lenda.png';
  
  interface RankingEntry {
    id: string;
@@ -225,23 +233,23 @@
            </CardHeader>
            <CardContent>
              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-               {[
-                 { name: 'Iniciante', xp: '0', color: 'bg-gray-500' },
-                 { name: 'Amador', xp: '150', color: 'bg-blue-500' },
-                 { name: 'Intermediário', xp: '450', color: 'bg-green-500' },
-                 { name: 'Avançado', xp: '1000', color: 'bg-yellow-500' },
-                 { name: 'Expert', xp: '2000', color: 'bg-orange-500' },
-                 { name: 'Mestre', xp: '4000', color: 'bg-red-500' },
-                 { name: 'Lenda', xp: '8000', color: 'bg-purple-500' },
-               ].map((level) => (
-                 <div key={level.name} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                   <div className={cn('w-3 h-3 rounded-full', level.color)} />
-                   <div>
-                     <p className="text-sm font-medium">{level.name}</p>
-                     <p className="text-xs text-muted-foreground">{level.xp}+ XP</p>
-                   </div>
-                 </div>
-               ))}
+              {[
+                  { name: 'Iniciante', xp: '0', img: levelIniciante },
+                  { name: 'Amador', xp: '150', img: levelAmador },
+                  { name: 'Intermediário', xp: '450', img: levelIntermediario },
+                  { name: 'Avançado', xp: '1000', img: levelAvancado },
+                  { name: 'Expert', xp: '2000', img: levelExpert },
+                  { name: 'Mestre', xp: '4000', img: levelMestre },
+                  { name: 'Lenda', xp: '8000', img: levelLenda },
+                ].map((level) => (
+                  <div key={level.name} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                    <img src={level.img} alt={level.name} className="w-8 h-8 object-contain" />
+                    <div>
+                      <p className="text-sm font-medium">{level.name}</p>
+                      <p className="text-xs text-muted-foreground">{level.xp}+ XP</p>
+                    </div>
+                  </div>
+                ))}
              </div>
            </CardContent>
          </Card>
