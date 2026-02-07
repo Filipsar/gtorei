@@ -67,7 +67,8 @@ function getActionForHand(
   suited: boolean,
   position: Position,
   stack: number,
-  scenario: Scenario
+  scenario: Scenario,
+  finalTable: boolean = false
 ): ActionFrequency[] {
   const ranks = RANKS;
   const idx1 = ranks.indexOf(rank1);
@@ -99,6 +100,23 @@ function getActionForHand(
   // Ajuste por stack (stacks curtos favorecem all-in)
   if (stack <= 12) {
     strength += 5;
+  }
+
+  // Ajuste ICM para mesa final - ranges mais tight
+  if (finalTable) {
+    // ICM penaliza jogadas marginais: reduz força geral
+    const icmPenalty = stack <= 15 ? 12 : stack <= 25 ? 8 : 5;
+    strength -= icmPenalty;
+
+    // Posições iniciais ficam ainda mais tight em mesa final
+    if (['UTG', 'UTG1', 'LJ'].includes(position)) {
+      strength -= 5;
+    }
+
+    // Pares baixos e mãos especulativas perdem valor com ICM
+    if (!isPair && gap >= 4 && highCardIdx >= 4) {
+      strength -= 6;
+    }
   }
 
   // Normalizar para 0-100
@@ -208,7 +226,7 @@ export function generateRange(
 
       if (i === j) {
         // Pares (diagonal)
-        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario);
+        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable);
         hands.push({
           hand: `${rank1}${rank2}`,
           actions,
@@ -218,7 +236,7 @@ export function generateRange(
         });
       } else if (i < j) {
         // Suited (acima da diagonal)
-        const actions = getActionForHand(rank1, rank2, true, position, stack, scenario);
+        const actions = getActionForHand(rank1, rank2, true, position, stack, scenario, finalTable);
         hands.push({
           hand: `${rank1}${rank2}s`,
           actions,
@@ -228,7 +246,7 @@ export function generateRange(
         });
       } else {
         // Offsuit (abaixo da diagonal)
-        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario);
+        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable);
         hands.push({
           hand: `${rank2}${rank1}o`,
           actions,
