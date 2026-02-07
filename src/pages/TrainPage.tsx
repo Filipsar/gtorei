@@ -344,6 +344,8 @@ export default function TrainPage() {
   // Get invalid positions for current scenario
   const getInvalidPositions = (sc: Scenario): Position[] => {
     switch (sc) {
+      case 'openRaise':
+        return ['BB']; // BB is last to act preflop — if it folds to BB, he wins automatically
       case 'vsOpenRaise':
       case 'vsOpenShove':
         return ['UTG']; // No one acts before UTG
