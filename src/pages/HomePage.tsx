@@ -58,12 +58,12 @@ export default function HomePage() {
         </div>
 
         {/* Title */}
-        <h1 className="text-4xl sm:text-6xl font-bold text-foreground mb-4">
+        <h1 className="text-display-md sm:text-display-xl text-foreground mb-4">
           <span className="text-primary">GTO</span>Rei
         </h1>
 
         {/* Description */}
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mb-4">
+        <p className="text-body-lg text-muted-foreground max-w-xl mb-4">
           Treinador de Poker GTO gratuito para jogadores que querem evoluir no poker.
         </p>
         
@@ -77,9 +77,9 @@ export default function HomePage() {
         <div className="w-full max-w-lg mb-8 p-6 rounded-xl bg-muted/30 border border-border">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Accessibility className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Acessibilidade</h2>
+            <h2 className="text-heading-md">Acessibilidade</h2>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">O GTORei apoia projetos para deficientes e promove a inclusão no poker.</p>
+          <p className="text-body-sm text-muted-foreground mb-4">O GTORei apoia projetos para deficientes e promove a inclusão no poker.</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/gtoreiacessibilidade')} className="gap-2">
             Saiba mais
             <ArrowRight className="h-4 w-4" />
@@ -88,7 +88,7 @@ export default function HomePage() {
 
         {/* Creator info */}
         <div className="flex flex-col items-center gap-4 mb-8">
-          <p className="text-sm text-muted-foreground">Criado por</p>
+          <p className="text-body-sm text-muted-foreground">Criado por</p>
           <a href="https://www.instagram.com/filiperubini/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors group">
             <Instagram className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
             <span className="font-medium">Filipe Rubini</span>

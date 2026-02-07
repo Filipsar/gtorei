@@ -29,9 +29,9 @@ export default function FavoritesPage() {
   const getActionBadgeColor = (action: string) => {
     switch (action) {
       case 'fold': return 'bg-muted text-muted-foreground';
-      case 'call': return 'bg-blue-500/20 text-blue-500';
-      case 'raise': return 'bg-green-500/20 text-green-500';
-      case 'allin': return 'bg-red-500/20 text-red-500';
+      case 'call': return 'bg-poker-call/20 text-poker-call';
+      case 'raise': return 'bg-poker-raise/20 text-poker-raise';
+      case 'allin': return 'bg-poker-allin/20 text-poker-allin';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -51,11 +51,11 @@ export default function FavoritesPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
             <Heart className="h-8 w-8 text-primary" />
             Favoritos
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-body-sm text-muted-foreground mt-1">
             Suas mãos e cenários salvos
           </p>
         </div>
@@ -80,7 +80,7 @@ export default function FavoritesPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="text-2xl font-bold font-mono bg-primary/10 px-3 py-1 rounded">
+                          <div className="text-poker-hand bg-primary/10 px-3 py-1 rounded">
                             {fav.hand}
                           </div>
                           <Badge className={getActionBadgeColor(fav.correctAction)}>
@@ -96,7 +96,7 @@ export default function FavoritesPage() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex flex-wrap gap-1.5 text-xs mb-3">
+                      <div className="flex flex-wrap gap-1.5 text-body-xs mb-3">
                         <span className="px-2 py-0.5 rounded bg-muted">{fav.position}</span>
                         <span className="px-2 py-0.5 rounded bg-muted">{fav.stack} BB</span>
                         <span className="px-2 py-0.5 rounded bg-muted">
@@ -125,8 +125,8 @@ export default function FavoritesPage() {
                   <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <Heart className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h2 className="text-xl font-semibold mb-2">Nenhuma mão favorita</h2>
-                  <p className="text-muted-foreground max-w-md mx-auto mb-4">
+                  <h2 className="text-heading-sm mb-2">Nenhuma mão favorita</h2>
+                  <p className="text-body-sm text-muted-foreground max-w-md mx-auto mb-4">
                     Durante o treino, clique no ícone ❤️ para salvar mãos que você quer revisar depois.
                   </p>
                   <Button onClick={() => navigate('/treinar')}>
@@ -146,8 +146,8 @@ export default function FavoritesPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className="font-semibold text-lg">{fav.name}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="text-heading-xs">{fav.name}</h3>
+                          <p className="text-body-sm text-muted-foreground">
                             {SCENARIOS.find(s => s.id === fav.scenario)?.label}
                           </p>
                         </div>
@@ -161,7 +161,7 @@ export default function FavoritesPage() {
                         </Button>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 mb-4 text-xs">
+                      <div className="flex flex-wrap gap-2 mb-4 text-body-xs">
                         <span className="px-2 py-1 rounded bg-muted">
                           {fav.position === 'random' ? 'Posição Aleatória' : fav.position}
                         </span>
@@ -192,8 +192,8 @@ export default function FavoritesPage() {
                   <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <Layers className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h2 className="text-xl font-semibold mb-2">Nenhum cenário salvo</h2>
-                  <p className="text-muted-foreground max-w-md mx-auto mb-4">
+                  <h2 className="text-heading-sm mb-2">Nenhum cenário salvo</h2>
+                  <p className="text-body-sm text-muted-foreground max-w-md mx-auto mb-4">
                     Você ainda não salvou nenhum cenário de treino favorito.
                   </p>
                   <Button onClick={() => navigate('/treinar')}>

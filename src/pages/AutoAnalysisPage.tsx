@@ -8,11 +8,11 @@ export default function AutoAnalysisPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
             <Bot className="h-8 w-8 text-primary" />
             Autoanálise
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-body-sm text-muted-foreground mt-1">
             Review de mãos com assistência de IA
           </p>
         </div>
@@ -22,8 +22,8 @@ export default function AutoAnalysisPage() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <Wrench className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Em Desenvolvimento</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
+            <h2 className="text-heading-sm mb-2">Em Desenvolvimento</h2>
+            <p className="text-body-md text-muted-foreground max-w-md mx-auto">
               Esta funcionalidade estará disponível em breve. 
               Você poderá revisar suas mãos jogadas com análise detalhada 
               e sugestões personalizadas de melhoria.

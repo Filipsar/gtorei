@@ -17,7 +17,7 @@ export default function AccessibilityPage() {
           </Button>
           <div className="flex items-center gap-2">
             <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8" />
-            <span className="text-xl font-bold">
+            <span className="text-heading-sm">
               <span className="text-primary">GTO</span>Rei
             </span>
           </div>
@@ -30,10 +30,10 @@ export default function AccessibilityPage() {
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
             <Accessibility className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">
+          <h1 className="text-display-md mb-2">
             <span className="text-primary">GTO</span>Rei Acessibilidade
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-body-lg text-muted-foreground">
             Poker para todos, sem barreiras
           </p>
         </div>
@@ -42,22 +42,22 @@ export default function AccessibilityPage() {
         <div className="space-y-6">
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <h2 className="text-heading-sm mb-4 flex items-center gap-2">
                 <Heart className="h-5 w-5 text-destructive" />
                 Por que apoiar a acessibilidade?
               </h2>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-body-md text-muted-foreground mb-4">
                 O poker é um jogo de habilidade que deve ser acessível a todos. 
                 Infelizmente, muitos jogadores com deficiências enfrentam barreiras 
                 significativas para aprender e praticar o jogo.
               </p>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-body-md text-muted-foreground mb-4">
                 No mundo do poker competitivo, a inclusão ainda é um desafio. 
                 Apoiar projetos de acessibilidade não é apenas uma questão de 
                 responsabilidade social, mas também de reconhecer o potencial 
                 de talentos que podem estar sendo negligenciados.
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-body-md text-muted-foreground">
                 O GTORei acredita que toda pessoa merece a oportunidade de 
                 aprender e evoluir no poker, independentemente de suas limitações físicas.
               </p>
@@ -66,16 +66,16 @@ export default function AccessibilityPage() {
 
           <Card className="border-primary/30 bg-primary/5">
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
+              <h2 className="text-heading-sm mb-4">
                 🎴 Conheça: Aces Inclusivos
               </h2>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-body-md text-muted-foreground mb-4">
                 O <strong>Aces Inclusivos</strong> é um projeto incrível que promove 
                 a inclusão de pessoas com deficiência no mundo do poker. Eles trabalham 
                 para criar um ambiente acolhedor e adaptado, permitindo que todos 
                 possam competir em igualdade de condições.
               </p>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-body-md text-muted-foreground mb-6">
                 O projeto oferece treinamentos, eventos adaptados e suporte para 
                 jogadores que enfrentam barreiras de acessibilidade. É uma iniciativa 
                 que merece todo nosso apoio e reconhecimento.
@@ -95,10 +95,10 @@ export default function AccessibilityPage() {
 
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
+              <h2 className="text-heading-sm mb-4">
                 ♿ Recursos de Acessibilidade do GTORei
               </h2>
-              <ul className="space-y-3 text-muted-foreground">
+              <ul className="space-y-3 text-body-md text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">✓</span>
                   <span>Interface otimizada para leitores de tela</span>

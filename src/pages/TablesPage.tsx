@@ -26,10 +26,10 @@ export default function TablesPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+          <h1 className="text-heading-md sm:text-heading-lg text-foreground">
             Ranges por ChipEV
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-body-sm text-muted-foreground mt-1">
             Visualize as ranges GTO para cada cenário e posição
           </p>
         </div>
@@ -138,7 +138,7 @@ export default function TablesPage() {
             {/* Range Matrix */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">
+                <CardTitle className="text-heading-xs">
                   {SCENARIOS.find(s => s.id === scenario)?.label} - {position} - {stack}BB
                 </CardTitle>
               </CardHeader>
@@ -184,7 +184,7 @@ export default function TablesPage() {
           <div className="lg:sticky lg:top-6 lg:self-start">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Detalhes da Mão</CardTitle>
+                <CardTitle className="text-heading-xs">Detalhes da Mão</CardTitle>
               </CardHeader>
               <CardContent>
                 {selectedHand ? (

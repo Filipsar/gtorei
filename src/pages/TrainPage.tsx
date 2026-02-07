@@ -387,11 +387,11 @@ export default function TrainPage() {
         <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+             <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
               <Zap className="h-8 w-8 text-primary" />
               Treino Rápido
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-body-sm text-muted-foreground mt-1">
               Configure seu treino e pratique decisões GTO
             </p>
           </div>
@@ -401,7 +401,7 @@ export default function TrainPage() {
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-lg">Cenário</h2>
+                  <h2 className="text-heading-xs">Cenário</h2>
                   <div className="flex items-center gap-2">
                     <Switch id="random-scenario" checked={randomScenario} onCheckedChange={setRandomScenario} />
                     <Label htmlFor="random-scenario" className="text-sm flex items-center gap-1">
@@ -443,7 +443,7 @@ export default function TrainPage() {
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-lg">Posição</h2>
+                  <h2 className="text-heading-xs">Posição</h2>
                   <div className="flex items-center gap-2">
                     <Switch id="random-pos" checked={randomPosition} onCheckedChange={setRandomPosition} />
                     <Label htmlFor="random-pos" className="text-sm flex items-center gap-1">
@@ -469,7 +469,7 @@ export default function TrainPage() {
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-lg">Stack (BB)</h2>
+                  <h2 className="text-heading-xs">Stack (BB)</h2>
                   <div className="flex items-center gap-2">
                     <Switch id="random-stack" checked={randomStack} onCheckedChange={setRandomStack} />
                     <Label htmlFor="random-stack" className="text-sm flex items-center gap-1">
@@ -491,7 +491,7 @@ export default function TrainPage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-semibold text-lg">Modo Mesa Final</h2>
+                    <h2 className="text-heading-xs">Modo Mesa Final</h2>
                     <p className="text-sm text-muted-foreground">
                       Ativa ajustes ICM para final tables
                     </p>
@@ -506,7 +506,7 @@ export default function TrainPage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-semibold text-lg flex items-center gap-2">
+                    <h2 className="text-heading-xs flex items-center gap-2">
                       <RefreshCw className="h-5 w-5" />
                       Limpar Sessão
                     </h2>
@@ -524,7 +524,7 @@ export default function TrainPage() {
             {/* Config summary */}
             <Card className="bg-muted/50">
               <CardContent className="p-4 sm:p-6">
-                <h2 className="font-semibold mb-3 text-lg">Resumo</h2>
+                <h2 className="text-heading-xs mb-3">Resumo</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Cenário</p>
