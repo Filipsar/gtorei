@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Instagram, Heart, Accessibility, ArrowRight } from 'lucide-react';
-import gtoreiLogo from '@/assets/gtorei-logo.png';
+import gtoreiLogo from '@/assets/gtorei-crown.png';
 export default function HomePage() {
   const navigate = useNavigate();
   return <div className="relative min-h-screen overflow-hidden bg-background">
