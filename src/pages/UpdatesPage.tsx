@@ -13,6 +13,34 @@ interface UpdateNote {
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.3.1',
+    date: '07/02/2026',
+    type: 'fix',
+    title: 'Correção do Modo Mesa Final',
+    description: 'O modo Mesa Final agora aplica penalidades ICM reais: ranges mais tight, posições iniciais mais conservadoras e mãos especulativas perdem valor. Afeta Treinar e Tabelas.',
+  },
+  {
+    version: '1.3.0',
+    date: '07/02/2026',
+    type: 'feature',
+    title: 'Níveis com Imagens de Fichas',
+    description: 'Os níveis de XP (Iniciante a Lenda) agora exibem imagens personalizadas de fichas de poker no lugar dos indicadores coloridos.',
+  },
+  {
+    version: '1.2.4',
+    date: '07/02/2026',
+    type: 'improvement',
+    title: 'Validação de Posições por Cenário',
+    description: 'Posições impossíveis são bloqueadas automaticamente: UTG em "Vs Open Raise" e "Vs Open Shove", BB em "Vs 3-bet". O sistema remove seleções inválidas ao trocar de modo.',
+  },
+  {
+    version: '1.2.3',
+    date: '07/02/2026',
+    type: 'feature',
+    title: 'Menu Lateral: Aulas e Apoie',
+    description: 'Nova aba "Aulas" (em breve) e link "Apoie" adicionados ao menu lateral. Banner de aulas gratuitas de poker GTO nos avisos.',
+  },
+  {
     version: '1.2.1',
     date: '05/02/2026',
     type: 'improvement',
