@@ -2,11 +2,14 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { getUserStats, getUserProfile, getLevelName, getLevelProgress, getSessions } from '@/data/localStorage';
+import { getLevelName, getLevelProgress } from '@/data/localStorage';
 import { POSITIONS } from '@/data/gtoRanges';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { 
-  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye
+  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye, Info
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,16 +17,118 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
+interface MonthlyStats {
+  totalHands: number;
+  totalScore: number;
+  averageAccuracy: number;
+  bestStreak: number;
+  feedbackDistribution: { best: number; correct: number; inaccuracy: number; mistake: number; blunder: number };
+  positionStats: Record<string, { hands: number; accuracy: number }>;
+  recentTrend: 'improving' | 'stable' | 'declining';
+  sessions: { id: string; startedAt: string; handsPlayed: number; score: number; accuracy: number }[];
+}
+
 export default function AnalysisPage() {
   const navigate = useNavigate();
-  const stats = getUserStats();
-  const profile = getUserProfile();
-  const sessions = getSessions().slice(0, 10);
-  const levelProgress = profile ? getLevelProgress(profile.totalScore) : { current: 0, next: 500, progress: 0 };
+  const { user, profile: authProfile } = useAuth();
+  const [stats, setStats] = useState<MonthlyStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Prepare chart data
-  const sessionChartData = sessions.map((s, idx) => ({
-    name: `S${sessions.length - idx}`,
+  const level = authProfile?.level ?? 1;
+  const totalXp = authProfile?.total_xp ?? 0;
+  const levelProgress = getLevelProgress(totalXp);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchMonthlyStats(user.id);
+  }, [user?.id]);
+
+  async function fetchMonthlyStats(userId: string) {
+    setLoading(true);
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+
+    const [sessionsRes, handsRes] = await Promise.all([
+      supabase
+        .from('training_sessions')
+        .select('id, started_at, hands_played, score, accuracy')
+        .eq('user_id', userId)
+        .gte('started_at', monthStart)
+        .order('started_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('played_hands')
+        .select('feedback, position, points')
+        .eq('user_id', userId)
+        .gte('played_at', monthStart),
+    ]);
+
+    const sessions = sessionsRes.data ?? [];
+    const hands = handsRes.data ?? [];
+
+    const feedbackDistribution = { best: 0, correct: 0, inaccuracy: 0, mistake: 0, blunder: 0 };
+    const posMap: Record<string, { hands: number; correct: number }> = {};
+    POSITIONS.forEach(p => posMap[p] = { hands: 0, correct: 0 });
+
+    let bestStreak = 0, currentStreak = 0;
+    hands.forEach(h => {
+      const fb = h.feedback as keyof typeof feedbackDistribution;
+      if (fb in feedbackDistribution) feedbackDistribution[fb]++;
+      if (posMap[h.position]) {
+        posMap[h.position].hands++;
+        if (fb === 'best' || fb === 'correct') posMap[h.position].correct++;
+      }
+      if (fb === 'best' || fb === 'correct') {
+        currentStreak++;
+        bestStreak = Math.max(bestStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    });
+
+    const correctCount = feedbackDistribution.best + feedbackDistribution.correct;
+    const avgAcc = hands.length > 0 ? Math.round((correctCount / hands.length) * 100) : 0;
+
+    const recent5 = sessions.slice(0, 5);
+    const older5 = sessions.slice(5, 10);
+    let trend: 'improving' | 'stable' | 'declining' = 'stable';
+    if (recent5.length >= 3 && older5.length >= 3) {
+      const rAvg = recent5.reduce((a, s) => a + Number(s.accuracy), 0) / recent5.length;
+      const oAvg = older5.reduce((a, s) => a + Number(s.accuracy), 0) / older5.length;
+      if (rAvg > oAvg + 5) trend = 'improving';
+      else if (rAvg < oAvg - 5) trend = 'declining';
+    }
+
+    const positionStats = Object.fromEntries(
+      Object.entries(posMap).map(([pos, s]) => [pos, { hands: s.hands, accuracy: s.hands > 0 ? Math.round((s.correct / s.hands) * 100) : 0 }])
+    );
+
+    const totalScore = sessions.reduce((a, s) => a + s.score, 0);
+
+    setStats({
+      totalHands: hands.length,
+      totalScore,
+      averageAccuracy: avgAcc,
+      bestStreak,
+      feedbackDistribution,
+      positionStats,
+      recentTrend: trend,
+      sessions: sessions.map(s => ({ id: s.id, startedAt: s.started_at, handsPlayed: s.hands_played, score: s.score, accuracy: Number(s.accuracy) })),
+    });
+    setLoading(false);
+  }
+
+  if (loading || !stats) {
+    return (
+      <MainLayout>
+        <div className="p-8 flex items-center justify-center text-muted-foreground">
+          Carregando estatísticas...
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const sessionChartData = stats.sessions.slice(0, 10).map((s, idx) => ({
+    name: `S${stats.sessions.slice(0, 10).length - idx}`,
     score: s.score,
     accuracy: s.accuracy,
   })).reverse();
@@ -47,6 +152,8 @@ export default function AnalysisPage() {
   const trendColor = stats.recentTrend === 'improving' ? 'text-feedback-best' :
                      stats.recentTrend === 'declining' ? 'text-feedback-blunder' : 'text-muted-foreground';
 
+  const currentMonth = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
@@ -57,8 +164,12 @@ export default function AnalysisPage() {
             Análise de Desempenho
           </h1>
           <p className="text-muted-foreground mt-1">
-            Acompanhe seu progresso e identifique áreas de melhoria
+            Desempenho de <span className="capitalize font-medium">{currentMonth}</span>
           </p>
+          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 w-fit">
+            <Info className="h-3.5 w-3.5 shrink-0" />
+            <span>O desempenho é resetado mensalmente</span>
+          </div>
         </div>
 
         {/* Overview cards */}
@@ -127,15 +238,15 @@ export default function AnalysisPage() {
         </div>
 
         {/* Level progress */}
-        {profile && (
+        {authProfile && (
           <Card className="mb-6">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div>
-                    <h2 className="text-xl font-bold">{getLevelName(profile.level)}</h2>
+                    <h2 className="text-xl font-bold">{getLevelName(level)}</h2>
                     <p className="text-sm text-muted-foreground">
-                      {stats.totalHands} mãos treinadas
+                      {stats.totalHands} mãos este mês
                     </p>
                   </div>
                   <Button
@@ -149,7 +260,7 @@ export default function AnalysisPage() {
                   </Button>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-primary">{profile.totalScore}</p>
+                  <p className="text-2xl font-bold text-primary">{totalXp}</p>
                   <p className="text-sm text-muted-foreground">
                     XP Total
                   </p>
@@ -157,7 +268,7 @@ export default function AnalysisPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Nível {profile.level}</span>
+                  <span>Nível {level}</span>
                   <span>{levelProgress.progress}%</span>
                 </div>
                 <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
@@ -169,7 +280,7 @@ export default function AnalysisPage() {
                 <p className="text-xs text-muted-foreground text-center">
                   {levelProgress.next === Infinity 
                     ? 'Nível máximo atingido!' 
-                    : `${levelProgress.next - profile.totalScore} XP para o próximo nível`}
+                    : `${levelProgress.next - totalXp} XP para o próximo nível`}
                 </p>
               </div>
             </CardContent>
@@ -304,9 +415,9 @@ export default function AnalysisPage() {
             <CardTitle className="text-lg">Sessões Recentes</CardTitle>
           </CardHeader>
           <CardContent>
-            {sessions.length > 0 ? (
+            {stats.sessions.length > 0 ? (
               <div className="space-y-3">
-                {sessions.slice(0, 5).map((session) => (
+                {stats.sessions.slice(0, 5).map((session) => (
                   <div 
                     key={session.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -338,7 +449,7 @@ export default function AnalysisPage() {
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhuma sessão registrada ainda
+                Nenhuma sessão registrada este mês
               </div>
             )}
           </CardContent>
