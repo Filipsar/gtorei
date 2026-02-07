@@ -117,11 +117,11 @@ export default function UpdatesPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
             <Bell className="h-8 w-8 text-primary" />
             Atualizações
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-body-sm text-muted-foreground mt-1">
             Novidades e melhorias do GTORei
           </p>
         </div>
@@ -141,12 +141,12 @@ export default function UpdatesPage() {
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg">{update.title}</CardTitle>
+                        <CardTitle className="text-heading-xs">{update.title}</CardTitle>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-body-xs">
                             v{update.version}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-body-xs text-muted-foreground">
                             {update.date}
                           </span>
                         </div>
@@ -158,7 +158,7 @@ export default function UpdatesPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-body-sm text-muted-foreground">
                     {update.description}
                   </p>
                 </CardContent>

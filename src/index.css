@@ -78,6 +78,11 @@
     --chart-4: 0 72% 51%;
     --chart-5: 280 65% 60%;
 
+    /* Ranking Position Colors */
+    --rank-first: 45 100% 50%;
+    --rank-second: 0 0% 65%;
+    --rank-third: 25 80% 45%;
+
     /* Sidebar */
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 45 10% 85%;

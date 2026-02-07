@@ -51,9 +51,9 @@ export function AppSidebar() {
             {!collapsed && (
               <div className="flex items-center gap-3">
                 <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8 object-contain" />
-                <span className="text-xl font-bold">
+                <span className="text-heading-sm">
                   <span className="text-primary">GTO</span>
-                  <span className="text-white">Rei</span>
+                  <span className="text-sidebar-foreground">Rei</span>
                 </span>
               </div>
             )}

@@ -33,7 +33,7 @@ export default function DonatePage() {
           </Button>
           <div className="flex items-center gap-3">
             <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8" />
-            <span className="font-bold text-lg text-foreground">GTORei</span>
+            <span className="text-heading-xs text-foreground">GTORei</span>
           </div>
         </div>
       </div>
@@ -44,10 +44,10 @@ export default function DonatePage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/20 mb-4">
             <Heart className="h-8 w-8 text-destructive" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <h1 className="text-display-md sm:text-display-lg text-foreground mb-4">
             Apoie o GTORei
           </h1>
-          <p className="text-lg text-muted-foreground max-w-lg mx-auto">
+          <p className="text-body-lg text-muted-foreground max-w-lg mx-auto">
             Sua contribuição ajuda a manter o projeto gratuito e acessível para todos os jogadores.
           </p>
         </div>
@@ -55,8 +55,8 @@ export default function DonatePage() {
         {/* Info card */}
         <Card className="mb-8 bg-muted/30">
           <CardContent className="p-6">
-            <h2 className="font-semibold text-lg mb-3">Por que apoiar?</h2>
-            <ul className="space-y-2 text-muted-foreground">
+            <h2 className="text-heading-xs mb-3">Por que apoiar?</h2>
+            <ul className="space-y-2 text-body-md text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary">✓</span>
                 Manter o projeto 100% gratuito
@@ -80,15 +80,15 @@ export default function DonatePage() {
         {/* QR Code section */}
         <Card className="mb-6">
           <CardContent className="p-6 text-center">
-            <h2 className="font-semibold text-lg mb-4">Escaneie o QR Code</h2>
-            <div className="inline-block p-4 bg-white rounded-xl shadow-lg mb-4">
+            <h2 className="text-heading-xs mb-4">Escaneie o QR Code</h2>
+            <div className="inline-block p-4 bg-background rounded-xl shadow-lg mb-4 border border-border">
               <img
                 src={qrCodeImage}
                 alt="QR Code para doação"
                 className="w-48 h-48 sm:w-56 sm:h-56"
               />
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-body-sm text-muted-foreground mb-4">
               Ou clique no botão abaixo para abrir o link de pagamento
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -114,7 +114,7 @@ export default function DonatePage() {
 
         {/* Thank you message */}
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">
+          <p className="text-body-sm">
             Qualquer valor é bem-vindo! Obrigado pelo apoio. ❤️
           </p>
         </div>

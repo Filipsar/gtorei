@@ -1,4 +1,142 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+
+const typographyPlugin = plugin(function ({ addUtilities }) {
+  addUtilities({
+    // DISPLAY - Landing pages & heroes
+    '.text-display-xl': {
+      fontSize: '4rem',
+      lineHeight: '1.1',
+      letterSpacing: '-0.02em',
+      fontWeight: '700',
+    },
+    '.text-display-lg': {
+      fontSize: '3.5rem',
+      lineHeight: '1.1',
+      letterSpacing: '-0.02em',
+      fontWeight: '700',
+    },
+    '.text-display-md': {
+      fontSize: '3rem',
+      lineHeight: '1.15',
+      letterSpacing: '-0.01em',
+      fontWeight: '700',
+    },
+    // Responsive display variants
+    '.sm\\:text-display-xl': {
+      '@media (min-width: 640px)': {
+        fontSize: '4rem',
+        lineHeight: '1.1',
+        letterSpacing: '-0.02em',
+        fontWeight: '700',
+      },
+    },
+    '.sm\\:text-display-lg': {
+      '@media (min-width: 640px)': {
+        fontSize: '3.5rem',
+        lineHeight: '1.1',
+        letterSpacing: '-0.02em',
+        fontWeight: '700',
+      },
+    },
+    '.sm\\:text-display-md': {
+      '@media (min-width: 640px)': {
+        fontSize: '3rem',
+        lineHeight: '1.15',
+        letterSpacing: '-0.01em',
+        fontWeight: '700',
+      },
+    },
+    // HEADING - Internal pages
+    '.text-heading-xl': {
+      fontSize: '2.5rem',
+      lineHeight: '1.2',
+      letterSpacing: '-0.01em',
+      fontWeight: '700',
+    },
+    '.text-heading-lg': {
+      fontSize: '2rem',
+      lineHeight: '1.25',
+      letterSpacing: '-0.01em',
+      fontWeight: '700',
+    },
+    '.text-heading-md': {
+      fontSize: '1.5rem',
+      lineHeight: '1.3',
+      letterSpacing: '0',
+      fontWeight: '600',
+    },
+    '.text-heading-sm': {
+      fontSize: '1.25rem',
+      lineHeight: '1.4',
+      letterSpacing: '0',
+      fontWeight: '600',
+    },
+    '.text-heading-xs': {
+      fontSize: '1.125rem',
+      lineHeight: '1.4',
+      letterSpacing: '0',
+      fontWeight: '600',
+    },
+    // Responsive heading variants
+    '.sm\\:text-heading-lg': {
+      '@media (min-width: 640px)': {
+        fontSize: '2rem',
+        lineHeight: '1.25',
+        letterSpacing: '-0.01em',
+        fontWeight: '700',
+      },
+    },
+    '.sm\\:text-heading-xl': {
+      '@media (min-width: 640px)': {
+        fontSize: '2.5rem',
+        lineHeight: '1.2',
+        letterSpacing: '-0.01em',
+        fontWeight: '700',
+      },
+    },
+    // BODY - Running text
+    '.text-body-lg': {
+      fontSize: '1.125rem',
+      lineHeight: '1.6',
+      letterSpacing: '0',
+      fontWeight: '400',
+    },
+    '.text-body-md': {
+      fontSize: '1rem',
+      lineHeight: '1.6',
+      letterSpacing: '0',
+      fontWeight: '400',
+    },
+    '.text-body-sm': {
+      fontSize: '0.875rem',
+      lineHeight: '1.5',
+      letterSpacing: '0',
+      fontWeight: '400',
+    },
+    '.text-body-xs': {
+      fontSize: '0.75rem',
+      lineHeight: '1.5',
+      letterSpacing: '0',
+      fontWeight: '400',
+    },
+    // POKER - Specific poker elements
+    '.text-poker-hand': {
+      fontSize: '1.5rem',
+      lineHeight: '1',
+      letterSpacing: '0.05em',
+      fontWeight: '700',
+      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+    },
+    '.text-poker-card': {
+      fontSize: '1.125rem',
+      lineHeight: '1',
+      letterSpacing: '0.05em',
+      fontWeight: '700',
+      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+    },
+  });
+});
 
 export default {
   darkMode: ["class"],
@@ -79,6 +217,12 @@ export default {
           mistake: "hsl(var(--feedback-mistake))",
           blunder: "hsl(var(--feedback-blunder))",
         },
+        // Ranking position colors
+        rank: {
+          first: "hsl(var(--rank-first))",
+          second: "hsl(var(--rank-second))",
+          third: "hsl(var(--rank-third))",
+        },
         chart: {
           "1": "hsl(var(--chart-1))",
           "2": "hsl(var(--chart-2))",
@@ -128,5 +272,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), typographyPlugin],
 } satisfies Config;

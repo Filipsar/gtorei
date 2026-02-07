@@ -159,11 +159,11 @@ export default function AnalysisPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
             <BarChart3 className="h-8 w-8 text-primary" />
             Análise de Desempenho
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-body-sm text-muted-foreground mt-1">
             Desempenho de <span className="capitalize font-medium">{currentMonth}</span>
           </p>
           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 w-fit">
@@ -244,7 +244,7 @@ export default function AnalysisPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div>
-                    <h2 className="text-xl font-bold">{getLevelName(level)}</h2>
+                    <h2 className="text-heading-sm">{getLevelName(level)}</h2>
                     <p className="text-sm text-muted-foreground">
                       {stats.totalHands} mãos este mês
                     </p>
@@ -292,7 +292,7 @@ export default function AnalysisPage() {
           {/* Score evolution */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Evolução do Score</CardTitle>
+              <CardTitle className="text-heading-xs">Evolução do Score</CardTitle>
             </CardHeader>
             <CardContent>
               {sessionChartData.length > 0 ? (
@@ -328,7 +328,7 @@ export default function AnalysisPage() {
           {/* Feedback distribution */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Distribuição de Resultados</CardTitle>
+              <CardTitle className="text-heading-xs">Distribuição de Resultados</CardTitle>
             </CardHeader>
             <CardContent>
               {feedbackChartData.length > 0 ? (
@@ -384,7 +384,7 @@ export default function AnalysisPage() {
         {/* Position performance */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Performance por Posição</CardTitle>
+            <CardTitle className="text-heading-xs">Performance por Posição</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -412,7 +412,7 @@ export default function AnalysisPage() {
         {/* Recent sessions */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Sessões Recentes</CardTitle>
+            <CardTitle className="text-heading-xs">Sessões Recentes</CardTitle>
           </CardHeader>
           <CardContent>
             {stats.sessions.length > 0 ? (
