@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Instagram, Heart, Accessibility, ArrowRight } from 'lucide-react';
-import gtoreiLogo from '@/assets/gtorei-crown.png';
+import gtoreiLogo from '@/assets/gtorei-crown-optimized.webp';
 export default function HomePage() {
   const navigate = useNavigate();
   return <div className="relative min-h-screen overflow-hidden bg-background">
@@ -52,7 +52,7 @@ export default function HomePage() {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6 text-center">
         {/* Floating Logo */}
         <div className="mb-8 animate-float">
-          <img src={gtoreiLogo} alt="GTORei Logo" className="w-40 h-40 sm:w-56 sm:h-56 object-contain drop-shadow-2xl" style={{
+          <img src={gtoreiLogo} alt="GTORei Logo" width={224} height={224} fetchPriority="high" className="w-40 h-40 sm:w-56 sm:h-56 object-contain drop-shadow-2xl" style={{
           filter: 'drop-shadow(0 0 30px rgba(255, 184, 0, 0.3))'
         }} />
         </div>
