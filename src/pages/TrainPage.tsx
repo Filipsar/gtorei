@@ -18,9 +18,10 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback } from '@/data/gtoRanges';
 import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
-import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands } from '@/data/localStorage';
+import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
+import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -81,9 +82,12 @@ export default function TrainPage() {
   } | null>(null);
   const [isCurrentHandFavorited, setIsCurrentHandFavorited] = useState(false);
   const [correctHandsCount, setCorrectHandsCount] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [sessionBestCount, setSessionBestCount] = useState(0);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
+  const { checkAchievements } = useAchievements();
 
   // Ensure user profile exists
   useEffect(() => {
@@ -315,6 +319,18 @@ export default function TrainPage() {
       setHandsPlayed(prev => prev + 1);
       if (isCorrect) {
         setCorrectHandsCount(prev => prev + 1);
+        setCurrentStreak(prev => {
+          const newStreak = prev + 1;
+          // Check streak achievements
+          checkAchievements({ streak: newStreak });
+          return newStreak;
+        });
+      } else {
+        setCurrentStreak(0);
+      }
+
+      if (feedback.type === 'best') {
+        setSessionBestCount(prev => prev + 1);
       }
 
       if (user && pointsToAdd > 0) {
@@ -325,6 +341,14 @@ export default function TrainPage() {
           correctHands: isCorrect ? 1 : 0,
         });
         updateSupabaseProfile(user.id, pointsToAdd, 1);
+
+        // Check volume and level achievements
+        const totalXp = (profile?.total_xp || 0) + pointsToAdd;
+        const newLevel = calculateLevel(totalXp);
+        checkAchievements({
+          totalHands: handsPlayed + 1,
+          level: newLevel,
+        });
       }
     }
     setLastFeedback({
@@ -440,6 +464,16 @@ export default function TrainPage() {
   const endSession = useCallback(() => {
     endCurrentSession();
 
+    // Check accuracy achievements before resetting
+    if (handsPlayed > 0) {
+      const accuracy = Math.round((correctHandsCount / handsPlayed) * 100);
+      checkAchievements({
+        sessionAccuracy: accuracy,
+        sessionHands: handsPlayed,
+        sessionBestCount,
+      });
+    }
+
     // Update Supabase session with final stats
     if (user && supabaseSessionId.current) {
       const accuracy = handsPlayed > 0 ? Math.round((correctHandsCount / handsPlayed) * 100) : 0;
@@ -464,7 +498,9 @@ export default function TrainPage() {
     setCurrentHandId(null);
     setIsHandAlreadyPlayedState(false);
     setPreviousHandResult(null);
-  }, [user, handsPlayed, correctHandsCount, sessionScore]);
+    setCurrentStreak(0);
+    setSessionBestCount(0);
+  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements]);
 
   // Clear played hands session
   const handleClearSession = useCallback(() => {

@@ -16,6 +16,7 @@ import AccessibilityPage from "./pages/AccessibilityPage";
 import UpdatesPage from "./pages/UpdatesPage";
 import AuthPage from "./pages/AuthPage";
 import RankingPage from "./pages/RankingPage";
+import AchievementsPage from "./pages/AchievementsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/autoanalise" element={<ProtectedRoute><AutoAnalysisPage /></ProtectedRoute>} />
             <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><RankingPage /></ProtectedRoute>} />
+            <Route path="/conquistas" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
             <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
             <Route path="/atualizacoes" element={<UpdatesPage />} />
             <Route path="*" element={<NotFound />} />
