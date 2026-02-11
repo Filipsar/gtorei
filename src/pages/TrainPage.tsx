@@ -14,6 +14,7 @@ import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard'
 import { TrainingModeSelector, TrainingMode } from '@/components/poker/TrainingModeSelector';
 import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '@/components/poker/BountyConfig';
 import { calculateBountyAdjustment } from '@/data/gtoRanges';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback } from '@/data/gtoRanges';
 import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
@@ -764,57 +765,23 @@ export default function TrainPage() {
           </div>}
 
         {/* Bounty info banner */}
-        {trainingMode === 'bounty' && handState && (
-          <div className="mb-4 p-3 rounded-lg bg-rank-first/10 border border-rank-first/30 flex items-center gap-3">
-            <span className="text-lg">💰</span>
-            <div className="flex-1">
-              <p className="text-sm font-medium">
-                Seu bounty: <span className="text-rank-first">${heroBounty}</span>
-                {handState.villainPosition && currentBounties[handState.villainPosition] && (
-                  <> · Bounty do vilão: <span className="text-rank-first">${currentBounties[handState.villainPosition]}</span></>
-                )}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {getBountyAdjustment() > 0 ? 'Ranges mais amplos (bounty do oponente vale a pena)' : getBountyAdjustment() < 0 ? 'Ranges mais conservadores' : 'Ajuste neutro'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Game info */}
-        {handState && <div className="space-y-4">
-            {/* Scenario description */}
-            <Card className="bg-muted/30 border-primary/20">
-              <CardContent className="p-3">
-                <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">
-                    {getScenarioDescription(scenario, handState.heroPosition, handState.villainPosition, handState.villainAction)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Action history for VS scenarios */}
-            {scenario !== 'openRaise' && handState.actions.length > 0 && <ActionHistory actions={handState.actions} street={handState.street} heroPosition={handState.heroPosition} className="max-w-xs" />}
-
-            {/* Hand info compact */}
-            <Card>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Posição</p>
-                      <p className="text-lg font-semibold">{handState.heroPosition}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Stack</p>
-                      <p className="text-lg font-semibold">{handState.heroStack} BB</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Pot</p>
-                      <p className="text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
-                    </div>
+        {/* Hand info compact with info popover */}
+        {handState && (
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground">Posição</p>
+                    <p className="text-lg font-semibold">{handState.heroPosition}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground">Stack</p>
+                    <p className="text-lg font-semibold">{handState.heroStack} BB</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground">Pot</p>
+                    <p className="text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground">Cenário</p>
@@ -823,9 +790,54 @@ export default function TrainPage() {
                     </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
+                {/* Info icon with popover */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="p-1.5 rounded-full hover:bg-muted transition-colors" aria-label="Informações da mão">
+                      <Info className="h-5 w-5 text-primary" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 space-y-3" side="bottom" align="end">
+                    {/* Street */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground">Street</span>
+                      <span className="text-sm font-medium capitalize">{handState.street}</span>
+                    </div>
+
+                    {/* Scenario description */}
+                    <div className="text-sm text-muted-foreground">
+                      {getScenarioDescription(scenario, handState.heroPosition, handState.villainPosition, handState.villainAction)}
+                    </div>
+
+                    {/* Bounty info */}
+                    {trainingMode === 'bounty' && (
+                      <div className="p-2 rounded bg-rank-first/10 border border-rank-first/30 space-y-1">
+                        <p className="text-sm font-medium">
+                          💰 Seu bounty: <span className="text-rank-first">${heroBounty}</span>
+                          {handState.villainPosition && currentBounties[handState.villainPosition] && (
+                            <> · Vilão: <span className="text-rank-first">${currentBounties[handState.villainPosition]}</span></>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {getBountyAdjustment() > 0 ? 'Ranges mais amplos (bounty do oponente vale a pena)' : getBountyAdjustment() < 0 ? 'Ranges mais conservadores' : 'Ajuste neutro'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action history */}
+                    {scenario !== 'openRaise' && handState.actions.length > 0 && (
+                      <ActionHistory actions={handState.actions} street={handState.street} heroPosition={handState.heroPosition} />
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Game content */}
+        {handState && <div className="space-y-4">
             {/* Poker table */}
             <PokerTable 
               heroPosition={handState.heroPosition} 
