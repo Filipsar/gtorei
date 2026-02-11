@@ -29,6 +29,7 @@ const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
 
 // Scenarios available per mode
 const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
+  rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
   hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
   threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet'],
   bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
@@ -36,9 +37,10 @@ const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
 
 // Positions available per mode
 const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
-  hu: ['SB', 'BB'], // Heads-up only SB and BB
-  threeHand: ['BTN', 'SB', 'BB'], // 3-handed
-  bounty: POSITIONS, // Full ring
+  rangeTraining: POSITIONS, // Full 8-max
+  hu: ['SB', 'BB'],
+  threeHand: ['BTN', 'SB', 'BB'],
+  bounty: POSITIONS,
 };
 
 type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review';
@@ -459,6 +461,7 @@ export default function TrainPage() {
   // Mode label helper
   const getModeLabel = (): string => {
     switch (trainingMode) {
+      case 'rangeTraining': return 'Treino de Range';
       case 'hu': return 'HU (1x1)';
       case 'threeHand': return 'Three Hand (1x1x1)';
       case 'bounty': return 'Modo Bounty';
