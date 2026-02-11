@@ -166,9 +166,11 @@ export function DecisionFeedback({
             {/* Frequências */}
             <div className="space-y-2">
               <p className="text-sm font-medium">Frequências GTO:</p>
-              {handData.actions
-                .filter(a => a.frequency > 0)
-                .sort((a, b) => b.frequency - a.frequency)
+            {(['allin', 'raise', 'call', 'fold'] as ActionType[])
+                .map(actionType => {
+                  const found = handData.actions.find(a => a.action === actionType);
+                  return { action: actionType, frequency: found?.frequency || 0, ev: found?.ev };
+                })
                 .map((action) => (
                   <div key={action.action} className="flex items-center gap-3">
                     <span className="text-sm w-16 capitalize">{actionLabels[action.action]}</span>

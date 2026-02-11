@@ -275,7 +275,8 @@ export default function TrainPage() {
     const playerCount = MODE_POSITIONS[trainingMode].length;
     const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, bountyAdj, playerCount);
     if (!handData) return;
-    const feedback = calculateFeedback(action, handData);
+    const userLevel = profile?.level || 1;
+    const feedback = calculateFeedback(action, handData, userLevel);
 
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
@@ -333,7 +334,7 @@ export default function TrainPage() {
         setSessionBestCount(prev => prev + 1);
       }
 
-      if (user && pointsToAdd > 0) {
+      if (user && pointsToAdd !== 0) {
         updateUserRanking({
           userId: user.id,
           xpEarned: pointsToAdd,
