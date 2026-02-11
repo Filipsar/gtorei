@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import { initializeHandState, getVillainPosition, getScenarioDescription, HandSt
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft } from 'lucide-react';
@@ -82,6 +83,7 @@ export default function TrainPage() {
   const [correctHandsCount, setCorrectHandsCount] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const supabaseSessionId = useRef<string | null>(null);
 
   // Ensure user profile exists
   useEffect(() => {
@@ -182,6 +184,23 @@ export default function TrainPage() {
       stack: randomStack ? 'random' : stk
     });
 
+    // Persist session to Supabase
+    if (user) {
+      supabase
+        .from('training_sessions')
+        .insert({
+          user_id: user.id,
+          scenario: selectedScenario,
+          position: pos,
+          stack: stk,
+        })
+        .select('id')
+        .single()
+        .then(({ data }) => {
+          if (data) supabaseSessionId.current = data.id;
+        });
+    }
+
     const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
@@ -269,6 +288,28 @@ export default function TrainPage() {
         points: feedback.points,
         evLoss: feedback.evLoss
       });
+
+      // Persist hand to Supabase
+      if (user && supabaseSessionId.current) {
+        supabase
+          .from('played_hands')
+          .insert({
+            user_id: user.id,
+            session_id: supabaseSessionId.current,
+            hand: handName,
+            scenario,
+            position: handState.heroPosition,
+            stack: handState.heroStack,
+            user_action: action,
+            correct_action: handData.primaryAction,
+            feedback: feedback.type,
+            points: feedback.points,
+            ev_loss: feedback.evLoss,
+          })
+          .then(({ error }) => {
+            if (error) console.error('Error saving hand:', error);
+          });
+      }
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
       if (isCorrect) {
@@ -291,7 +332,7 @@ export default function TrainPage() {
       feedback
     });
     setPhase('feedback');
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user]);
 
   // Next hand
   const nextHand = useCallback(() => {
@@ -397,13 +438,32 @@ export default function TrainPage() {
   // End session
   const endSession = useCallback(() => {
     endCurrentSession();
+
+    // Update Supabase session with final stats
+    if (user && supabaseSessionId.current) {
+      const accuracy = handsPlayed > 0 ? Math.round((correctHandsCount / handsPlayed) * 100) : 0;
+      supabase
+        .from('training_sessions')
+        .update({
+          ended_at: new Date().toISOString(),
+          hands_played: handsPlayed,
+          score: sessionScore,
+          accuracy,
+        })
+        .eq('id', supabaseSessionId.current)
+        .then(({ error }) => {
+          if (error) console.error('Error ending session:', error);
+        });
+      supabaseSessionId.current = null;
+    }
+
     setPhase('config');
     setHandState(null);
     setLastFeedback(null);
     setCurrentHandId(null);
     setIsHandAlreadyPlayedState(false);
     setPreviousHandResult(null);
-  }, []);
+  }, [user, handsPlayed, correctHandsCount, sessionScore]);
 
   // Clear played hands session
   const handleClearSession = useCallback(() => {
