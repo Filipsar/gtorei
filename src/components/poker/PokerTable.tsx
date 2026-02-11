@@ -35,6 +35,7 @@ interface PokerTableProps {
     amount: number;
   }[];
   bounties?: Record<string, number>;
+  visiblePositions?: Position[];
   className?: string;
 }
 
@@ -129,6 +130,7 @@ export function PokerTable({
   foldedPositions = [],
   activeBets = [],
   bounties,
+  visiblePositions,
   className
 }: PokerTableProps) {
   const navigate = useNavigate();
@@ -173,7 +175,7 @@ export function PokerTable({
         </div>
 
         {/* Posições dos jogadores */}
-        {POSITIONS.map(pos => {
+        {(visiblePositions || POSITIONS).map(pos => {
           const isHero = pos === heroPosition;
           const isVillain = pos === villainPosition;
           const hasFolded = foldedPositions.includes(pos);
@@ -227,7 +229,7 @@ export function PokerTable({
         })}
 
         {/* Fichas de apostas ativas */}
-        {activeBets.map(bet => {
+        {activeBets.filter(bet => !visiblePositions || visiblePositions.includes(bet.position)).map(bet => {
           const betPos = betPositions[bet.position];
           if (!betPos) return null;
           return (
