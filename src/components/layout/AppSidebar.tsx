@@ -101,7 +101,7 @@ export function AppSidebar() {
           )}
         </SidebarHeader>
 
-        <SidebarContent className={cn("p-2", collapsed && "px-3")}>
+        <SidebarContent className="p-2">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
