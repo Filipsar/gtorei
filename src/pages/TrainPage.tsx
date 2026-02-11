@@ -11,6 +11,9 @@ import { ActionButtons } from '@/components/poker/ActionButtons';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard';
+import { TrainingModeSelector, TrainingMode } from '@/components/poker/TrainingModeSelector';
+import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '@/components/poker/BountyConfig';
+import { calculateBountyAdjustment } from '@/data/gtoRanges';
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback } from '@/data/gtoRanges';
 import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
@@ -19,13 +22,33 @@ import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlaye
 import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft } from 'lucide-react';
 
 // Locked scenarios (under maintenance)
 const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
 
-type GamePhase = 'config' | 'playing' | 'feedback' | 'review';
+// Scenarios available per mode
+const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
+  hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
+  threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet'],
+  bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
+};
+
+// Positions available per mode
+const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
+  hu: ['SB', 'BB'], // Heads-up only SB and BB
+  threeHand: ['BTN', 'SB', 'BB'], // 3-handed
+  bounty: POSITIONS, // Full ring
+};
+
+type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review';
+
 export default function TrainPage() {
+  // Mode state
+  const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
+  const [heroBounty, setHeroBounty] = useState<BountyTier>(5);
+  const [currentBounties, setCurrentBounties] = useState<Record<string, number>>({});
+
   // Config state
   const [scenario, setScenario] = useState<Scenario>('openRaise');
   const [randomScenario, setRandomScenario] = useState(false);
@@ -36,7 +59,7 @@ export default function TrainPage() {
   const [finalTable, setFinalTable] = useState(false);
 
   // Game state
-  const [phase, setPhase] = useState<GamePhase>('config');
+  const [phase, setPhase] = useState<GamePhase>('modeSelect');
   const [handState, setHandState] = useState<HandState | null>(null);
   const [sessionScore, setSessionScore] = useState(0);
   const [handsPlayed, setHandsPlayed] = useState(0);
@@ -63,6 +86,48 @@ export default function TrainPage() {
       createUserProfile('Jogador');
     }
   }, []);
+
+  // When mode changes, reset positions to valid ones
+  const handleModeSelect = (mode: TrainingMode) => {
+    setTrainingMode(mode);
+    const validPositions = MODE_POSITIONS[mode];
+    setSelectedPositions([validPositions[0]]);
+    // Bounty mode always has ICM
+    if (mode === 'bounty') {
+      setFinalTable(true);
+    } else {
+      setFinalTable(false);
+    }
+    setPhase('config');
+  };
+
+  // Get available positions for current mode
+  const getAvailablePositions = (): Position[] => {
+    return trainingMode ? MODE_POSITIONS[trainingMode] : POSITIONS;
+  };
+
+  // Get available scenarios for current mode
+  const getAvailableScenarios = (): Scenario[] => {
+    return trainingMode ? MODE_SCENARIOS[trainingMode] : ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+  };
+
+  // Get current bounty adjustment
+  const getBountyAdjustment = (): number => {
+    if (trainingMode !== 'bounty' || !handState) return 0;
+    const villainBounty = handState.villainPosition ? (currentBounties[handState.villainPosition] || heroBounty) : heroBounty;
+    return calculateBountyAdjustment(heroBounty, villainBounty);
+  };
+
+  // Generate bounties for all positions
+  const generateBounties = (): Record<string, number> => {
+    const bounties: Record<string, number> = {};
+    const positions = getAvailablePositions();
+    for (const pos of positions) {
+      bounties[pos] = generateOpponentBounty(heroBounty);
+    }
+    // Hero always has the selected bounty
+    return bounties;
+  };
 
   // Generate random hand
   const generateRandomHand = useCallback((): string => {
@@ -91,18 +156,18 @@ export default function TrainPage() {
     if (invalid.length > 0) {
       setSelectedPositions(prev => {
         const filtered = prev.filter(p => !invalid.includes(p));
-        return filtered.length > 0 ? filtered : POSITIONS.filter(p => !invalid.includes(p)).slice(0, 1);
+        const available = getAvailablePositions().filter(p => !invalid.includes(p));
+        return filtered.length > 0 ? filtered : available.slice(0, 1);
       });
     }
   };
 
   // Start game
   const startGame = useCallback(() => {
-    // Filter out locked scenarios for random selection
-    const availableScenarios: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const availableScenarios = getAvailableScenarios().filter(s => !LOCKED_SCENARIOS.includes(s));
     const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
     const scenarioInvalid = getInvalidPositions(selectedScenario);
-    const validPositions = POSITIONS.filter(p => !scenarioInvalid.includes(p));
+    const validPositions = getAvailablePositions().filter(p => !scenarioInvalid.includes(p));
     const validSelected = selectedPositions.filter(p => !scenarioInvalid.includes(p));
     const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
@@ -114,17 +179,23 @@ export default function TrainPage() {
       stack: randomStack ? 'random' : stk
     });
 
-    // Inicializar estado da mão com o novo sistema
     const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards);
 
-    // Gerar ID da mão
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
     
-    // Atualizar o cenário exibido (para cenário aleatório)
     if (randomScenario) {
       setScenario(selectedScenario);
+    }
+
+    // Generate bounties for bounty mode
+    let bounties: Record<string, number> = {};
+    if (trainingMode === 'bounty') {
+      bounties = generateBounties();
+      // Hero bounty is always the selected one
+      bounties[pos] = heroBounty;
+      setCurrentBounties(bounties);
     }
     
     setHandState({
@@ -142,13 +213,12 @@ export default function TrainPage() {
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
-  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand]);
+  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, heroBounty]);
 
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
     if (!handState || !currentHandId) return;
 
-    // Verificar se mão já foi jogada
     if (isHandAlreadyPlayedState) {
       toast({
         title: "Mão já jogada!",
@@ -157,7 +227,6 @@ export default function TrainPage() {
       });
     }
 
-    // Extrair nome da mão a partir das cartas
     const heroCards = handState.heroCards;
     const rank1 = heroCards[0]?.rank || '';
     const rank2 = heroCards[1]?.rank || '';
@@ -175,15 +244,15 @@ export default function TrainPage() {
         handName = `${rank2}${rank1}${isSuited ? 's' : 'o'}`;
       }
     }
-    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable);
+
+    const bountyAdj = getBountyAdjustment();
+    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, bountyAdj);
     if (!handData) return;
     const feedback = calculateFeedback(action, handData);
 
-    // Só dar pontos se mão não foi jogada antes
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 
-    // Registrar mão como jogada (se ainda não foi)
     if (!isHandAlreadyPlayedState) {
       markHandAsPlayed(currentHandId, action, feedback.points, feedback.type);
       addHandToSession({
@@ -203,7 +272,6 @@ export default function TrainPage() {
         setCorrectHandsCount(prev => prev + 1);
       }
 
-      // Update ranking in Supabase
       if (user && pointsToAdd > 0) {
         updateUserRanking({
           userId: user.id,
@@ -220,16 +288,15 @@ export default function TrainPage() {
       feedback
     });
     setPhase('feedback');
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties]);
 
   // Next hand
   const nextHand = useCallback(() => {
-    // Filter out locked scenarios for random selection
-    const availableScenarios: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    const availableScenarios = getAvailableScenarios().filter(s => !LOCKED_SCENARIOS.includes(s));
     const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
     
     const scenarioInvalid = getInvalidPositions(selectedScenario);
-    const validPositions = POSITIONS.filter(p => !scenarioInvalid.includes(p));
+    const validPositions = getAvailablePositions().filter(p => !scenarioInvalid.includes(p));
     const validSelected = selectedPositions.filter(p => !scenarioInvalid.includes(p));
     const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
@@ -237,14 +304,19 @@ export default function TrainPage() {
     const cards = generateCardsFromHand(hand);
     const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards);
 
-    // Gerar ID da mão
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
     
-    // Atualizar o cenário exibido (para cenário aleatório)
     if (randomScenario) {
       setScenario(selectedScenario);
+    }
+
+    // Regenerate bounties
+    if (trainingMode === 'bounty') {
+      const bounties = generateBounties();
+      bounties[pos] = heroBounty;
+      setCurrentBounties(bounties);
     }
     
     setHandState({
@@ -261,7 +333,7 @@ export default function TrainPage() {
     setIsCurrentHandFavorited(isHandFavorited(hand, selectedScenario, pos, stk));
     setLastFeedback(null);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand]);
+  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, heroBounty]);
 
   // Toggle favorite hand
   const toggleFavoriteHand = useCallback(() => {
@@ -286,7 +358,6 @@ export default function TrainPage() {
     }
     
     if (isCurrentHandFavorited) {
-      // Find and remove
       const favorites = getFavoriteHands();
       const fav = favorites.find(f => 
         f.hand === handName && 
@@ -303,7 +374,6 @@ export default function TrainPage() {
         });
       }
     } else {
-      // Get correct action
       const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable);
       addFavoriteHand({
         hand: handName,
@@ -343,17 +413,22 @@ export default function TrainPage() {
 
   // Get invalid positions for current scenario
   const getInvalidPositions = (sc: Scenario): Position[] => {
+    const available = getAvailablePositions();
+    const baseInvalid: Position[] = [];
     switch (sc) {
       case 'openRaise':
-        return ['BB']; // BB is last to act preflop — if it folds to BB, he wins automatically
+        baseInvalid.push('BB');
+        break;
       case 'vsOpenRaise':
       case 'vsOpenShove':
-        return ['UTG']; // No one acts before UTG
+        baseInvalid.push('UTG');
+        break;
       case 'vs3bet':
-        return ['BB']; // No one acts after BB
-      default:
-        return [];
+        baseInvalid.push('BB');
+        break;
     }
+    // Also mark positions not available in current mode as invalid
+    return [...baseInvalid, ...POSITIONS.filter(p => !available.includes(p))];
   };
 
   const invalidPositions = getInvalidPositions(scenario);
@@ -381,12 +456,52 @@ export default function TrainPage() {
     }
   };
 
+  // Mode label helper
+  const getModeLabel = (): string => {
+    switch (trainingMode) {
+      case 'hu': return 'HU (1x1)';
+      case 'threeHand': return 'Three Hand (1x1x1)';
+      case 'bounty': return 'Modo Bounty';
+      default: return '';
+    }
+  };
+
+  // Mode selection phase
+  if (phase === 'modeSelect') {
+    return (
+      <MainLayout>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
+              <Zap className="h-8 w-8 text-primary" />
+              Treino Rápido
+            </h1>
+            <p className="text-body-sm text-muted-foreground mt-1">
+              Configure seu treino e pratique decisões GTO
+            </p>
+          </div>
+          <TrainingModeSelector onSelect={handleModeSelect} />
+        </div>
+      </MainLayout>
+    );
+  }
+
   // Config phase
   if (phase === 'config') {
+    const availableScenarios = getAvailableScenarios();
+    const availablePositions = getAvailablePositions();
+
     return <MainLayout>
         <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="ghost" size="sm" onClick={() => setPhase('modeSelect')} className="gap-1 text-muted-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </Button>
+              <span className="text-body-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">{getModeLabel()}</span>
+            </div>
              <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
               <Zap className="h-8 w-8 text-primary" />
               Treino Rápido
@@ -397,6 +512,11 @@ export default function TrainPage() {
           </div>
 
           <div className="space-y-6">
+            {/* Bounty config (only in bounty mode) */}
+            {trainingMode === 'bounty' && (
+              <BountyConfig selectedBounty={heroBounty} onBountyChange={setHeroBounty} />
+            )}
+
             {/* Scenario selection */}
             <Card>
               <CardContent className="p-4 sm:p-6">
@@ -413,16 +533,18 @@ export default function TrainPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {SCENARIOS.map(s => {
                     const isLocked = LOCKED_SCENARIOS.includes(s.id);
+                    const isAvailable = availableScenarios.includes(s.id);
+                    const isDisabled = isLocked || !isAvailable;
                     return (
                       <Button 
                         key={s.id} 
-                        variant={scenario === s.id && !randomScenario && !isLocked ? 'default' : 'outline'} 
-                        onClick={() => !isLocked && handleScenarioChange(s.id)} 
-                        disabled={randomScenario || isLocked} 
+                        variant={scenario === s.id && !randomScenario && !isDisabled ? 'default' : 'outline'} 
+                        onClick={() => !isDisabled && handleScenarioChange(s.id)} 
+                        disabled={randomScenario || isDisabled} 
                         className={cn(
                           'h-auto py-3 flex flex-col items-center gap-1 relative',
-                          scenario === s.id && !randomScenario && !isLocked && 'bg-primary text-primary-foreground',
-                          isLocked && 'opacity-50 cursor-not-allowed'
+                          scenario === s.id && !randomScenario && !isDisabled && 'bg-primary text-primary-foreground',
+                          isDisabled && 'opacity-50 cursor-not-allowed'
                         )}
                       >
                         {isLocked && (
@@ -453,7 +575,7 @@ export default function TrainPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                {POSITIONS.map(pos => {
+                {availablePositions.map(pos => {
                     const isInvalid = invalidPositions.includes(pos);
                     return (
                       <Button key={pos} variant={selectedPositions.includes(pos) && !randomPosition && !isInvalid ? 'default' : 'outline'} size="sm" onClick={() => togglePosition(pos)} disabled={randomPosition || isInvalid} className={cn('min-w-[3.5rem]', selectedPositions.includes(pos) && !randomPosition && !isInvalid && 'bg-primary text-primary-foreground', isInvalid && 'opacity-40 cursor-not-allowed')}>
@@ -486,20 +608,22 @@ export default function TrainPage() {
               </CardContent>
             </Card>
 
-            {/* Final table toggle */}
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-heading-xs">Modo Mesa Final</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Ativa ajustes ICM para final tables
-                    </p>
+            {/* Final table toggle (hidden in bounty mode - always on) */}
+            {trainingMode !== 'bounty' && (
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-heading-xs">Modo Mesa Final</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Ativa ajustes ICM para final tables
+                      </p>
+                    </div>
+                    <Switch checked={finalTable} onCheckedChange={setFinalTable} />
                   </div>
-                  <Switch checked={finalTable} onCheckedChange={setFinalTable} />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Session reset button */}
             <Card className="border-dashed border-muted-foreground/30">
@@ -527,6 +651,10 @@ export default function TrainPage() {
                 <h2 className="text-heading-xs mb-3">Resumo</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                   <div>
+                    <p className="text-muted-foreground">Modo</p>
+                    <p className="font-medium">{getModeLabel()}</p>
+                  </div>
+                  <div>
                     <p className="text-muted-foreground">Cenário</p>
                     <p className="font-medium">
                       {randomScenario ? 'Aleatório' : SCENARIOS.find(s => s.id === scenario)?.label}
@@ -544,10 +672,12 @@ export default function TrainPage() {
                       {randomStack ? 'Aleatório' : selectedStacks.join(', ') + ' BB'}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Modo</p>
-                    <p className="font-medium">{finalTable ? 'Mesa Final' : 'Normal'}</p>
-                  </div>
+                  {trainingMode === 'bounty' && (
+                    <div>
+                      <p className="text-muted-foreground">Bounty</p>
+                      <p className="font-medium">${heroBounty}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -576,6 +706,9 @@ export default function TrainPage() {
               <Target className="h-4 w-4" />
               <span>{handsPlayed} mãos</span>
             </div>
+            {trainingMode && (
+              <span className="text-body-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">{getModeLabel()}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -627,6 +760,24 @@ export default function TrainPage() {
             </div>
           </div>}
 
+        {/* Bounty info banner */}
+        {trainingMode === 'bounty' && handState && (
+          <div className="mb-4 p-3 rounded-lg bg-rank-first/10 border border-rank-first/30 flex items-center gap-3">
+            <span className="text-lg">💰</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                Seu bounty: <span className="text-rank-first">${heroBounty}</span>
+                {handState.villainPosition && currentBounties[handState.villainPosition] && (
+                  <> · Bounty do vilão: <span className="text-rank-first">${currentBounties[handState.villainPosition]}</span></>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {getBountyAdjustment() > 0 ? 'Ranges mais amplos (bounty do oponente vale a pena)' : getBountyAdjustment() < 0 ? 'Ranges mais conservadores' : 'Ajuste neutro'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Game info */}
         {handState && <div className="space-y-4">
             {/* Scenario description */}
@@ -673,7 +824,20 @@ export default function TrainPage() {
             </Card>
 
             {/* Poker table */}
-            <PokerTable heroPosition={handState.heroPosition} heroCards={handState.heroCards} pot={handState.pot} heroStack={handState.heroStack} villainPosition={handState.villainPosition} villainAction={handState.villainAction} villainStack={handState.villainStack} communityCards={handState.communityCards} street={handState.street} foldedPositions={handState.foldedPositions} activeBets={handState.activeBets} />
+            <PokerTable 
+              heroPosition={handState.heroPosition} 
+              heroCards={handState.heroCards} 
+              pot={handState.pot} 
+              heroStack={handState.heroStack} 
+              villainPosition={handState.villainPosition} 
+              villainAction={handState.villainAction} 
+              villainStack={handState.villainStack} 
+              communityCards={handState.communityCards} 
+              street={handState.street} 
+              foldedPositions={handState.foldedPositions} 
+              activeBets={handState.activeBets}
+              bounties={trainingMode === 'bounty' ? currentBounties : undefined}
+            />
 
             {/* Action buttons - hidden in review mode */}
             {phase !== 'review' && (
