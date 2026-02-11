@@ -61,9 +61,10 @@ function shuffle<T>(array: T[]): T[] {
 // "Antes" = age antes (índice menor), "Depois" = age depois (índice maior)
 export function getVillainPosition(
   scenario: Scenario,
-  heroPosition: Position
+  heroPosition: Position,
+  availablePositions?: Position[]
 ): Position | undefined {
-  const positionOrder = POSITIONS;
+  const positionOrder = availablePositions || POSITIONS;
   const heroIndex = positionOrder.indexOf(heroPosition);
   
   switch (scenario) {
@@ -128,7 +129,8 @@ export function initializeHandState(
   heroPosition: Position,
   heroStack: number,
   heroHand: string,
-  heroCards: CardType[]
+  heroCards: CardType[],
+  availablePositions?: Position[]
 ): HandState {
   const actions: ActionEntry[] = [];
   const activeBets: { position: Position; amount: number }[] = [];
@@ -139,12 +141,12 @@ export function initializeHandState(
   actions.push({ position: 'SB', action: 'post_sb', amount: 0.5 });
   actions.push({ position: 'BB', action: 'post_bb', amount: 1 });
   
-  const villainPosition = getVillainPosition(scenario, heroPosition);
+  const villainPosition = getVillainPosition(scenario, heroPosition, availablePositions);
   let villainAction: { action: string; amount: number } | undefined;
   let villainStack = heroStack; // Assumir mesmo stack
   
   // Marcar todos entre o opener e o herói como fold
-  const positionOrder = POSITIONS;
+  const positionOrder = availablePositions || POSITIONS;
   const heroIndex = positionOrder.indexOf(heroPosition);
   
   if ((scenario === 'vsOpenRaise' || scenario === 'simulation') && villainPosition) {

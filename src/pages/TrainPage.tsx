@@ -182,7 +182,7 @@ export default function TrainPage() {
       stack: randomStack ? 'random' : stk
     });
 
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
@@ -305,7 +305,7 @@ export default function TrainPage() {
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
