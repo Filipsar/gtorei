@@ -34,6 +34,7 @@ interface PokerTableProps {
     position: Position;
     amount: number;
   }[];
+  bounties?: Record<string, number>;
   className?: string;
 }
 
@@ -127,6 +128,7 @@ export function PokerTable({
   street = 'preflop',
   foldedPositions = [],
   activeBets = [],
+  bounties,
   className
 }: PokerTableProps) {
   const navigate = useNavigate();
@@ -201,6 +203,15 @@ export function PokerTable({
                 top: layout.top
               }}
             >
+              {/* Bounty badge above player */}
+              {bounties && bounties[pos] !== undefined && (
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
+                  <div className="flex items-center gap-0.5 bg-rank-first/90 text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
+                    <span className="text-[8px]">💰</span>
+                    ${bounties[pos]}
+                  </div>
+                </div>
+              )}
               <PlayerSeat 
                 position={pos} 
                 isHero={isHero} 

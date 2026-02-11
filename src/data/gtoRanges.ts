@@ -60,6 +60,21 @@ export function getHandName(rank1: Rank, rank2: Rank, suited: boolean): string {
   return `${highRank}${lowRank}${suited ? 's' : 'o'}`;
 }
 
+// Calcular ajuste de bounty para ranges
+// Bounty alto no oponente = ranges mais amplos (vale mais a pena eliminar)
+// Bounty alto no herói = ranges mais conservadores (vale mais proteger seu bounty)
+export function calculateBountyAdjustment(
+  heroBounty: number,
+  opponentBounty: number
+): number {
+  if (heroBounty <= 0) return 0;
+  const ratio = opponentBounty / heroBounty;
+  // ratio > 1: opponent worth more → widen range (+bonus)
+  // ratio < 1: opponent worth less → tighten slightly
+  // ratio = 1: neutral
+  return Math.round((ratio - 1) * 15);
+}
+
 // Função para determinar a ação baseada na posição e força da mão
 function getActionForHand(
   rank1: Rank,
@@ -68,7 +83,8 @@ function getActionForHand(
   position: Position,
   stack: number,
   scenario: Scenario,
-  finalTable: boolean = false
+  finalTable: boolean = false,
+  bountyAdjustment: number = 0
 ): ActionFrequency[] {
   const ranks = RANKS;
   const idx1 = ranks.indexOf(rank1);
@@ -118,6 +134,9 @@ function getActionForHand(
       strength -= 6;
     }
   }
+
+  // Bounty adjustment (PKO)
+  strength += bountyAdjustment;
 
   // Normalizar para 0-100
   strength = Math.max(0, Math.min(100, strength));
@@ -214,7 +233,8 @@ export function generateRange(
   scenario: Scenario,
   position: Position,
   stack: number,
-  finalTable: boolean = false
+  finalTable: boolean = false,
+  bountyAdjustment: number = 0
 ): RangeData {
   const hands: HandData[] = [];
 
@@ -225,8 +245,7 @@ export function generateRange(
       const rank2 = RANKS[j];
 
       if (i === j) {
-        // Pares (diagonal)
-        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable);
+        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable, bountyAdjustment);
         hands.push({
           hand: `${rank1}${rank2}`,
           actions,
@@ -235,8 +254,7 @@ export function generateRange(
           pair: true,
         });
       } else if (i < j) {
-        // Suited (acima da diagonal)
-        const actions = getActionForHand(rank1, rank2, true, position, stack, scenario, finalTable);
+        const actions = getActionForHand(rank1, rank2, true, position, stack, scenario, finalTable, bountyAdjustment);
         hands.push({
           hand: `${rank1}${rank2}s`,
           actions,
@@ -245,8 +263,7 @@ export function generateRange(
           pair: false,
         });
       } else {
-        // Offsuit (abaixo da diagonal)
-        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable);
+        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable, bountyAdjustment);
         hands.push({
           hand: `${rank2}${rank1}o`,
           actions,
@@ -274,12 +291,13 @@ export function getRange(
   scenario: Scenario,
   position: Position,
   stack: number,
-  finalTable: boolean = false
+  finalTable: boolean = false,
+  bountyAdjustment: number = 0
 ): RangeData {
-  const key = `${scenario}-${position}-${stack}-${finalTable}`;
+  const key = `${scenario}-${position}-${stack}-${finalTable}-${bountyAdjustment}`;
 
   if (!rangeCache.has(key)) {
-    rangeCache.set(key, generateRange(scenario, position, stack, finalTable));
+    rangeCache.set(key, generateRange(scenario, position, stack, finalTable, bountyAdjustment));
   }
 
   return rangeCache.get(key)!;
@@ -291,9 +309,10 @@ export function getHandData(
   scenario: Scenario,
   position: Position,
   stack: number,
-  finalTable: boolean = false
+  finalTable: boolean = false,
+  bountyAdjustment: number = 0
 ): HandData | undefined {
-  const range = getRange(scenario, position, stack, finalTable);
+  const range = getRange(scenario, position, stack, finalTable, bountyAdjustment);
   return range.hands.find(h => h.hand === hand);
 }
 
