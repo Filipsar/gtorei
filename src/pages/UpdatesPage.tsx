@@ -13,6 +13,13 @@ interface UpdateNote {
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.5.0',
+    date: '11/02/2026',
+    type: 'feature',
+    title: 'Sistema de Conquistas',
+    description: 'Novo sistema de conquistas com 18 achievements baseados em nível, sequência de acertos, volume de mãos e precisão. Notificações ao desbloquear e página dedicada no menu.',
+  },
+  {
     version: '1.4.1',
     date: '11/02/2026',
     type: 'improvement',
