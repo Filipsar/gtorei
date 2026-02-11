@@ -417,21 +417,32 @@ export default function TrainPage() {
   // Get invalid positions for current scenario
   const getInvalidPositions = (sc: Scenario): Position[] => {
     const available = getAvailablePositions();
-    const baseInvalid: Position[] = [];
-    switch (sc) {
-      case 'openRaise':
-        baseInvalid.push('BB');
-        break;
-      case 'vsOpenRaise':
-      case 'vsOpenShove':
-        baseInvalid.push('UTG');
-        break;
-      case 'vs3bet':
-        baseInvalid.push('BB');
-        break;
+    const invalid: Position[] = [];
+    
+    for (const pos of available) {
+      const posIndex = available.indexOf(pos);
+      const hasEarlier = posIndex > 0; // someone acts before this position
+      const hasLater = posIndex < available.length - 1; // someone acts after
+      
+      switch (sc) {
+        case 'openRaise':
+          // Last position (BB) can't open raise
+          if (!hasLater) invalid.push(pos);
+          break;
+        case 'vsOpenRaise':
+        case 'vsOpenShove':
+          // First position has no one before to open/shove
+          if (!hasEarlier) invalid.push(pos);
+          break;
+        case 'vs3bet':
+          // Last position can't be 3-bet (no one after to 3-bet)
+          if (!hasLater) invalid.push(pos);
+          break;
+      }
     }
+    
     // Also mark positions not available in current mode as invalid
-    return [...baseInvalid, ...POSITIONS.filter(p => !available.includes(p))];
+    return [...invalid, ...POSITIONS.filter(p => !available.includes(p))];
   };
 
   const invalidPositions = getInvalidPositions(scenario);
