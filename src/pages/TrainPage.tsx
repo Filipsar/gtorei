@@ -852,6 +852,7 @@ export default function TrainPage() {
               foldedPositions={handState.foldedPositions} 
               activeBets={handState.activeBets}
               bounties={trainingMode === 'bounty' ? currentBounties : undefined}
+              visiblePositions={MODE_POSITIONS[trainingMode]}
             />
 
             {/* Action buttons - hidden in review mode */}
