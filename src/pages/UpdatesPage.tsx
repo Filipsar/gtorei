@@ -13,6 +13,27 @@ interface UpdateNote {
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.4.1',
+    date: '11/02/2026',
+    type: 'improvement',
+    title: 'Corte Progressivo de XP por Nível',
+    description: 'Jogadores de níveis mais altos agora ganham menos XP: Intermediário -10%, Avançado -30%, Expert -50%, Mestre/Lenda -75%. Torna o ranking mais competitivo e justo.',
+  },
+  {
+    version: '1.4.0',
+    date: '11/02/2026',
+    type: 'feature',
+    title: 'Ícone de Nível no Ranking',
+    description: 'O ranking agora exibe o ícone de ficha correspondente ao nível de cada jogador ao lado do nome, facilitando a identificação visual.',
+  },
+  {
+    version: '1.3.2',
+    date: '10/02/2026',
+    type: 'improvement',
+    title: 'Ranges Shorthanded (HU e Three Hand)',
+    description: 'Mãos Ax suited e offsuit agora são corretamente avaliadas como jogáveis nos modos HU e Three Hand. Validação de cenários por posição aprimorada.',
+  },
+  {
     version: '1.3.1',
     date: '07/02/2026',
     type: 'fix',
