@@ -268,7 +268,8 @@ export default function TrainPage() {
     }
 
     const bountyAdj = getBountyAdjustment();
-    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, bountyAdj);
+    const playerCount = MODE_POSITIONS[trainingMode].length;
+    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, bountyAdj, playerCount);
     if (!handData) return;
     const feedback = calculateFeedback(action, handData);
 
@@ -418,7 +419,7 @@ export default function TrainPage() {
         });
       }
     } else {
-      const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable);
+      const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, 0, MODE_POSITIONS[trainingMode].length);
       addFavoriteHand({
         hand: handName,
         scenario,

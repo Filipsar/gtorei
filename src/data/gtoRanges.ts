@@ -84,7 +84,8 @@ function getActionForHand(
   stack: number,
   scenario: Scenario,
   finalTable: boolean = false,
-  bountyAdjustment: number = 0
+  bountyAdjustment: number = 0,
+  playerCount: number = 8
 ): ActionFrequency[] {
   const ranks = RANKS;
   const idx1 = ranks.indexOf(rank1);
@@ -132,6 +133,25 @@ function getActionForHand(
     // Pares baixos e mãos especulativas perdem valor com ICM
     if (!isPair && gap >= 4 && highCardIdx >= 4) {
       strength -= 6;
+    }
+  }
+
+  // Shorthanded adjustment: boost Ax hands in HU (2) and Three Hand (3)
+  if (playerCount <= 3) {
+    const shortHandedBonus = playerCount === 2 ? 15 : 10;
+    // General shorthanded boost: all hands play better with fewer opponents
+    strength += Math.round(shortHandedBonus * 0.4);
+
+    // Extra boost for Ax hands (suited and offsuit)
+    const isAceHand = highCardIdx === 0 && !isPair;
+    if (isAceHand) {
+      if (suited) {
+        // Ax suited: strong boost - these are premium shorthanded
+        strength += shortHandedBonus;
+      } else {
+        // Ax offsuit: moderate boost
+        strength += Math.round(shortHandedBonus * 0.6);
+      }
     }
   }
 
@@ -234,7 +254,8 @@ export function generateRange(
   position: Position,
   stack: number,
   finalTable: boolean = false,
-  bountyAdjustment: number = 0
+  bountyAdjustment: number = 0,
+  playerCount: number = 8
 ): RangeData {
   const hands: HandData[] = [];
 
@@ -245,7 +266,7 @@ export function generateRange(
       const rank2 = RANKS[j];
 
       if (i === j) {
-        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable, bountyAdjustment);
+        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable, bountyAdjustment, playerCount);
         hands.push({
           hand: `${rank1}${rank2}`,
           actions,
@@ -254,7 +275,7 @@ export function generateRange(
           pair: true,
         });
       } else if (i < j) {
-        const actions = getActionForHand(rank1, rank2, true, position, stack, scenario, finalTable, bountyAdjustment);
+        const actions = getActionForHand(rank1, rank2, true, position, stack, scenario, finalTable, bountyAdjustment, playerCount);
         hands.push({
           hand: `${rank1}${rank2}s`,
           actions,
@@ -263,7 +284,7 @@ export function generateRange(
           pair: false,
         });
       } else {
-        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable, bountyAdjustment);
+        const actions = getActionForHand(rank1, rank2, false, position, stack, scenario, finalTable, bountyAdjustment, playerCount);
         hands.push({
           hand: `${rank2}${rank1}o`,
           actions,
@@ -292,12 +313,13 @@ export function getRange(
   position: Position,
   stack: number,
   finalTable: boolean = false,
-  bountyAdjustment: number = 0
+  bountyAdjustment: number = 0,
+  playerCount: number = 8
 ): RangeData {
-  const key = `${scenario}-${position}-${stack}-${finalTable}-${bountyAdjustment}`;
+  const key = `${scenario}-${position}-${stack}-${finalTable}-${bountyAdjustment}-${playerCount}`;
 
   if (!rangeCache.has(key)) {
-    rangeCache.set(key, generateRange(scenario, position, stack, finalTable, bountyAdjustment));
+    rangeCache.set(key, generateRange(scenario, position, stack, finalTable, bountyAdjustment, playerCount));
   }
 
   return rangeCache.get(key)!;
@@ -310,9 +332,10 @@ export function getHandData(
   position: Position,
   stack: number,
   finalTable: boolean = false,
-  bountyAdjustment: number = 0
+  bountyAdjustment: number = 0,
+  playerCount: number = 8
 ): HandData | undefined {
-  const range = getRange(scenario, position, stack, finalTable, bountyAdjustment);
+  const range = getRange(scenario, position, stack, finalTable, bountyAdjustment, playerCount);
   return range.hands.find(h => h.hand === hand);
 }
 
