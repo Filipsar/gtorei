@@ -16,7 +16,7 @@
  
  // Multiplicadores por nível (1 = Iniciante, 7 = Lenda)
  const LEVEL_MULTIPLIERS = {
-   gain: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4], // Quanto maior nível, menos ganha
+   gain: [1.0, 1.0, 0.9, 0.7, 0.5, 0.25, 0.25], // Quanto maior nível, menos ganha
    loss: [1.0, 1.1, 1.2, 1.3, 1.5, 1.7, 2.0], // Quanto maior nível, mais perde
  };
  
