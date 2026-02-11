@@ -364,11 +364,15 @@ export function getFeedbackColor(feedback: FeedbackType): string {
   return colors[feedback];
 }
 
+// Multiplicadores de perda por nível (1 = Iniciante, 7 = Lenda)
+const LEVEL_EV_PENALTY = [0, 0, 0.5, 1.0, 1.5, 2.0, 2.5]; // Quanto maior nível, mais perde com EV loss
+
 // Calcular feedback baseado na ação do usuário vs GTO
 // Sistema de pontuação balanceado (redução de ~85%)
 export function calculateFeedback(
   userAction: ActionType,
-  handData: HandData
+  handData: HandData,
+  level: number = 1
 ): { type: FeedbackType; points: number; evLoss: number; message: string } {
   const gtoAction = handData.primaryAction;
   const gtoFrequency = handData.actions.find(a => a.action === gtoAction)?.frequency || 0;
@@ -376,6 +380,11 @@ export function calculateFeedback(
   const gtoEv = handData.actions.find(a => a.action === gtoAction)?.ev || 0;
   const userEv = handData.actions.find(a => a.action === userAction)?.ev || 0;
   const evLoss = Math.max(0, gtoEv - userEv);
+
+  // Penalidade de EV baseada no nível
+  const levelIndex = Math.min(level - 1, 6);
+  const evPenaltyMultiplier = LEVEL_EV_PENALTY[levelIndex];
+  const evPenalty = evLoss > 0 ? Math.round(evLoss * evPenaltyMultiplier) : 0;
 
   // BEST MOVE: Ação GTO primária com frequência >= 50%
   if (userAction === gtoAction && gtoFrequency >= 50) {
@@ -389,21 +398,27 @@ export function calculateFeedback(
 
   if (userFrequency >= 20) {
     const frequencyBonus = Math.min(12, Math.floor(userFrequency / 4));
-    return { type: 'correct', points: Math.max(8, frequencyBonus), evLoss, message: 'Jogada dentro do range GTO.' };
+    const basePoints = Math.max(8, frequencyBonus);
+    const finalPoints = basePoints - evPenalty;
+    return { type: 'correct', points: finalPoints, evLoss, message: evPenalty > 0 ? 'Jogada dentro do range GTO, mas com perda de EV.' : 'Jogada dentro do range GTO.' };
   }
 
   // INACCURACY: Frequência entre 5-20%
   if (userFrequency >= 5) {
-    return { type: 'inaccuracy', points: 6, evLoss, message: 'Jogada aceitável, mas não ótima.' };
+    const finalPoints = 6 - evPenalty;
+    return { type: 'inaccuracy', points: Math.min(6, finalPoints), evLoss, message: 'Jogada aceitável, mas não ótima.' };
   }
 
   // MISTAKE: Frequência < 5% mas EV loss < 0.5 BB
   if (evLoss < 0.5) {
     const penalty = Math.floor(evLoss * 6);
-    return { type: 'mistake', points: Math.max(2, 5 - penalty), evLoss, message: 'Erro. Frequência baixa no GTO.' };
+    const basePoints = Math.max(2, 5 - penalty);
+    const finalPoints = basePoints - evPenalty;
+    return { type: 'mistake', points: Math.min(basePoints, finalPoints), evLoss, message: 'Erro. Frequência baixa no GTO.' };
   }
 
   // BLUNDER: Erro grave com EV loss >= 0.5 BB
   const severePenalty = Math.min(50, Math.floor(evLoss * 20));
-  return { type: 'blunder', points: -severePenalty, evLoss, message: 'Erro grave! Essa não é uma jogada GTO.' };
+  const blunderEvPenalty = Math.round(evLoss * Math.max(1, evPenaltyMultiplier));
+  return { type: 'blunder', points: -(severePenalty + blunderEvPenalty), evLoss, message: 'Erro grave! Essa não é uma jogada GTO.' };
 }
