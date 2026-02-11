@@ -1,14 +1,22 @@
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Swords, Trophy, Crown } from 'lucide-react';
+import { Users, Swords, Crown, Zap } from 'lucide-react';
 
-export type TrainingMode = 'hu' | 'threeHand' | 'bounty';
+export type TrainingMode = 'rangeTraining' | 'hu' | 'threeHand' | 'bounty';
 
 interface TrainingModeSelectorProps {
   onSelect: (mode: TrainingMode) => void;
 }
 
 const modes: { id: TrainingMode; title: string; subtitle: string; description: string; icon: React.ElementType; color: string }[] = [
+  {
+    id: 'rangeTraining',
+    title: 'Treino de Range',
+    subtitle: '8-max completo',
+    description: 'Mesa completa com todas as posições e cenários. O treino clássico do GTORei.',
+    icon: Zap,
+    color: 'text-primary',
+  },
   {
     id: 'hu',
     title: 'HU',
@@ -42,7 +50,7 @@ export function TrainingModeSelector({ onSelect }: TrainingModeSelectorProps) {
         <h2 className="text-heading-md mb-1">Escolha o Modo de Treino</h2>
         <p className="text-body-sm text-muted-foreground">Selecione como você quer praticar</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {modes.map((mode) => (
           <Card
             key={mode.id}
