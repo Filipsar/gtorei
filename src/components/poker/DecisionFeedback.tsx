@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ActionType, FeedbackType, HandData, Scenario, Position } from '@/data/gtoRanges';
+import { ActionType, FeedbackType, HandData, Scenario, Position, GameMode } from '@/data/gtoRanges';
 import { RangeViewerModal } from './RangeViewerModal';
 import { CheckCircle2, XCircle, AlertTriangle, Skull, Trophy, BarChart3 } from 'lucide-react';
 
@@ -26,6 +26,8 @@ interface DecisionFeedbackProps {
   position?: Position;
   stack?: number;
   finalTable?: boolean;
+  gameMode?: GameMode;
+  bountyMultiplier?: number;
   // Flag para mão já jogada
   alreadyPlayed?: boolean;
   previousResult?: {
@@ -95,6 +97,8 @@ export function DecisionFeedback({
   position,
   stack,
   finalTable = false,
+  gameMode = '8max',
+  bountyMultiplier = 0,
   alreadyPlayed = false,
   previousResult,
   isReviewMode = false,
@@ -273,6 +277,8 @@ export function DecisionFeedback({
           position={position}
           stack={stack}
           finalTable={finalTable}
+          gameMode={gameMode}
+          bountyMultiplier={bountyMultiplier}
           heroHand={handData.hand}
           heroAction={userAction}
         />

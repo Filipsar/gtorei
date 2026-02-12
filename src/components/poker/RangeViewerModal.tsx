@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RANKS, Scenario, Position, ActionType, HandData, getRange } from '@/data/gtoRanges';
+import { RANKS, Scenario, Position, ActionType, HandData, getRange, GameMode } from '@/data/gtoRanges';
 import {
   Tooltip,
   TooltipContent,
@@ -19,7 +19,9 @@ interface RangeViewerModalProps {
   position: Position;
   stack: number;
   finalTable?: boolean;
-  heroHand: string; // ex: "AKs"
+  gameMode?: GameMode;
+  bountyMultiplier?: number;
+  heroHand: string;
   heroAction: ActionType;
 }
 
@@ -54,10 +56,12 @@ export function RangeViewerModal({
   position,
   stack,
   finalTable = false,
+  gameMode = '8max',
+  bountyMultiplier = 0,
   heroHand,
   heroAction,
 }: RangeViewerModalProps) {
-  const range = getRange(scenario, position, stack, finalTable);
+  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
 
   // Encontrar dados da mão do herói

@@ -13,10 +13,10 @@ import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard';
 import { TrainingModeSelector, TrainingMode } from '@/components/poker/TrainingModeSelector';
 import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '@/components/poker/BountyConfig';
-import { calculateBountyAdjustment } from '@/data/gtoRanges';
+import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
-import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback } from '@/data/gtoRanges';
+import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
 import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
@@ -120,11 +120,26 @@ export default function TrainPage() {
     return trainingMode ? MODE_SCENARIOS[trainingMode] : ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
   };
 
-  // Get current bounty adjustment
-  const getBountyAdjustment = (): number => {
+  // Get current game mode
+  const getGameMode = (): GameMode => {
+    const map: Record<TrainingMode, GameMode> = {
+      rangeTraining: '8max', hu: 'hu', threeHand: 'threehand', bounty: 'bounty',
+    };
+    return trainingMode ? map[trainingMode] : '8max';
+  };
+
+  // Get current bounty multiplier
+  const getBountyMultiplier = (): number => {
     if (trainingMode !== 'bounty' || !handState) return 0;
     const villainBounty = handState.villainPosition ? (currentBounties[handState.villainPosition] || heroBounty) : heroBounty;
-    return calculateBountyAdjustment(heroBounty, villainBounty);
+    return calculateBountyMultiplier(heroBounty, villainBounty);
+  };
+
+  // Backward compat helper for info display
+  const getBountyAdjustment = (): number => {
+    if (trainingMode !== 'bounty' || !handState) return 0;
+    const mult = getBountyMultiplier();
+    return Math.round((mult - 1) * 15);
   };
 
   // Generate bounties for all positions
@@ -271,9 +286,9 @@ export default function TrainPage() {
       }
     }
 
-    const bountyAdj = getBountyAdjustment();
-    const playerCount = MODE_POSITIONS[trainingMode].length;
-    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, bountyAdj, playerCount);
+    const gm = getGameMode();
+    const bm = getBountyMultiplier();
+    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, gm, bm);
     if (!handData) return;
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
@@ -444,7 +459,7 @@ export default function TrainPage() {
         });
       }
     } else {
-      const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, 0, MODE_POSITIONS[trainingMode].length);
+      const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, getGameMode());
       addFavoriteHand({
         hand: handName,
         scenario,
@@ -1003,7 +1018,7 @@ export default function TrainPage() {
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={() => setPhase('review')} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={() => setPhase('review')} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
