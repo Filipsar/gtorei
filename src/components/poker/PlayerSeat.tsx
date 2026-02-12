@@ -27,7 +27,7 @@ function getPositionColorClass(position: Position): string {
     'CO': 'bg-poker-late',
     'BTN': 'bg-poker-late',
     'SB': 'bg-poker-blinds',
-    'BB': 'bg-poker-blinds',
+    'BB': 'bg-poker-blinds'
   };
   return colorClasses[position] || 'bg-muted';
 }
@@ -46,7 +46,7 @@ function getPositionType(position: Position): string {
     'CO': 'late',
     'BTN': 'late',
     'SB': 'blinds',
-    'BB': 'blinds',
+    'BB': 'blinds'
   };
   return types[position] || 'muted';
 }
@@ -60,7 +60,7 @@ function getPositionFullName(position: Position): string {
     'LJ': 'Lojack',
     'HJ': 'Hijack',
     'CO': 'Cutoff',
-    'BTN': 'Button',
+    'BTN': 'Button'
   };
   return names[position] || position;
 }
@@ -74,7 +74,7 @@ export function PlayerSeat({
   stack,
   lastAction,
   showCards = false,
-  className,
+  className
 }: PlayerSeatProps) {
   const positionColorClass = getPositionColorClass(position);
 
@@ -93,16 +93,16 @@ export function PlayerSeat({
           positionColorClass,
           isHero ? 'border-primary' : 'border-transparent',
           isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-        )}
-      >
+        )}>
+
         <span className="text-white drop-shadow-md">{position}</span>
         
         {/* Indicador de herói */}
-        {isHero && (
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+        {isHero &&
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
             <span className="text-[8px] text-primary-foreground font-bold">H</span>
           </div>
-        )}
+        }
       </div>
 
       {/* Nome da posição (apenas em telas maiores) */}
@@ -111,43 +111,43 @@ export function PlayerSeat({
       </span>
 
       {/* Stack do jogador */}
-      {stack !== undefined && stack > 0 && (
-        <div className="text-xs text-muted-foreground bg-background/80 px-2 py-0.5 rounded shadow-sm">
+      {stack !== undefined && stack > 0 &&
+      <div className="text-xs text-muted-foreground bg-background/80 px-2 py-0.5 rounded shadow-sm">
           {stack} BB
         </div>
-      )}
+      }
 
       {/* Cartas do jogador */}
-      {showCards && cards && cards.length > 0 && (
-        <div className="mt-1">
+      {showCards && cards && cards.length > 0 &&
+      <div className="mt-1">
           <HandDisplay cards={cards} size="xs" />
         </div>
-      )}
+      }
 
       {/* Indicador de ação do villain */}
-      {lastAction && !hasFolded && (
-        <div className={cn(
-          'px-2 py-0.5 rounded text-[10px] font-medium shadow-md animate-fade-in',
-          lastAction.action === 'fold' && 'bg-muted text-muted-foreground',
-          lastAction.action === 'call' && 'bg-poker-call text-white',
-          lastAction.action === 'raise' && 'bg-poker-raise text-white',
-          lastAction.action === 'allin' && 'bg-poker-allin text-white',
-          lastAction.action === '3-bet' && 'bg-poker-raise text-white',
-          lastAction.action === 'open' && 'bg-primary text-primary-foreground',
-        )}>
-          {lastAction.action}
-          {lastAction.amount && ` ${lastAction.amount}BB`}
-        </div>
-      )}
+      {lastAction && !hasFolded
+
+
+
+
+
+
+
+
+
+
+
+
+      }
 
       {/* Indicador de fold */}
-      {hasFolded && (
-        <div className="text-[10px] text-muted-foreground italic">
+      {hasFolded &&
+      <div className="text-[10px] text-muted-foreground italic">
           Fold
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 export { getPositionColor, getPositionFullName };
