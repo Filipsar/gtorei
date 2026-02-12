@@ -52,9 +52,9 @@ export default function HomePage() {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6 text-center">
         {/* Floating Logo */}
         <div className="mb-8 animate-float">
-          <img src={gtoreiLogo} alt="GTORei Logo" className="w-40 h-40 sm:w-56 sm:h-56 object-contain drop-shadow-2xl" style={{
+          <img alt="GTORei Logo" className="w-40 h-40 sm:w-56 sm:h-56 object-contain drop-shadow-2xl" style={{
           filter: 'drop-shadow(0 0 30px rgba(255, 184, 0, 0.3))'
-        }} />
+        }} src="/lovable-uploads/bedf00eb-3f1f-4389-955b-e4b51a3122e9.png" />
         </div>
 
         {/* Title */}
