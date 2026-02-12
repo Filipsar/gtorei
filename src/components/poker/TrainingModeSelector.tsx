@@ -1,6 +1,10 @@
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Swords, Crown, Zap } from 'lucide-react';
+
+import rangeImg from '@/assets/modes/range-training.png';
+import huImg from '@/assets/modes/hu.png';
+import threeHandImg from '@/assets/modes/three-hand.png';
+import bountyImg from '@/assets/modes/bounty.png';
 
 export type TrainingMode = 'rangeTraining' | 'hu' | 'threeHand' | 'bounty';
 
@@ -8,38 +12,34 @@ interface TrainingModeSelectorProps {
   onSelect: (mode: TrainingMode) => void;
 }
 
-const modes: { id: TrainingMode; title: string; subtitle: string; description: string; icon: React.ElementType; color: string }[] = [
+const modes: { id: TrainingMode; title: string; subtitle: string; description: string; image: string }[] = [
   {
     id: 'rangeTraining',
     title: 'Treino de Range',
     subtitle: '8-max completo',
     description: 'Mesa completa com todas as posições e cenários. O treino clássico do GTORei.',
-    icon: Zap,
-    color: 'text-primary',
+    image: rangeImg,
   },
   {
     id: 'hu',
     title: 'HU',
     subtitle: '1 x 1',
     description: 'Heads-Up contra um único oponente. Treine decisões em cenários diretos.',
-    icon: Swords,
-    color: 'text-poker-call',
+    image: huImg,
   },
   {
     id: 'threeHand',
     title: 'Three Hand',
     subtitle: '1 x 1 x 1',
     description: 'Mesa com 3 jogadores. Ranges mais amplos e dinâmica multiway simplificada.',
-    icon: Users,
-    color: 'text-poker-raise',
+    image: threeHandImg,
   },
   {
     id: 'bounty',
     title: 'Modo Bounty',
     subtitle: 'ICM + Recompensas',
     description: 'Torneio PKO com bounties. O valor da recompensa em cada cabeça altera seus ranges.',
-    icon: Crown,
-    color: 'text-rank-first',
+    image: bountyImg,
   },
 ];
 
@@ -54,20 +54,22 @@ export function TrainingModeSelector({ onSelect }: TrainingModeSelectorProps) {
         {modes.map((mode) => (
           <Card
             key={mode.id}
-            className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group"
+            className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group overflow-hidden"
             onClick={() => onSelect(mode.id)}
           >
-            <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-              <div className={cn(
-                'w-16 h-16 rounded-xl flex items-center justify-center bg-muted/50 group-hover:bg-primary/10 transition-colors',
-              )}>
-                <mode.icon className={cn('h-8 w-8', mode.color)} />
+            <CardContent className="p-0 flex flex-col items-center text-center">
+              <div className="w-full aspect-square overflow-hidden bg-muted/30">
+                <img
+                  src={mode.image}
+                  alt={mode.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
               </div>
-              <div>
+              <div className="p-4 space-y-1">
                 <h3 className="text-heading-sm">{mode.title}</h3>
                 <p className="text-body-xs text-muted-foreground font-mono tracking-wider">{mode.subtitle}</p>
+                <p className="text-body-xs text-muted-foreground">{mode.description}</p>
               </div>
-              <p className="text-body-xs text-muted-foreground">{mode.description}</p>
             </CardContent>
           </Card>
         ))}
