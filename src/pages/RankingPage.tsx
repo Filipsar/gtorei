@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,6 +49,7 @@ type PeriodType = 'daily' | 'weekly' | 'monthly';
  
 export default function RankingPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<PeriodType>('daily');
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,8 +192,9 @@ export default function RankingPage() {
                 {rankings.map((entry, index) => (
                   <div
                     key={entry.id}
+                    onClick={() => navigate(`/perfil/${entry.user_id}`)}
                     className={cn(
-                      'flex items-center gap-4 p-3 rounded-lg transition-colors',
+                      'flex items-center gap-4 p-3 rounded-lg transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30',
                       index < 3 ? 'bg-primary/5' : 'bg-muted/50',
                       user?.id === entry.user_id && 'ring-2 ring-primary/50'
                     )}

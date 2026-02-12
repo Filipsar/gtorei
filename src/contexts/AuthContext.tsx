@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface UserProfile {
   username: string;
   avatar_url: string | null;
+  banner_url: string | null;
+  screenshot_urls: string[] | null;
   level: number;
   total_xp: number;
 }
@@ -30,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('username, avatar_url, level, total_xp')
+        .select('username, avatar_url, banner_url, screenshot_urls, level, total_xp')
         .eq('user_id', userId)
         .maybeSingle();
       
