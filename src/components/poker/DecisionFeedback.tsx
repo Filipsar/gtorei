@@ -115,7 +115,7 @@ export function DecisionFeedback({
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="sr-only">Resultado da Jogada</DialogTitle>
           </DialogHeader>
@@ -237,21 +237,20 @@ export function DecisionFeedback({
               </p>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-3">
+            {/* Actions - sticky on mobile */}
+            <div className="flex gap-3 sticky bottom-0 bg-card pt-3 pb-1 -mx-1 px-1 border-t border-border mt-2">
               <Button
                 variant="outline"
                 onClick={onClose}
-                className="flex-1"
+                className="flex-1 h-12 text-base"
               >
                 Rever
               </Button>
-              {/* Botão Ver Range */}
               {scenario && position && stack && (
                 <Button
                   variant="outline"
                   onClick={() => setShowRangeModal(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 h-12"
                 >
                   <BarChart3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Ver Range</span>
@@ -259,7 +258,7 @@ export function DecisionFeedback({
               )}
               <Button
                 onClick={onNextHand}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="flex-1 h-12 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Próxima Mão
               </Button>
