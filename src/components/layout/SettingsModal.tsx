@@ -114,6 +114,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       return;
     }
 
+    // Validate image dimensions (max 512x512)
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    const dimensionsValid = await new Promise<boolean>((resolve) => {
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        if (img.width > 512 || img.height > 512) {
+          toast({
+            title: 'Imagem muito grande',
+            description: 'A largura e altura máximas são 512x512 pixels.',
+            variant: 'destructive',
+          });
+          resolve(false);
+        } else {
+          resolve(true);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        resolve(false);
+      };
+    });
+    if (!dimensionsValid) return;
+
     // Convert to base64 for local storage (simpler approach without storage bucket)
     setUploading(true);
     try {
