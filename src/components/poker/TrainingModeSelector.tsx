@@ -54,18 +54,18 @@ export function TrainingModeSelector({ onSelect }: TrainingModeSelectorProps) {
         {modes.map((mode) => (
           <Card
             key={mode.id}
-            className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group overflow-hidden"
+            className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group"
             onClick={() => onSelect(mode.id)}
           >
-            <CardContent className="p-0 flex flex-col items-center text-center">
-              <div className="w-full aspect-square overflow-hidden bg-muted/30">
+            <CardContent className="p-6 flex flex-col items-center text-center gap-3">
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-muted/50 group-hover:bg-primary/10 transition-colors overflow-hidden">
                 <img
                   src={mode.image}
                   alt={mode.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-10 h-10 object-contain"
                 />
               </div>
-              <div className="p-4 space-y-1">
+              <div>
                 <h3 className="text-heading-sm">{mode.title}</h3>
                 <p className="text-body-xs text-muted-foreground font-mono tracking-wider">{mode.subtitle}</p>
                 <p className="text-body-xs text-muted-foreground">{mode.description}</p>
