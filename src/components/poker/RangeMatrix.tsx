@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { RANKS, getRange, Scenario, Position, ActionType, HandData } from '@/data/gtoRanges';
+import { RANKS, getRange, Scenario, Position, ActionType, HandData, GameMode } from '@/data/gtoRanges';
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +13,8 @@ interface RangeMatrixProps {
   position: Position;
   stack: number;
   finalTable?: boolean;
+  gameMode?: GameMode;
+  bountyMultiplier?: number;
   onHandClick?: (hand: HandData) => void;
   selectedHand?: string;
 }
@@ -48,10 +50,12 @@ export function RangeMatrix({
   position,
   stack,
   finalTable = false,
+  gameMode = '8max',
+  bountyMultiplier = 0,
   onHandClick,
   selectedHand,
 }: RangeMatrixProps) {
-  const range = getRange(scenario, position, stack, finalTable);
+  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
 
   // Criar matriz 13x13
