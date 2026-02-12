@@ -17,6 +17,8 @@ import UpdatesPage from "./pages/UpdatesPage";
 import AuthPage from "./pages/AuthPage";
 import RankingPage from "./pages/RankingPage";
 import AchievementsPage from "./pages/AchievementsPage";
+import ProfilePage from "./pages/ProfilePage";
+import SearchPage from "./pages/SearchPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +41,9 @@ const App = () => (
             <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><RankingPage /></ProtectedRoute>} />
             <Route path="/conquistas" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
+            <Route path="/perfil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/perfil/:userId" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/buscar" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
             <Route path="/atualizacoes" element={<UpdatesPage />} />
             <Route path="*" element={<NotFound />} />

@@ -106,11 +106,13 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          banner_url: string | null
           consecutive_errors: number
           created_at: string
           hands_played: number
           id: string
           level: number
+          screenshot_urls: string[] | null
           total_xp: number
           updated_at: string
           user_id: string
@@ -118,11 +120,13 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          banner_url?: string | null
           consecutive_errors?: number
           created_at?: string
           hands_played?: number
           id?: string
           level?: number
+          screenshot_urls?: string[] | null
           total_xp?: number
           updated_at?: string
           user_id: string
@@ -130,11 +134,13 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          banner_url?: string | null
           consecutive_errors?: number
           created_at?: string
           hands_played?: number
           id?: string
           level?: number
+          screenshot_urls?: string[] | null
           total_xp?: number
           updated_at?: string
           user_id?: string
