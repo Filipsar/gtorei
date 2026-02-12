@@ -83,7 +83,6 @@ export function PlayerSeat({
       'flex flex-col items-center gap-1 transition-all duration-300',
       isHero && 'scale-110',
       hasFolded && 'opacity-40',
-      // Removido animate-pulse para não piscar
       className
     )}>
       {/* Avatar do jogador */}
@@ -94,15 +93,14 @@ export function PlayerSeat({
           isHero ? 'border-primary' : 'border-transparent',
           isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
         )}>
-
         <span className="text-white drop-shadow-md">{position}</span>
         
         {/* Indicador de herói */}
-        {isHero &&
-        <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+        {isHero && (
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
             <span className="text-[8px] text-primary-foreground font-bold">H</span>
           </div>
-        }
+        )}
       </div>
 
       {/* Nome da posição (apenas em telas maiores) */}
@@ -111,43 +109,34 @@ export function PlayerSeat({
       </span>
 
       {/* Stack do jogador */}
-      {stack !== undefined && stack > 0 &&
-      <div className="text-xs text-muted-foreground bg-background/80 px-2 py-0.5 rounded shadow-sm">
+      {stack !== undefined && stack > 0 && (
+        <div className="text-xs text-muted-foreground bg-background/80 px-2 py-0.5 rounded shadow-sm">
           {stack} BB
         </div>
-      }
+      )}
 
       {/* Cartas do jogador */}
-      {showCards && cards && cards.length > 0 &&
-      <div className="mt-1">
+      {showCards && cards && cards.length > 0 && (
+        <div className="mt-1">
           <HandDisplay cards={cards} size="xs" />
         </div>
-      }
+      )}
 
       {/* Indicador de ação do villain */}
-      {lastAction && !hasFolded
-
-
-
-
-
-
-
-
-
-
-
-
-      }
+      {lastAction && !hasFolded && (
+        <div className="text-[10px] sm:text-xs font-semibold bg-accent/90 text-accent-foreground px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+          {lastAction.action}{lastAction.amount ? ` ${lastAction.amount}BB` : ''}
+        </div>
+      )}
 
       {/* Indicador de fold */}
-      {hasFolded &&
-      <div className="text-[10px] text-muted-foreground italic">
+      {hasFolded && (
+        <div className="text-[10px] text-muted-foreground italic">
           Fold
         </div>
-      }
-    </div>);
-
+      )}
+    </div>
+  );
 }
 
 export { getPositionColor, getPositionFullName };
