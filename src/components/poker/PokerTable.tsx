@@ -205,11 +205,10 @@ export function PokerTable({
                 top: layout.top
               }}
             >
-              {/* Bounty badge above player */}
+              {/* Bounty badge - compact, inside seat */}
               {bounties && bounties[pos] !== undefined && (
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
-                  <div className="flex items-center gap-0.5 bg-rank-first/90 text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
-                    <span className="text-[8px]">💰</span>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
+                  <div className="bg-rank-first/80 text-primary-foreground text-[8px] sm:text-[9px] font-bold px-1 py-px rounded-sm shadow whitespace-nowrap leading-none">
                     ${bounties[pos]}
                   </div>
                 </div>
