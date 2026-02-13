@@ -8,6 +8,41 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+export type ColorPalette = 'classic' | 'ocean' | 'sunset' | 'neon' | 'pastel' | 'monochrome';
+
+export const COLOR_PALETTES: { id: ColorPalette; label: string; colors: Record<ActionType, string> }[] = [
+  {
+    id: 'classic',
+    label: 'Clássico',
+    colors: { fold: '#64748b', call: '#3b82f6', raise: '#22c55e', allin: '#ef4444' },
+  },
+  {
+    id: 'ocean',
+    label: 'Oceano',
+    colors: { fold: '#475569', call: '#06b6d4', raise: '#14b8a6', allin: '#f97316' },
+  },
+  {
+    id: 'sunset',
+    label: 'Pôr do Sol',
+    colors: { fold: '#78716c', call: '#f59e0b', raise: '#f97316', allin: '#dc2626' },
+  },
+  {
+    id: 'neon',
+    label: 'Neon',
+    colors: { fold: '#4b5563', call: '#a855f7', raise: '#22d3ee', allin: '#f43f5e' },
+  },
+  {
+    id: 'pastel',
+    label: 'Pastel',
+    colors: { fold: '#94a3b8', call: '#93c5fd', raise: '#86efac', allin: '#fca5a5' },
+  },
+  {
+    id: 'monochrome',
+    label: 'Monocromático',
+    colors: { fold: '#525252', call: '#a3a3a3', raise: '#e5e5e5', allin: '#fafafa' },
+  },
+];
+
 interface RangeMatrixProps {
   scenario: Scenario;
   position: Position;
@@ -17,32 +52,7 @@ interface RangeMatrixProps {
   bountyMultiplier?: number;
   onHandClick?: (hand: HandData) => void;
   selectedHand?: string;
-}
-
-// Cores para cada ação
-const actionColors: Record<ActionType, { bg: string; border: string }> = {
-  fold: { bg: 'bg-slate-600/80', border: 'border-slate-500' },
-  call: { bg: 'bg-secondary', border: 'border-secondary' },
-  raise: { bg: 'bg-emerald-600', border: 'border-emerald-500' },
-  allin: { bg: 'bg-destructive', border: 'border-red-500' },
-};
-
-// Obter cor com gradiente baseado em frequência
-function getHandColor(hand: HandData): string {
-  const primary = hand.actions.find(a => a.action === hand.primaryAction);
-  if (!primary) return actionColors.fold.bg;
-
-  const freq = primary.frequency;
-  const colors = actionColors[hand.primaryAction];
-
-  // Se frequência < 100, fazer gradiente com fold
-  if (freq < 100) {
-    const opacity = Math.round((freq / 100) * 100);
-    if (hand.primaryAction === 'fold') return colors.bg;
-    return `${colors.bg} opacity-${Math.max(30, opacity)}`;
-  }
-
-  return colors.bg;
+  colorPalette?: ColorPalette;
 }
 
 export function RangeMatrix({
@@ -54,9 +64,12 @@ export function RangeMatrix({
   bountyMultiplier = 0,
   onHandClick,
   selectedHand,
+  colorPalette = 'classic',
 }: RangeMatrixProps) {
   const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
+
+  const palette = COLOR_PALETTES.find(p => p.id === colorPalette) || COLOR_PALETTES[0];
 
   // Criar matriz 13x13
   const matrix: HandData[][] = [];
@@ -68,11 +81,11 @@ export function RangeMatrix({
 
       let handName: string;
       if (i === j) {
-        handName = `${rank1}${rank2}`; // Pair
+        handName = `${rank1}${rank2}`;
       } else if (i < j) {
-        handName = `${rank1}${rank2}s`; // Suited (above diagonal)
+        handName = `${rank1}${rank2}s`;
       } else {
-        handName = `${rank2}${rank1}o`; // Offsuit (below diagonal)
+        handName = `${rank2}${rank1}o`;
       }
 
       const handData = range.hands.find(h => h.hand === handName);
@@ -82,13 +95,36 @@ export function RangeMatrix({
     }
   }
 
+  // Build CSS gradient for proportional fill
+  function getProportionalGradient(hand: HandData): string {
+    const visibleActions = hand.actions
+      .filter(a => a.frequency > 0)
+      .sort((a, b) => b.frequency - a.frequency);
+
+    if (visibleActions.length <= 1) {
+      return palette.colors[hand.primaryAction];
+    }
+
+    // Build linear-gradient stops
+    let accumulated = 0;
+    const stops: string[] = [];
+    for (const action of visibleActions) {
+      const color = palette.colors[action.action];
+      stops.push(`${color} ${accumulated}%`);
+      accumulated += action.frequency;
+      stops.push(`${color} ${accumulated}%`);
+    }
+
+    return `linear-gradient(to right, ${stops.join(', ')})`;
+  }
+
   return (
     <TooltipProvider delayDuration={100}>
       <div className="w-full overflow-x-auto">
         <div className="min-w-[400px] max-w-[600px] mx-auto">
           {/* Header row */}
           <div className="grid grid-cols-[2rem_repeat(13,1fr)] gap-0.5 mb-0.5">
-            <div className="h-6" /> {/* Empty corner */}
+            <div className="h-6" />
             {RANKS.map((rank) => (
               <div
                 key={`header-${rank}`}
@@ -102,12 +138,10 @@ export function RangeMatrix({
           {/* Matrix rows */}
           {RANKS.map((rowRank, i) => (
             <div key={rowRank} className="grid grid-cols-[2rem_repeat(13,1fr)] gap-0.5 mb-0.5">
-              {/* Row label */}
               <div className="h-8 flex items-center justify-center text-xs font-medium text-muted-foreground">
                 {rowRank}
               </div>
 
-              {/* Hand cells */}
               {RANKS.map((colRank, j) => {
                 const hand = matrix[i]?.[j];
                 if (!hand) return <div key={`${rowRank}-${colRank}`} className="h-8" />;
@@ -117,8 +151,8 @@ export function RangeMatrix({
                 const isSelected = selectedHand === hand.hand;
                 const isHovered = hoveredHand === hand.hand;
 
-                const primaryAction = hand.actions.find(a => a.action === hand.primaryAction);
-                const freq = primaryAction?.frequency || 0;
+                const bg = getProportionalGradient(hand);
+                const isGradient = bg.startsWith('linear-gradient');
 
                 return (
                   <Tooltip key={hand.hand}>
@@ -127,16 +161,14 @@ export function RangeMatrix({
                         className={cn(
                           'h-8 flex items-center justify-center text-[10px] sm:text-xs font-medium rounded-sm',
                           'transition-all duration-150 cursor-pointer',
-                          'border border-transparent',
-                          actionColors[hand.primaryAction].bg,
-                          freq < 100 && 'opacity-70',
+                          'border border-transparent text-white',
                           isSelected && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
-                          isHovered && !isSelected && actionColors[hand.primaryAction].border,
+                          isHovered && !isSelected && 'border-white/50',
                           isPair && 'font-bold',
-                          isSuited ? 'text-white' : 'text-white/90'
                         )}
                         style={{
-                          opacity: freq < 100 ? 0.4 + (freq / 100) * 0.6 : 1,
+                          background: bg,
+                          ...(colorPalette === 'monochrome' ? { color: '#18181b' } : {}),
                         }}
                         onClick={() => onHandClick?.(hand)}
                         onMouseEnter={() => setHoveredHand(hand.hand)}
@@ -172,11 +204,11 @@ export function RangeMatrix({
                                 <div className="flex items-center gap-2">
                                   <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                                     <div
-                                      className={cn(
-                                        'h-full rounded-full',
-                                        actionColors[action.action].bg
-                                      )}
-                                      style={{ width: `${action.frequency}%` }}
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${action.frequency}%`,
+                                        backgroundColor: palette.colors[action.action],
+                                      }}
                                     />
                                   </div>
                                   <span className="text-muted-foreground w-8 text-right">

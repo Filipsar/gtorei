@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { RangeMatrix } from '@/components/poker/RangeMatrix';
+import { RangeMatrix, COLOR_PALETTES, type ColorPalette } from '@/components/poker/RangeMatrix';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, HandData } from '@/data/gtoRanges';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Lock } from 'lucide-react';
+import { Lock, Palette } from 'lucide-react';
 
 // Locked scenarios (under maintenance)
 const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
@@ -20,6 +20,7 @@ export default function TablesPage() {
   const [stack, setStack] = useState<number>(30);
   const [finalTable, setFinalTable] = useState(false);
   const [selectedHand, setSelectedHand] = useState<HandData | null>(null);
+  const [colorPalette, setColorPalette] = useState<ColorPalette>('classic');
 
   return (
     <MainLayout>
@@ -131,6 +132,39 @@ export default function TablesPage() {
                       onCheckedChange={setFinalTable}
                     />
                   </div>
+
+                  {/* Color palette selector */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Paleta de Cores
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {COLOR_PALETTES.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => setColorPalette(p.id)}
+                          className={cn(
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
+                            colorPalette === p.id
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border bg-card text-muted-foreground hover:border-primary/50'
+                          )}
+                        >
+                          <div className="flex gap-0.5">
+                            {Object.values(p.colors).map((color, idx) => (
+                              <div
+                                key={idx}
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -146,35 +180,34 @@ export default function TablesPage() {
                 <ScrollArea className="w-full">
                   <div className="min-w-[320px]">
                     <RangeMatrix
-                  scenario={scenario}
-                  position={position}
-                  stack={stack}
-                  finalTable={finalTable}
-                  selectedHand={selectedHand?.hand}
-                  onHandClick={setSelectedHand}
-                />
-                  </div>
-                  <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                      scenario={scenario}
+                      position={position}
+                      stack={stack}
+                      finalTable={finalTable}
+                      selectedHand={selectedHand?.hand}
+                      onHandClick={setSelectedHand}
+                      colorPalette={colorPalette}
+                    />
+                   </div>
+                   <ScrollBar orientation="horizontal" />
+                 </ScrollArea>
 
                 {/* Legend */}
                 <div className="mt-6 flex flex-wrap gap-4 justify-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-muted-foreground/50" />
-                    <span className="text-sm text-muted-foreground">Fold</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-secondary" />
-                    <span className="text-sm text-muted-foreground">Call</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-feedback-best" />
-                    <span className="text-sm text-muted-foreground">Raise</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-destructive" />
-                    <span className="text-sm text-muted-foreground">All-in</span>
-                  </div>
+                  {(['fold', 'call', 'raise', 'allin'] as const).map((action) => {
+                    const palette = COLOR_PALETTES.find(p => p.id === colorPalette) || COLOR_PALETTES[0];
+                    return (
+                      <div key={action} className="flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded"
+                          style={{ backgroundColor: palette.colors[action] }}
+                        />
+                        <span className="text-sm text-muted-foreground capitalize">
+                          {action === 'allin' ? 'All-in' : action}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
