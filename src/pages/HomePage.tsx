@@ -70,7 +70,7 @@ export default function HomePage() {
 
         {/* CTA Button */}
         <Button onClick={() => navigate('/treinar')} size="lg" className="text-xl px-10 py-7 font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold mb-12">
-          🎴 Jogar
+          Jogar
         </Button>
 
         {/* Accessibility section */}
