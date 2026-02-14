@@ -17,7 +17,8 @@ import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
-import { initializeHandState, getVillainPosition, getScenarioDescription, HandState, Street } from '@/data/handState';
+import { initializeHandState, getVillainPosition, getScenarioDescription, processPostflopAction, HandState, Street } from '@/data/handState';
+import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
@@ -32,7 +33,7 @@ const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
 
 // Scenarios available per mode
 const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
-  rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
+  rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
   hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
   threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet'],
   bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
@@ -46,7 +47,7 @@ const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
   bounty: POSITIONS,
 };
 
-type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review';
+type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop';
 
 export default function TrainPage() {
   // Mode state
@@ -373,7 +374,39 @@ export default function TrainPage() {
       feedback
     });
     setPhase('feedback');
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore]);
+
+  // Handle closing feedback in simulation mode — transition to postflop
+  const handleFeedbackClose = useCallback(() => {
+    if (scenario === 'simulation' && handState && !handState.isHandComplete && lastFeedback?.userAction !== 'fold') {
+      // Continue to post-flop play
+      if (handState.awaitingPostflopAction) {
+        setPhase('postflop');
+      } else {
+        setPhase('review');
+      }
+    } else {
+      setPhase('review');
+    }
+  }, [scenario, handState, lastFeedback]);
+
+  // Handle postflop action in simulation mode
+  const handlePostflopAction = useCallback((action: 'check' | 'bet' | 'fold' | 'allin') => {
+    if (!handState) return;
+    
+    const newState = processPostflopAction(handState, action);
+    setHandState(newState);
+    
+    if (newState.isHandComplete) {
+      setPhase('review');
+    } else if (newState.awaitingPostflopAction) {
+      // Still need hero action (villain bet, hero must respond)
+      setPhase('postflop');
+    } else {
+      // Advance to next street then await action
+      setPhase('postflop');
+    }
+  }, [handState]);
 
   // Next hand
   const nextHand = useCallback(() => {
@@ -545,6 +578,7 @@ export default function TrainPage() {
           break;
         case 'vsOpenRaise':
         case 'vsOpenShove':
+        case 'simulation':
           // First position has no one before to open/shove
           if (!hasEarlier) invalid.push(pos);
           break;
@@ -979,7 +1013,8 @@ export default function TrainPage() {
               heroCards={handState.heroCards} 
               pot={handState.pot} 
               heroStack={handState.heroStack} 
-              villainPosition={handState.villainPosition} 
+              villainPosition={handState.villainPosition}
+              villainCards={handState.villainCards}
               villainAction={handState.villainAction} 
               villainStack={handState.villainStack} 
               communityCards={handState.communityCards} 
@@ -998,9 +1033,88 @@ export default function TrainPage() {
               })()}
             />
 
-            {/* Action buttons - hidden in review mode */}
-            {phase !== 'review' && (
-              <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={phase === 'feedback'} showRaiseSlider={false} />
+            {/* Action buttons - hidden in review/postflop mode */}
+            {phase === 'playing' && (
+              <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} />
+            )}
+
+            {/* Post-flop action buttons for simulation mode */}
+            {phase === 'postflop' && handState.isSimulation && !handState.isHandComplete && (
+              <div className="space-y-3">
+                <div className="text-center">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {handState.street} — Sua vez
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 my-[40px]">
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePostflopAction('check')}
+                    className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1',
+                      'bg-secondary hover:bg-secondary/90 border-secondary text-white font-semibold')}
+                  >
+                    <span className="text-lg">✓</span>
+                    <span className="text-xs sm:text-sm">Check</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePostflopAction('bet')}
+                    className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1',
+                      'bg-poker-raise hover:bg-poker-raise/90 border-emerald-500 text-white font-semibold')}
+                  >
+                    <span className="text-lg">💰</span>
+                    <span className="text-xs sm:text-sm">Bet</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePostflopAction('fold')}
+                    className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1',
+                      'bg-slate-700 hover:bg-slate-600 border-slate-600 text-white font-semibold')}
+                  >
+                    <span className="text-lg">✕</span>
+                    <span className="text-xs sm:text-sm">Fold</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Showdown result for simulation */}
+            {handState.isHandComplete && handState.isSimulation && handState.street === 'showdown' && phase === 'review' && (
+              <Card className={cn(
+                'border-2',
+                handState.result === 'hero_wins' ? 'border-feedback-best bg-feedback-best/10' :
+                handState.result === 'villain_wins' ? 'border-feedback-blunder bg-feedback-blunder/10' :
+                'border-primary bg-primary/10'
+              )}>
+                <CardContent className="p-4 text-center space-y-2">
+                  <p className={cn('text-xl font-bold',
+                    handState.result === 'hero_wins' ? 'text-feedback-best' :
+                    handState.result === 'villain_wins' ? 'text-feedback-blunder' :
+                    'text-primary'
+                  )}>
+                    {handState.result === 'hero_wins' ? '🏆 Você Ganhou!' :
+                     handState.result === 'villain_wins' ? '💀 Você Perdeu' :
+                     '🤝 Empate'}
+                  </p>
+                  <div className="flex justify-center gap-6 text-sm">
+                    {handState.heroEval && (
+                      <div>
+                        <span className="text-muted-foreground">Você: </span>
+                        <span className="font-medium">{handState.heroEval.rankName}</span>
+                      </div>
+                    )}
+                    {handState.villainEval && (
+                      <div>
+                        <span className="text-muted-foreground">Vilão: </span>
+                        <span className="font-medium">{handState.villainEval.rankName}</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Pot: {handState.pot.toFixed(1)} BB
+                  </p>
+                </CardContent>
+              </Card>
             )}
             
             {/* Review mode - only show next hand button */}
@@ -1018,7 +1132,7 @@ export default function TrainPage() {
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={() => setPhase('review')} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={scenario === 'simulation' && !handState.isHandComplete && lastFeedback.userAction !== 'fold' ? () => { handleFeedbackClose(); } : nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
