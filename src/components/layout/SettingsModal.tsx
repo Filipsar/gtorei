@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { Sun, Moon, Monitor, User, Palette, Save, Upload, Check } from 'lucide-react';
+import { Sun, Moon, Monitor, User, Palette, Save, Upload, Check, Lock } from 'lucide-react';
 import { getUserProfile, updateUserProfile, UserProfile } from '@/data/localStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -390,17 +390,20 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             </div>
 
-            {/* Screen Reader */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            {/* Screen Reader - locked */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 opacity-60">
               <div>
-                <p className="font-medium text-sm">Leitor de Tela</p>
+                <p className="font-medium text-sm flex items-center gap-2">
+                  Leitor de Tela
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Ativar recursos de acessibilidade
+                  Em manutenção
                 </p>
               </div>
               <Switch
-                checked={screenReaderEnabled}
-                onCheckedChange={handleScreenReaderToggle}
+                checked={false}
+                disabled
               />
             </div>
 

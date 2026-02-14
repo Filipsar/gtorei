@@ -133,38 +133,6 @@ export default function TablesPage() {
                     />
                   </div>
 
-                  {/* Color palette selector */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Palette className="h-4 w-4" />
-                      Paleta de Cores
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {COLOR_PALETTES.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => setColorPalette(p.id)}
-                          className={cn(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
-                            colorPalette === p.id
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : 'border-border bg-card text-muted-foreground hover:border-primary/50'
-                          )}
-                        >
-                          <div className="flex gap-0.5">
-                            {Object.values(p.colors).map((color, idx) => (
-                              <div
-                                key={idx}
-                                className="w-3 h-3 rounded-sm"
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -213,8 +181,45 @@ export default function TablesPage() {
             </Card>
           </div>
 
-          {/* Sidebar - Hand details */}
-          <div className="lg:sticky lg:top-6 lg:self-start">
+          {/* Sidebar - Palette + Hand details */}
+          <div className="lg:sticky lg:top-6 lg:self-start space-y-4">
+            {/* Color palette selector */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-heading-xs flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Paleta de Cores
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="flex flex-col gap-2">
+                  {COLOR_PALETTES.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setColorPalette(p.id)}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all w-full',
+                        colorPalette === p.id
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-card text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      <div className="flex gap-0.5">
+                        {Object.values(p.colors).map((color, idx) => (
+                          <div
+                            key={idx}
+                            className="w-3 h-3 rounded-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-heading-xs">Detalhes da Mão</CardTitle>

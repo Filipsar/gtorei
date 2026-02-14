@@ -127,11 +127,17 @@ export default function AnalysisPage() {
     );
   }
 
-  const sessionChartData = stats.sessions.slice(0, 10).map((s, idx) => ({
-    name: `S${stats.sessions.slice(0, 10).length - idx}`,
-    score: s.score,
-    accuracy: s.accuracy,
-  })).reverse();
+  // Aggregate XP by day of week
+  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const xpByDay: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  stats.sessions.forEach((s) => {
+    const day = new Date(s.startedAt).getDay();
+    xpByDay[day] += s.score;
+  });
+  const sessionChartData = daysOfWeek.map((name, idx) => ({
+    name,
+    xp: xpByDay[idx],
+  }));
 
   const feedbackChartData = [
     { name: 'Best', value: stats.feedbackDistribution.best, color: 'hsl(142, 71%, 45%)' },
@@ -295,9 +301,9 @@ export default function AnalysisPage() {
               <CardTitle className="text-heading-xs">Evolução do Score</CardTitle>
             </CardHeader>
             <CardContent>
-              {sessionChartData.length > 0 ? (
+              {stats.sessions.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={sessionChartData}>
+                  <BarChart data={sessionChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -307,15 +313,10 @@ export default function AnalysisPage() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
+                      formatter={(value: number) => [`${value} XP`, 'XP Adquirido']}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))' }}
-                    />
-                  </LineChart>
+                    <Bar dataKey="xp" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[250px] flex items-center justify-center text-muted-foreground">
@@ -380,6 +381,46 @@ export default function AnalysisPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Position suggestion */}
+        {(() => {
+          const positionsWithHands = POSITIONS.filter(p => (stats.positionStats[p]?.hands || 0) > 0);
+          if (positionsWithHands.length >= 2) {
+            const worstPos = positionsWithHands.reduce((worst, pos) => {
+              const acc = stats.positionStats[pos]?.accuracy ?? 100;
+              const worstAcc = stats.positionStats[worst]?.accuracy ?? 100;
+              return acc < worstAcc ? pos : worst;
+            }, positionsWithHands[0]);
+            const worstAcc = stats.positionStats[worstPos]?.accuracy ?? 0;
+            return (
+              <Card className="mb-6 border-primary/30 bg-primary/5">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/20">
+                      <Target className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Sugestão de Treino</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Sua pior posição é <span className="font-bold text-primary">{worstPos}</span> com{' '}
+                        <span className="font-bold text-feedback-blunder">{worstAcc}%</span> de precisão.
+                        Recomendamos treinar mais nessa posição para melhorar seu jogo geral.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => navigate('/train')}
+                      >
+                        Treinar como {worstPos}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+          return null;
+        })()}
 
         {/* Position performance */}
         <Card className="mb-6">
