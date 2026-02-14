@@ -97,14 +97,14 @@ type PositionScenarios = Partial<Record<Scenario, ScenarioPercent>>;
 type ModeConfigMap = Partial<Record<Position, PositionScenarios>>;
 
 const EIGHT_MAX_BASE: ModeConfigMap = {
-  UTG:  { openRaise: { raise: 15 }, vsOpenRaise: { raise: 4, call: 4 },  vs3bet: { allin: 3, call: 5 },  vsOpenShove: { call: 8 } },
-  UTG1: { openRaise: { raise: 18 }, vsOpenRaise: { raise: 4, call: 6 },  vs3bet: { allin: 3, call: 5 },  vsOpenShove: { call: 9 } },
-  LJ:   { openRaise: { raise: 18 }, vsOpenRaise: { raise: 5, call: 8 },  vs3bet: { allin: 3, call: 6 },  vsOpenShove: { call: 10 } },
-  HJ:   { openRaise: { raise: 22 }, vsOpenRaise: { raise: 6, call: 10 }, vs3bet: { allin: 4, call: 7 },  vsOpenShove: { call: 12 } },
-  CO:   { openRaise: { raise: 28 }, vsOpenRaise: { raise: 8, call: 12 }, vs3bet: { allin: 5, call: 9 },  vsOpenShove: { call: 15 } },
-  BTN:  { openRaise: { raise: 45 }, vsOpenRaise: { raise: 10, call: 18 },vs3bet: { allin: 5, call: 10 }, vsOpenShove: { call: 20 } },
-  SB:   { openRaise: { raise: 40 }, vsOpenRaise: { raise: 10, call: 12 },vs3bet: { allin: 4, call: 8 },  vsOpenShove: { call: 18 } },
-  BB:   { openRaise: { raise: 0 },  vsOpenRaise: { raise: 10, call: 25 },vs3bet: { allin: 5, call: 10 }, vsOpenShove: { call: 25 } },
+  UTG:  { openRaise: { raise: 15 }, vsOpenRaise: { raise: 4, call: 4 },  vs3bet: { allin: 3, call: 5 },  vsOpenShove: { call: 8 },  simulation: { raise: 4, call: 4 } },
+  UTG1: { openRaise: { raise: 18 }, vsOpenRaise: { raise: 4, call: 6 },  vs3bet: { allin: 3, call: 5 },  vsOpenShove: { call: 9 },  simulation: { raise: 4, call: 6 } },
+  LJ:   { openRaise: { raise: 18 }, vsOpenRaise: { raise: 5, call: 8 },  vs3bet: { allin: 3, call: 6 },  vsOpenShove: { call: 10 }, simulation: { raise: 5, call: 8 } },
+  HJ:   { openRaise: { raise: 22 }, vsOpenRaise: { raise: 6, call: 10 }, vs3bet: { allin: 4, call: 7 },  vsOpenShove: { call: 12 }, simulation: { raise: 6, call: 10 } },
+  CO:   { openRaise: { raise: 28 }, vsOpenRaise: { raise: 8, call: 12 }, vs3bet: { allin: 5, call: 9 },  vsOpenShove: { call: 15 }, simulation: { raise: 8, call: 12 } },
+  BTN:  { openRaise: { raise: 45 }, vsOpenRaise: { raise: 10, call: 18 },vs3bet: { allin: 5, call: 10 }, vsOpenShove: { call: 20 }, simulation: { raise: 10, call: 18 } },
+  SB:   { openRaise: { raise: 40 }, vsOpenRaise: { raise: 10, call: 12 },vs3bet: { allin: 4, call: 8 },  vsOpenShove: { call: 18 }, simulation: { raise: 10, call: 12 } },
+  BB:   { openRaise: { raise: 0 },  vsOpenRaise: { raise: 10, call: 25 },vs3bet: { allin: 5, call: 10 }, vsOpenShove: { call: 25 }, simulation: { raise: 10, call: 25 } },
 };
 
 const MODE_CONFIGS: Record<GameMode, ModeConfigMap> = {
@@ -242,7 +242,7 @@ function getScenarioConfig(
         raisePercent -= shift;
       }
     }
-  } else if (scenario === 'vsOpenRaise') {
+  } else if (scenario === 'vsOpenRaise' || scenario === 'simulation') {
     raisePercent *= sm.raise3bet;
     callPercent *= sm.call;
   } else if (scenario === 'vs3bet') {

@@ -3,6 +3,7 @@
 
 import { ActionType, Position, Scenario, POSITIONS, RANKS, getHandData } from './gtoRanges';
 import { CardType } from '@/components/poker/PlayingCard';
+import { compareHands, HandEvaluation } from './handEvaluator';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
@@ -29,6 +30,10 @@ export interface HandState {
   activeBets: { position: Position; amount: number }[];
   isHandComplete: boolean;
   result?: 'hero_wins' | 'villain_wins' | 'tie';
+  heroEval?: HandEvaluation;
+  villainEval?: HandEvaluation;
+  isSimulation?: boolean;
+  awaitingPostflopAction?: boolean;
 }
 
 // Gerar um deck completo
@@ -245,6 +250,8 @@ export function initializeHandState(
   const shuffledDeck = shuffle(availableCards);
   const villainCards = shuffledDeck.slice(0, 2);
   
+  const isSimulation = scenario === 'simulation';
+  
   return {
     street: 'preflop',
     pot,
@@ -260,6 +267,8 @@ export function initializeHandState(
     foldedPositions,
     activeBets,
     isHandComplete: false,
+    isSimulation,
+    awaitingPostflopAction: false,
   };
 }
 
@@ -269,7 +278,7 @@ export function processHeroAction(
   action: ActionType,
   scenario: Scenario
 ): HandState {
-  const newState = { ...state };
+  const newState = { ...state, awaitingPostflopAction: false };
   
   // Adicionar ação do herói ao histórico
   newState.actions = [
@@ -302,7 +311,7 @@ export function processHeroAction(
     );
     newState.pot = state.pot + amountToCall;
     
-    // Em cenários VS, após call, lidamos o flop
+    // Em cenários VS ou simulação, após call, lidamos o flop
     if (scenario !== 'openRaise') {
       return dealNextStreet(newState);
     }
@@ -320,6 +329,81 @@ export function processHeroAction(
   }
   
   return newState;
+}
+
+// Processar ação pós-flop do herói (check/bet/fold) para modo simulação
+export function processPostflopAction(
+  state: HandState,
+  action: 'check' | 'bet' | 'fold' | 'allin'
+): HandState {
+  const newState = { ...state, awaitingPostflopAction: false };
+  
+  newState.actions = [
+    ...state.actions,
+    { position: state.heroPosition, action, isHero: true }
+  ];
+  
+  if (action === 'fold') {
+    newState.isHandComplete = true;
+    newState.result = 'villain_wins';
+    return newState;
+  }
+  
+  if (action === 'allin') {
+    newState.pot = state.pot + state.heroStack;
+    // Villain calls all-in — go to showdown via runout
+    newState.actions = [
+      ...newState.actions,
+      { position: state.villainPosition!, action: 'call' }
+    ];
+    return runoutToShowdown(newState);
+  }
+  
+  if (action === 'bet') {
+    const betSize = Math.round(state.pot * 0.6 * 10) / 10; // ~60% pot
+    newState.pot = state.pot + betSize;
+    newState.actions = [...newState.actions];
+    
+    // Villain response to bet
+    const villainCalls = Math.random() > 0.35;
+    if (villainCalls) {
+      newState.actions = [
+        ...newState.actions,
+        { position: state.villainPosition!, action: 'call' }
+      ];
+      newState.pot += betSize;
+      return dealNextStreet(newState);
+    } else {
+      newState.actions = [
+        ...newState.actions,
+        { position: state.villainPosition!, action: 'fold' }
+      ];
+      newState.isHandComplete = true;
+      newState.result = 'hero_wins';
+      return newState;
+    }
+  }
+  
+  // Check
+  // Villain checks back or bets
+  const villainBets = Math.random() > 0.55;
+  if (villainBets) {
+    const villainBetSize = Math.round(state.pot * 0.5 * 10) / 10;
+    newState.actions = [
+      ...newState.actions,
+      { position: state.villainPosition!, action: 'bet', amount: villainBetSize }
+    ];
+    newState.pot += villainBetSize;
+    // Hero must respond — set awaiting action again
+    newState.awaitingPostflopAction = true;
+    return newState;
+  } else {
+    newState.actions = [
+      ...newState.actions,
+      { position: state.villainPosition!, action: 'check' }
+    ];
+    return dealNextStreet(newState);
+  }
 }
 
 // Simular resposta do villain
@@ -381,13 +465,58 @@ function dealNextStreet(state: HandState): HandState {
     case 'river':
       newState.street = 'showdown';
       newState.isHandComplete = true;
-      // Simplificado: 50/50 quem ganha
-      newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
+      // Avaliação real de mãos
+      if (state.heroCards && state.villainCards) {
+        const visibleCards = newState.communityCards.slice(0, 5);
+        const result = compareHands(state.heroCards, state.villainCards, visibleCards);
+        newState.result = result.winner;
+        newState.heroEval = result.heroEval;
+        newState.villainEval = result.villainEval;
+      } else {
+        newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
+      }
       break;
   }
   
   // Limpar apostas ativas ao mudar de street
   newState.activeBets = [];
+  
+  // Em simulação, marcar que herói precisa agir no pós-flop
+  if (state.isSimulation && !newState.isHandComplete && newState.street !== 'preflop') {
+    newState.awaitingPostflopAction = true;
+  }
+  
+  return newState;
+}
+
+// Runout direto para showdown (all-in preflop/postflop)
+function runoutToShowdown(state: HandState): HandState {
+  const newState = { ...state };
+  
+  // Gerar board se necessário
+  if (state.communityCards.length === 0) {
+    const deck = generateDeck();
+    const usedCards = [...state.heroCards, ...(state.villainCards || [])];
+    const availableCards = deck.filter(c => 
+      !usedCards.some(used => used.rank === c.rank && used.suit === c.suit)
+    );
+    const shuffledDeck = shuffle(availableCards);
+    newState.communityCards = shuffledDeck.slice(0, 5);
+  }
+  
+  newState.street = 'showdown';
+  newState.isHandComplete = true;
+  newState.activeBets = [];
+  
+  if (state.heroCards && state.villainCards) {
+    const visibleCards = newState.communityCards.slice(0, 5);
+    const result = compareHands(state.heroCards, state.villainCards, visibleCards);
+    newState.result = result.winner;
+    newState.heroEval = result.heroEval;
+    newState.villainEval = result.villainEval;
+  } else {
+    newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
+  }
   
   return newState;
 }
