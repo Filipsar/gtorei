@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft } from 'lucide-react';
 
 // Locked scenarios (under maintenance)
-const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
+const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
 
 // Scenarios available per mode
 const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {

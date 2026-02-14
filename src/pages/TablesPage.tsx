@@ -12,7 +12,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Lock, Palette } from 'lucide-react';
 
 // Locked scenarios (under maintenance)
-const LOCKED_SCENARIOS: Scenario[] = ['simulation', 'multiway'];
+const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
 
 export default function TablesPage() {
   const [scenario, setScenario] = useState<Scenario>('openRaise');
