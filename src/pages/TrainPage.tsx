@@ -481,6 +481,10 @@ export default function TrainPage() {
         }, 500);
       }
     } else {
+      // Fold in simulation or non-simulation — apply pending score if exists
+      if (scenario === 'simulation') {
+        applyPendingScore();
+      }
       setPhase('review');
     }
   }, [scenario, handState, lastFeedback, applyPendingScore]);
