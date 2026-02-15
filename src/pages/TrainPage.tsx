@@ -47,7 +47,7 @@ const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
   bounty: POSITIONS,
 };
 
-type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop';
+type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning';
 
 export default function TrainPage() {
   // Mode state
@@ -85,6 +85,15 @@ export default function TrainPage() {
   const [correctHandsCount, setCorrectHandsCount] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [sessionBestCount, setSessionBestCount] = useState(0);
+  const [pendingSimulationScore, setPendingSimulationScore] = useState<{
+    points: number;
+    isCorrect: boolean;
+    action: ActionType;
+    handName: string;
+    handData: ReturnType<typeof getHandData>;
+    feedback: ReturnType<typeof calculateFeedback>;
+  } | null>(null);
+  const [selectedBetSize, setSelectedBetSize] = useState(0.5);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
@@ -297,7 +306,10 @@ export default function TrainPage() {
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 
-    if (!isHandAlreadyPlayedState) {
+    // In simulation mode, defer scoring until hand completes
+    const isSimulation = scenario === 'simulation';
+
+    if (!isHandAlreadyPlayedState && !isSimulation) {
       markHandAsPlayed(currentHandId, action, feedback.points, feedback.type);
       addHandToSession({
         hand: handName,
@@ -311,7 +323,6 @@ export default function TrainPage() {
         evLoss: feedback.evLoss
       });
 
-      // Persist hand to Supabase
       if (user && supabaseSessionId.current) {
         supabase
           .from('played_hands')
@@ -338,7 +349,6 @@ export default function TrainPage() {
         setCorrectHandsCount(prev => prev + 1);
         setCurrentStreak(prev => {
           const newStreak = prev + 1;
-          // Check streak achievements
           checkAchievements({ streak: newStreak });
           return newStreak;
         });
@@ -359,7 +369,6 @@ export default function TrainPage() {
         });
         updateSupabaseProfile(user.id, pointsToAdd, 1);
 
-        // Check volume and level achievements
         const totalXp = (profile?.total_xp || 0) + pointsToAdd;
         const newLevel = calculateLevel(totalXp);
         checkAchievements({
@@ -367,7 +376,18 @@ export default function TrainPage() {
           level: newLevel,
         });
       }
+    } else if (isSimulation && !isHandAlreadyPlayedState) {
+      // Store pending score to apply after simulation completes
+      setPendingSimulationScore({
+        points: pointsToAdd,
+        isCorrect,
+        action,
+        handName,
+        handData,
+        feedback,
+      });
     }
+
     setLastFeedback({
       userAction: action,
       handData,
@@ -376,42 +396,124 @@ export default function TrainPage() {
     setPhase('feedback');
   }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore]);
 
-  // Handle closing feedback in simulation mode — transition to postflop
+  // Apply deferred simulation score when hand completes
+  const applyPendingScore = useCallback(() => {
+    if (!pendingSimulationScore || !handState || !currentHandId) return;
+    
+    const { points, isCorrect, action, handName, feedback } = pendingSimulationScore;
+    
+    markHandAsPlayed(currentHandId, action, points, feedback.type);
+    addHandToSession({
+      hand: handName,
+      scenario,
+      position: handState.heroPosition,
+      stack: handState.heroStack,
+      userAction: action,
+      correctAction: pendingSimulationScore.handData?.primaryAction || 'fold',
+      feedback: feedback.type,
+      points,
+      evLoss: feedback.evLoss
+    });
+
+    if (user && supabaseSessionId.current) {
+      supabase
+        .from('played_hands')
+        .insert({
+          user_id: user.id,
+          session_id: supabaseSessionId.current,
+          hand: handName,
+          scenario,
+          position: handState.heroPosition,
+          stack: handState.heroStack,
+          user_action: action,
+          correct_action: pendingSimulationScore.handData?.primaryAction || 'fold',
+          feedback: feedback.type,
+          points,
+          ev_loss: feedback.evLoss,
+        })
+        .then(({ error }) => {
+          if (error) console.error('Error saving hand:', error);
+        });
+    }
+
+    setSessionScore(prev => prev + points);
+    setHandsPlayed(prev => prev + 1);
+    if (isCorrect) {
+      setCorrectHandsCount(prev => prev + 1);
+      setCurrentStreak(prev => {
+        const newStreak = prev + 1;
+        checkAchievements({ streak: newStreak });
+        return newStreak;
+      });
+    } else {
+      setCurrentStreak(0);
+    }
+    if (feedback.type === 'best') {
+      setSessionBestCount(prev => prev + 1);
+    }
+    if (user && points !== 0) {
+      updateUserRanking({
+        userId: user.id,
+        xpEarned: points,
+        handsPlayed: 1,
+        correctHands: isCorrect ? 1 : 0,
+      });
+      updateSupabaseProfile(user.id, points, 1);
+    }
+    
+    setPendingSimulationScore(null);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements]);
+
+  // Handle closing feedback in simulation mode — transition to postflop with delay
   const handleFeedbackClose = useCallback(() => {
     if (scenario === 'simulation' && handState && lastFeedback?.userAction && lastFeedback.userAction !== 'fold') {
-      // Process the hero's preflop action to advance hand state
       const newState = processHeroAction(handState, lastFeedback.userAction, scenario);
       setHandState(newState);
       
       if (newState.isHandComplete) {
+        applyPendingScore();
         setPhase('review');
-      } else if (newState.awaitingPostflopAction) {
-        setPhase('postflop');
       } else {
-        setPhase('postflop');
+        // Show transitioning state with delay before showing postflop actions
+        setPhase('transitioning');
+        setTimeout(() => {
+          setPhase('postflop');
+        }, 500);
       }
     } else {
       setPhase('review');
     }
-  }, [scenario, handState, lastFeedback]);
+  }, [scenario, handState, lastFeedback, applyPendingScore]);
 
-  // Handle postflop action in simulation mode
+  // Handle postflop action in simulation mode with delays
   const handlePostflopAction = useCallback((action: 'check' | 'bet' | 'fold' | 'allin') => {
     if (!handState) return;
     
-    const newState = processPostflopAction(handState, action);
-    setHandState(newState);
+    const betSize = action === 'bet' ? selectedBetSize : undefined;
+    const newState = processPostflopAction(handState, action, betSize);
     
-    if (newState.isHandComplete) {
-      setPhase('review');
-    } else if (newState.awaitingPostflopAction) {
-      // Still need hero action (villain bet, hero must respond)
-      setPhase('postflop');
-    } else {
-      // Advance to next street then await action
-      setPhase('postflop');
-    }
-  }, [handState]);
+    // Show transitioning phase for delay effect
+    setPhase('transitioning');
+    
+    setTimeout(() => {
+      setHandState(newState);
+      
+      if (newState.isHandComplete) {
+        applyPendingScore();
+        setPhase('review');
+      } else if (newState.awaitingPostflopAction) {
+        // Villain bet, hero must respond — add another delay
+        setTimeout(() => {
+          setPhase('postflop');
+        }, 500);
+      } else {
+        // Next street dealt — delay before showing actions
+        setTimeout(() => {
+          setPhase('postflop');
+        }, 500);
+      }
+    }, 500);
+  }, [handState, selectedBetSize, applyPendingScore]);
 
   // Next hand
   const nextHand = useCallback(() => {
@@ -455,6 +557,7 @@ export default function TrainPage() {
     } : null);
     setIsCurrentHandFavorited(isHandFavorited(hand, selectedScenario, pos, stk));
     setLastFeedback(null);
+    setPendingSimulationScore(null);
     setPhase('playing');
   }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, heroBounty]);
 
@@ -1039,7 +1142,7 @@ export default function TrainPage() {
             />
 
             {/* Hero cards display above actions */}
-            {handState.heroCards && handState.heroCards.length > 0 && (phase === 'playing' || phase === 'postflop') && (
+            {handState.heroCards && handState.heroCards.length > 0 && (phase === 'playing' || phase === 'postflop' || phase === 'transitioning') && (
               <div className="flex justify-center">
                 <HandDisplay cards={handState.heroCards} size="md" />
               </div>
@@ -1050,6 +1153,13 @@ export default function TrainPage() {
               <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} />
             )}
 
+            {/* Transitioning indicator */}
+            {phase === 'transitioning' && (
+              <div className="flex justify-center py-6">
+                <div className="animate-pulse text-sm text-muted-foreground">Aguarde...</div>
+              </div>
+            )}
+
             {/* Post-flop action buttons for simulation mode */}
             {phase === 'postflop' && handState.isSimulation && !handState.isHandComplete && (
               <div className="space-y-3">
@@ -1058,12 +1168,38 @@ export default function TrainPage() {
                     {handState.street} — Sua vez
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 sm:gap-3 my-[40px]">
+
+                {/* Bet sizing selector - GGPoker style */}
+                <div className="flex items-center justify-center gap-2">
+                  {[
+                    { label: '33%', value: 0.33 },
+                    { label: '50%', value: 0.5 },
+                    { label: '75%', value: 0.75 },
+                    { label: '100%', value: 1.0 },
+                  ].map(size => (
+                    <Button
+                      key={size.label}
+                      variant={selectedBetSize === size.value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedBetSize(size.value)}
+                      className={cn(
+                        'min-w-[3rem] text-xs',
+                        selectedBetSize === size.value && 'bg-primary text-primary-foreground'
+                      )}
+                    >
+                      {size.label}
+                    </Button>
+                  ))}
+                  <span className="text-xs text-muted-foreground ml-1">
+                    {(handState.pot * selectedBetSize).toFixed(1)} BB
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   <Button
                     variant="outline"
                     onClick={() => handlePostflopAction('check')}
-                    className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1',
-                      'bg-secondary hover:bg-secondary/90 border-secondary text-white font-semibold')}
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-secondary hover:bg-secondary/90 border-secondary text-secondary-foreground font-semibold"
                   >
                     <span className="text-lg">✓</span>
                     <span className="text-xs sm:text-sm">Check</span>
@@ -1071,17 +1207,15 @@ export default function TrainPage() {
                   <Button
                     variant="outline"
                     onClick={() => handlePostflopAction('bet')}
-                    className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1',
-                      'bg-poker-raise hover:bg-poker-raise/90 border-emerald-500 text-white font-semibold')}
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
                   >
                     <span className="text-lg">💰</span>
-                    <span className="text-xs sm:text-sm">Bet</span>
+                    <span className="text-xs sm:text-sm">Bet {(handState.pot * selectedBetSize).toFixed(1)}</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handlePostflopAction('fold')}
-                    className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1',
-                      'bg-slate-700 hover:bg-slate-600 border-slate-600 text-white font-semibold')}
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-muted hover:bg-muted/80 border-muted text-foreground font-semibold"
                   >
                     <span className="text-lg">✕</span>
                     <span className="text-xs sm:text-sm">Fold</span>
