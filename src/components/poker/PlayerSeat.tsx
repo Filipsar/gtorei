@@ -5,6 +5,7 @@ import { HandDisplay, CardType } from './PlayingCard';
 interface PlayerSeatProps {
   position: Position;
   isHero?: boolean;
+  isVillain?: boolean;
   isActive?: boolean;
   hasFolded?: boolean;
   cards?: CardType[];
@@ -68,6 +69,7 @@ function getPositionFullName(position: Position): string {
 export function PlayerSeat({
   position,
   isHero = false,
+  isVillain = false,
   isActive = false,
   hasFolded = false,
   cards,
@@ -90,7 +92,7 @@ export function PlayerSeat({
         className={cn(
           'relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center font-bold text-xs sm:text-sm shadow-lg transition-all',
           positionColorClass,
-          isHero ? 'border-primary' : 'border-transparent',
+          isHero ? 'border-primary' : isVillain ? 'border-destructive ring-2 ring-destructive/50' : 'border-transparent',
           isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
         )}>
         <span className="text-white drop-shadow-md">{position}</span>
@@ -99,6 +101,13 @@ export function PlayerSeat({
         {isHero && (
           <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
             <span className="text-[8px] text-primary-foreground font-bold">H</span>
+          </div>
+        )}
+
+        {/* Indicador de vilão */}
+        {isVillain && !hasFolded && (
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
+            <span className="text-[8px] text-destructive-foreground font-bold">V</span>
           </div>
         )}
       </div>
@@ -116,9 +125,9 @@ export function PlayerSeat({
       )}
 
       {/* Cartas do jogador */}
-      {showCards && cards && cards.length > 0 && (
+      {cards && cards.length > 0 && (
         <div className="mt-1">
-          <HandDisplay cards={cards} size="xs" />
+          <HandDisplay cards={cards} size="xs" faceDown={!showCards} />
         </div>
       )}
 

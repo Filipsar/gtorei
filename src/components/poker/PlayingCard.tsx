@@ -76,13 +76,25 @@ export function PlayingCard({
 interface HandDisplayProps {
   cards: CardType[];
   size?: 'xs' | 'sm' | 'md' | 'lg';
+  faceDown?: boolean;
   className?: string;
 }
 export function HandDisplay({
   cards,
   size = 'md',
+  faceDown = false,
   className
 }: HandDisplayProps) {
+  if (faceDown) {
+    return <div className={cn('flex gap-1', className)}>
+      {cards.map((_, idx) => (
+        <div key={idx} className={cn(
+          'rounded-lg border-2 border-slate-400 bg-gradient-to-br from-blue-800 to-blue-950 shadow-md',
+          size === 'xs' ? 'w-6 h-8' : size === 'sm' ? 'w-8 h-11' : size === 'md' ? 'w-12 h-16' : 'w-16 h-22'
+        )} />
+      ))}
+    </div>;
+  }
   return <div className={cn('flex gap-2', className)}>
       {cards.map((card, idx) => <PlayingCard key={idx} rank={card.rank} suit={card.suit} size={size} />)}
     </div>;

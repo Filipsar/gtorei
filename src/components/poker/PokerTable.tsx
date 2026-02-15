@@ -182,10 +182,15 @@ export function PokerTable({
           const layout = positionLayout[pos];
           const activeBet = activeBets.find(b => b.position === pos);
 
-          // Determinar cartas a mostrar (NÃO mostrar cartas do herói aqui)
+          // Determinar cartas a mostrar abaixo do seat
           let cardsToShow: CardType[] | undefined;
-          if (isVillain && villainCards && (street === 'showdown' || villainCards.length > 0)) {
+          let shouldShowCards = false;
+          if (isHero && heroCards && heroCards.length > 0) {
+            cardsToShow = heroCards;
+            shouldShowCards = true;
+          } else if (isVillain && villainCards && villainCards.length > 0) {
             cardsToShow = villainCards;
+            shouldShowCards = street === 'showdown'; // face down unless showdown
           }
 
           // Determinar stack a mostrar
@@ -216,11 +221,12 @@ export function PokerTable({
               <PlayerSeat 
                 position={pos} 
                 isHero={isHero} 
+                isVillain={isVillain}
                 isActive={isHero && street === 'preflop'} 
                 hasFolded={hasFolded} 
                 cards={cardsToShow} 
                 stack={stackToShow} 
-                showCards={isVillain && street === 'showdown'} 
+                showCards={shouldShowCards} 
                 lastAction={isVillain && villainAction ? villainAction : undefined} 
               />
             </div>
@@ -245,13 +251,6 @@ export function PokerTable({
           );
         })}
       </div>
-
-      {/* Cartas do herói - FORA da mesa */}
-      {heroCards && heroCards.length > 0 && (
-        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-primary/30">
-          <HandDisplay cards={heroCards} size="md" />
-        </div>
-      )}
     </div>
   );
 }
