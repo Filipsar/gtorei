@@ -334,7 +334,8 @@ export function processHeroAction(
 // Processar ação pós-flop do herói (check/bet/fold) para modo simulação
 export function processPostflopAction(
   state: HandState,
-  action: 'check' | 'bet' | 'fold' | 'allin'
+  action: 'check' | 'bet' | 'fold' | 'allin',
+  betSizePct?: number // percentual do pot (0.33, 0.5, 0.75, 1.0)
 ): HandState {
   const newState = { ...state, awaitingPostflopAction: false };
   
@@ -360,12 +361,14 @@ export function processPostflopAction(
   }
   
   if (action === 'bet') {
-    const betSize = Math.round(state.pot * 0.6 * 10) / 10; // ~60% pot
+    const pct = betSizePct || 0.5;
+    const betSize = Math.round(state.pot * pct * 10) / 10;
     newState.pot = state.pot + betSize;
     newState.actions = [...newState.actions];
     
-    // Villain response to bet
-    const villainCalls = Math.random() > 0.35;
+    // Villain response to bet — fold more vs bigger bets
+    const foldThreshold = 0.25 + (pct * 0.15); // bigger bet = more folds
+    const villainCalls = Math.random() > foldThreshold;
     if (villainCalls) {
       newState.actions = [
         ...newState.actions,
