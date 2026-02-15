@@ -10,7 +10,7 @@ import { PokerTable } from '@/components/poker/PokerTable';
 import { ActionButtons } from '@/components/poker/ActionButtons';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
-import { generateCardsFromHand, CardType } from '@/components/poker/PlayingCard';
+import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
 import { TrainingModeSelector, TrainingMode } from '@/components/poker/TrainingModeSelector';
 import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '@/components/poker/BountyConfig';
 import { calculateBountyMultiplier } from '@/data/gtoRanges';
@@ -1037,6 +1037,13 @@ export default function TrainPage() {
                 return positions;
               })()}
             />
+
+            {/* Hero cards display above actions */}
+            {handState.heroCards && handState.heroCards.length > 0 && (phase === 'playing' || phase === 'postflop') && (
+              <div className="flex justify-center">
+                <HandDisplay cards={handState.heroCards} size="md" />
+              </div>
+            )}
 
             {/* Action buttons - hidden in review/postflop mode */}
             {phase === 'playing' && (
