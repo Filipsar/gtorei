@@ -17,7 +17,7 @@ import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
-import { initializeHandState, getVillainPosition, getScenarioDescription, processPostflopAction, HandState, Street } from '@/data/handState';
+import { initializeHandState, getVillainPosition, getScenarioDescription, processHeroAction, processPostflopAction, HandState, Street } from '@/data/handState';
 import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
@@ -378,12 +378,17 @@ export default function TrainPage() {
 
   // Handle closing feedback in simulation mode — transition to postflop
   const handleFeedbackClose = useCallback(() => {
-    if (scenario === 'simulation' && handState && !handState.isHandComplete && lastFeedback?.userAction !== 'fold') {
-      // Continue to post-flop play
-      if (handState.awaitingPostflopAction) {
+    if (scenario === 'simulation' && handState && lastFeedback?.userAction && lastFeedback.userAction !== 'fold') {
+      // Process the hero's preflop action to advance hand state
+      const newState = processHeroAction(handState, lastFeedback.userAction, scenario);
+      setHandState(newState);
+      
+      if (newState.isHandComplete) {
+        setPhase('review');
+      } else if (newState.awaitingPostflopAction) {
         setPhase('postflop');
       } else {
-        setPhase('review');
+        setPhase('postflop');
       }
     } else {
       setPhase('review');
