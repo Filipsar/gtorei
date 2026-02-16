@@ -466,7 +466,22 @@ export default function TrainPage() {
 
   // Handle closing feedback in simulation mode — transition to postflop with delay
   const handleFeedbackClose = useCallback(() => {
-    if (scenario === 'simulation' && handState && lastFeedback?.userAction && lastFeedback.userAction !== 'fold') {
+    if (scenario === 'simulation' && handState && lastFeedback?.userAction) {
+      const isCorrect = lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct';
+      
+      // If hero made wrong preflop decision, end simulation — don't allow continuing
+      if (!isCorrect) {
+        applyPendingScore();
+        setPhase('review');
+        return;
+      }
+      
+      if (lastFeedback.userAction === 'fold') {
+        applyPendingScore();
+        setPhase('review');
+        return;
+      }
+      
       const newState = processHeroAction(handState, lastFeedback.userAction, scenario);
       setHandState(newState);
       
@@ -481,10 +496,7 @@ export default function TrainPage() {
         }, 500);
       }
     } else {
-      // Fold in simulation or non-simulation — apply pending score if exists
-      if (scenario === 'simulation') {
-        applyPendingScore();
-      }
+      // Non-simulation — go to review
       setPhase('review');
     }
   }, [scenario, handState, lastFeedback, applyPendingScore]);
@@ -1167,10 +1179,24 @@ export default function TrainPage() {
             {/* Post-flop action buttons for simulation mode */}
             {phase === 'postflop' && handState.isSimulation && !handState.isHandComplete && (
               <div className="space-y-3">
-                <div className="text-center">
+                <div className="text-center space-y-1">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {handState.street} — Sua vez
                   </span>
+                  {/* Show last villain action prominently */}
+                  {handState.lastVillainAction && (
+                    <div className="flex justify-center">
+                      <div className="bg-destructive/20 border border-destructive/40 text-destructive-foreground px-3 py-1.5 rounded-lg text-sm font-semibold">
+                        Vilão: {handState.lastVillainAction}
+                      </div>
+                    </div>
+                  )}
+                  {/* Stack info */}
+                  <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+                    <span>Seu stack: <strong className="text-foreground">{handState.heroStack.toFixed(1)} BB</strong></span>
+                    <span>Vilão stack: <strong className="text-foreground">{(handState.villainStack || 0).toFixed(1)} BB</strong></span>
+                    <span>Pot: <strong className="text-primary">{handState.pot.toFixed(1)} BB</strong></span>
+                  </div>
                 </div>
 
                 {/* Bet sizing selector - GGPoker style */}
@@ -1180,22 +1206,31 @@ export default function TrainPage() {
                     { label: '50%', value: 0.5 },
                     { label: '75%', value: 0.75 },
                     { label: '100%', value: 1.0 },
-                  ].map(size => (
-                    <Button
-                      key={size.label}
-                      variant={selectedBetSize === size.value ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedBetSize(size.value)}
-                      className={cn(
-                        'min-w-[3rem] text-xs',
-                        selectedBetSize === size.value && 'bg-primary text-primary-foreground'
-                      )}
-                    >
-                      {size.label}
-                    </Button>
-                  ))}
+                  ].map(size => {
+                    const betAmount = Math.min(
+                      Math.round(handState.pot * size.value * 10) / 10,
+                      Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
+                    );
+                    return (
+                      <Button
+                        key={size.label}
+                        variant={selectedBetSize === size.value ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedBetSize(size.value)}
+                        className={cn(
+                          'min-w-[3rem] text-xs',
+                          selectedBetSize === size.value && 'bg-primary text-primary-foreground'
+                        )}
+                      >
+                        {size.label}
+                      </Button>
+                    );
+                  })}
                   <span className="text-xs text-muted-foreground ml-1">
-                    {(handState.pot * selectedBetSize).toFixed(1)} BB
+                    {Math.min(
+                      Math.round(handState.pot * selectedBetSize * 10) / 10,
+                      Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
+                    ).toFixed(1)} BB
                   </span>
                 </div>
 
@@ -1214,7 +1249,10 @@ export default function TrainPage() {
                     className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
                   >
                     <span className="text-lg">💰</span>
-                    <span className="text-xs sm:text-sm">Bet {(handState.pot * selectedBetSize).toFixed(1)}</span>
+                    <span className="text-xs sm:text-sm">Bet {Math.min(
+                      Math.round(handState.pot * selectedBetSize * 10) / 10,
+                      Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
+                    ).toFixed(1)}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -1282,7 +1320,7 @@ export default function TrainPage() {
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={scenario === 'simulation' && !handState.isHandComplete && lastFeedback.userAction !== 'fold' ? () => { handleFeedbackClose(); } : nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} previousResult={previousHandResult ? {
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points

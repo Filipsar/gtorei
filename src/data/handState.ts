@@ -4,6 +4,7 @@
 import { ActionType, Position, Scenario, POSITIONS, RANKS, getHandData } from './gtoRanges';
 import { CardType } from '@/components/poker/PlayingCard';
 import { compareHands, HandEvaluation } from './handEvaluator';
+import { makeVillainPostflopDecision, VillainDecision } from './villainGTO';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
@@ -34,6 +35,7 @@ export interface HandState {
   villainEval?: HandEvaluation;
   isSimulation?: boolean;
   awaitingPostflopAction?: boolean;
+  lastVillainAction?: string; // Description of last villain action for display
 }
 
 // Gerar um deck completo
@@ -338,6 +340,7 @@ export function processPostflopAction(
   betSizePct?: number // percentual do pot (0.33, 0.5, 0.75, 1.0)
 ): HandState {
   const newState = { ...state, awaitingPostflopAction: false };
+  const effectiveStack = Math.min(state.heroStack, state.villainStack || state.heroStack);
   
   newState.actions = [
     ...state.actions,
@@ -351,62 +354,145 @@ export function processPostflopAction(
   }
   
   if (action === 'allin') {
-    newState.pot = state.pot + state.heroStack;
+    const allinAmount = Math.min(state.heroStack, state.villainStack || state.heroStack);
+    newState.pot = state.pot + allinAmount;
+    newState.heroStack = state.heroStack - allinAmount;
     // Villain calls all-in — go to showdown via runout
     newState.actions = [
       ...newState.actions,
       { position: state.villainPosition!, action: 'call' }
     ];
+    newState.villainStack = (state.villainStack || 0) - allinAmount;
+    newState.lastVillainAction = 'Call All-in';
     return runoutToShowdown(newState);
   }
   
   if (action === 'bet') {
     const pct = betSizePct || 0.5;
-    const betSize = Math.round(state.pot * pct * 10) / 10;
+    const rawBet = state.pot * pct;
+    const betSize = Math.min(Math.round(rawBet * 10) / 10, effectiveStack);
     newState.pot = state.pot + betSize;
-    newState.actions = [...newState.actions];
+    newState.heroStack = state.heroStack - betSize;
     
-    // Villain response to bet — fold more vs bigger bets
-    const foldThreshold = 0.25 + (pct * 0.15); // bigger bet = more folds
-    const villainCalls = Math.random() > foldThreshold;
-    if (villainCalls) {
+    // Villain GTO response to bet
+    const villainIsIP = isVillainInPosition(state);
+    const decision = makeVillainPostflopDecision(
+      state.villainCards || [],
+      state.communityCards,
+      state.street,
+      newState.pot,
+      state.villainStack || 0,
+      newState.heroStack,
+      betSize,
+      villainIsIP,
+      []
+    );
+    
+    if (decision.action === 'call') {
+      const callAmount = Math.min(betSize, state.villainStack || 0);
       newState.actions = [
         ...newState.actions,
-        { position: state.villainPosition!, action: 'call' }
+        { position: state.villainPosition!, action: 'call', amount: callAmount }
       ];
-      newState.pot += betSize;
+      newState.pot += callAmount;
+      newState.villainStack = (state.villainStack || 0) - callAmount;
+      newState.lastVillainAction = `Call ${callAmount.toFixed(1)}BB`;
       return dealNextStreet(newState);
+    } else if (decision.action === 'raise') {
+      const raiseSize = Math.min((decision.betSizePct || 0.75) * newState.pot + betSize, state.villainStack || 0);
+      newState.actions = [
+        ...newState.actions,
+        { position: state.villainPosition!, action: 'raise', amount: raiseSize }
+      ];
+      newState.pot += raiseSize;
+      newState.villainStack = (state.villainStack || 0) - raiseSize;
+      newState.lastVillainAction = `Raise ${raiseSize.toFixed(1)}BB`;
+      newState.awaitingPostflopAction = true;
+      return newState;
     } else {
+      // Villain folds
       newState.actions = [
         ...newState.actions,
         { position: state.villainPosition!, action: 'fold' }
       ];
       newState.isHandComplete = true;
       newState.result = 'hero_wins';
+      newState.lastVillainAction = 'Fold';
       return newState;
     }
   }
   
-  // Check
-  // Villain checks back or bets
-  const villainBets = Math.random() > 0.55;
-  if (villainBets) {
-    const villainBetSize = Math.round(state.pot * 0.5 * 10) / 10;
+  // Check action
+  // On river, if hero checks, villain gets one action and hand ends
+  const isRiver = state.street === 'river';
+  
+  const villainIsIP = isVillainInPosition(state);
+  const decision = makeVillainPostflopDecision(
+    state.villainCards || [],
+    state.communityCards,
+    state.street,
+    state.pot,
+    state.villainStack || 0,
+    state.heroStack,
+    0, // hero checked
+    villainIsIP,
+    []
+  );
+  
+  if (decision.action === 'bet') {
+    const rawBetSize = (decision.betSizePct || 0.5) * state.pot;
+    const villainBetSize = Math.min(Math.round(rawBetSize * 10) / 10, state.villainStack || 0, state.heroStack);
     newState.actions = [
       ...newState.actions,
       { position: state.villainPosition!, action: 'bet', amount: villainBetSize }
     ];
     newState.pot += villainBetSize;
-    // Hero must respond — set awaiting action again
+    newState.villainStack = (state.villainStack || 0) - villainBetSize;
+    newState.lastVillainAction = `Bet ${villainBetSize.toFixed(1)}BB`;
+    // Hero must respond
     newState.awaitingPostflopAction = true;
     return newState;
   } else {
+    // Villain checks back
     newState.actions = [
       ...newState.actions,
       { position: state.villainPosition!, action: 'check' }
     ];
+    newState.lastVillainAction = 'Check';
+    
+    if (isRiver) {
+      // River check-check = showdown immediately
+      return goToShowdown(newState);
+    }
     return dealNextStreet(newState);
   }
+}
+
+// Helper: is villain in position relative to hero
+function isVillainInPosition(state: HandState): boolean {
+  const villainIdx = POSITIONS.indexOf(state.villainPosition || 'UTG');
+  const heroIdx = POSITIONS.indexOf(state.heroPosition);
+  // Higher index = later position = in position postflop (except blinds act first)
+  return villainIdx > heroIdx;
+}
+
+// Go directly to showdown (for river check-check)
+function goToShowdown(state: HandState): HandState {
+  const newState = { ...state };
+  newState.street = 'showdown';
+  newState.isHandComplete = true;
+  newState.activeBets = [];
+  
+  if (state.heroCards && state.villainCards) {
+    const visibleCards = newState.communityCards.slice(0, 5);
+    const result = compareHands(state.heroCards, state.villainCards, visibleCards);
+    newState.result = result.winner;
+    newState.heroEval = result.heroEval;
+    newState.villainEval = result.villainEval;
+  } else {
+    newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
+  }
+  return newState;
 }
 
 // Simular resposta do villain
