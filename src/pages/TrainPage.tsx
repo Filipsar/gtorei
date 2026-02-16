@@ -1157,16 +1157,17 @@ export default function TrainPage() {
               })()}
             />
 
-            {/* Hero cards display above actions */}
-            {handState.heroCards && handState.heroCards.length > 0 && (phase === 'playing' || phase === 'postflop' || phase === 'transitioning') && (
-              <div className="flex justify-center">
-                <HandDisplay cards={handState.heroCards} size="md" />
-              </div>
-            )}
-
             {/* Action buttons - hidden in review/postflop mode */}
             {phase === 'playing' && (
-              <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} />
+              <>
+                {/* Hero cards display above actions */}
+                {handState.heroCards && handState.heroCards.length > 0 && (
+                  <div className="flex justify-center">
+                    <HandDisplay cards={handState.heroCards} size="md" />
+                  </div>
+                )}
+                <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} />
+              </>
             )}
 
             {/* Transitioning indicator */}
@@ -1189,6 +1190,12 @@ export default function TrainPage() {
                       <div className="bg-destructive/20 border border-destructive/40 text-destructive-foreground px-3 py-1.5 rounded-lg text-sm font-semibold">
                         Vilão: {handState.lastVillainAction}
                       </div>
+                    </div>
+                  )}
+                  {/* Hero cards display above postflop actions */}
+                  {handState.heroCards && handState.heroCards.length > 0 && (
+                    <div className="flex justify-center pt-1">
+                      <HandDisplay cards={handState.heroCards} size="md" />
                     </div>
                   )}
                   {/* Stack info */}
