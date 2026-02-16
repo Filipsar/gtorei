@@ -37,6 +37,8 @@ interface DecisionFeedbackProps {
   };
   // Flag para modo de revisão (após clicar em "Rever")
   isReviewMode?: boolean;
+  // Flag para simulação — controls button behavior
+  isSimulation?: boolean;
 }
 
 const feedbackConfig: Record<FeedbackType, {
@@ -102,6 +104,7 @@ export function DecisionFeedback({
   alreadyPlayed = false,
   previousResult,
   isReviewMode = false,
+  isSimulation = false,
 }: DecisionFeedbackProps) {
   const [showRangeModal, setShowRangeModal] = useState(false);
   
@@ -239,13 +242,16 @@ export function DecisionFeedback({
 
             {/* Actions - sticky on mobile */}
             <div className="flex gap-3 sticky bottom-0 bg-card pt-3 pb-1 -mx-1 px-1 border-t border-border mt-2">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="flex-1 h-12 text-base"
-              >
-                Rever
-              </Button>
+              {/* In simulation mode when wrong, don't allow "Rever" — only "Próxima Mão" */}
+              {!(isSimulation && !isCorrect) && (
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1 h-12 text-base"
+                >
+                  {isSimulation && isCorrect ? 'Continuar Simulação' : 'Rever'}
+                </Button>
+              )}
               {scenario && position && stack && (
                 <Button
                   variant="outline"
