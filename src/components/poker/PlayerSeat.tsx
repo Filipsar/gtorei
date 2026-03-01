@@ -124,9 +124,9 @@ export function PlayerSeat({
         </div>
       )}
 
-      {/* Cartas do jogador */}
-      {cards && cards.length > 0 && (
-        <div className="mt-1">
+      {/* Cartas do jogador - compactas para não atrapalhar a mesa */}
+      {cards && cards.length > 0 && !isHero && (
+        <div className="mt-0.5">
           <HandDisplay cards={cards} size="xs" faceDown={!showCards} />
         </div>
       )}

@@ -161,14 +161,14 @@ export function PokerTable({
 
           {/* Community Cards */}
           {street !== 'preflop' && communityCards.length > 0 && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1]">
+            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5]">
               <CommunityCards cards={communityCards} street={street} />
             </div>
           )}
 
           {/* Pot no centro - estilo GGPoker */}
           {pot > 0 && (
-            <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0">
+            <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-[4]">
               <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-border/30 shadow-lg">
                 <div className="flex -space-x-1">
                   <div className="w-3 h-3 rounded-full bg-red-500 border border-red-700" />
