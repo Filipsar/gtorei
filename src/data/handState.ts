@@ -302,6 +302,7 @@ export function processHeroAction(
       { position: state.heroPosition, amount: state.heroStack }
     ];
     newState.pot = state.pot + state.heroStack;
+    newState.heroStack = 0;
     
     // Simular resposta do villain
     return simulateVillainResponse(newState, action, scenario);
@@ -314,6 +315,7 @@ export function processHeroAction(
       0
     );
     newState.pot = state.pot + amountToCall;
+    newState.heroStack = state.heroStack - amountToCall;
     
     // Em cenários VS ou simulação, após call, lidamos o flop
     if (scenario !== 'openRaise') {
@@ -322,12 +324,13 @@ export function processHeroAction(
   }
   
   if (action === 'raise') {
-    const raiseAmount = state.pot * 2; // Raise de 2x pot simplificado
+    const raiseAmount = Math.min(state.pot * 2, state.heroStack); // Raise de 2x pot, limitado pelo stack
     newState.activeBets = [
       ...state.activeBets.filter(b => b.position !== state.heroPosition),
       { position: state.heroPosition, amount: raiseAmount }
     ];
     newState.pot = state.pot + raiseAmount;
+    newState.heroStack = state.heroStack - raiseAmount;
     
     return simulateVillainResponse(newState, action, scenario);
   }
