@@ -4,7 +4,7 @@
 import { ActionType, Position, Scenario, POSITIONS, RANKS, getHandData } from './gtoRanges';
 import { CardType } from '@/components/poker/PlayingCard';
 import { compareHands, HandEvaluation } from './handEvaluator';
-import { makeVillainPostflopDecision, VillainDecision } from './villainGTO';
+import { makeVillainPostflopDecision, makeVillainPreflopDecision, VillainDecision, VillainMemory, createVillainMemory, updateMemory } from './villainGTO';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
@@ -35,7 +35,8 @@ export interface HandState {
   villainEval?: HandEvaluation;
   isSimulation?: boolean;
   awaitingPostflopAction?: boolean;
-  lastVillainAction?: string; // Description of last villain action for display
+  lastVillainAction?: string;
+  villainMemory?: VillainMemory;
 }
 
 // Gerar um deck completo
@@ -271,6 +272,7 @@ export function initializeHandState(
     isHandComplete: false,
     isSimulation,
     awaitingPostflopAction: false,
+    villainMemory: createVillainMemory(),
   };
 }
 
@@ -342,6 +344,14 @@ export function processPostflopAction(
   const newState = { ...state, awaitingPostflopAction: false };
   const effectiveStack = Math.min(state.heroStack, state.villainStack || state.heroStack);
   
+  // Update memory with hero action
+  newState.villainMemory = updateMemory(
+    state.villainMemory || createVillainMemory(),
+    state.street,
+    action,
+    false // hero action
+  );
+  
   newState.actions = [
     ...state.actions,
     { position: state.heroPosition, action, isHero: true }
@@ -357,13 +367,35 @@ export function processPostflopAction(
     const allinAmount = Math.min(state.heroStack, state.villainStack || state.heroStack);
     newState.pot = state.pot + allinAmount;
     newState.heroStack = state.heroStack - allinAmount;
-    // Villain calls all-in — go to showdown via runout
-    newState.actions = [
-      ...newState.actions,
-      { position: state.villainPosition!, action: 'call' }
-    ];
+    
+    // Villain decides whether to call all-in using GTO
+    const villainIsIP = isVillainInPosition(state);
+    const decision = makeVillainPostflopDecision(
+      state.villainCards || [],
+      state.communityCards,
+      state.street,
+      newState.pot,
+      state.villainStack || 0,
+      0, // hero is all-in
+      allinAmount,
+      villainIsIP,
+      [],
+      newState.villainMemory,
+    );
+    
+    if (decision.action === 'fold') {
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'fold' }];
+      newState.isHandComplete = true;
+      newState.result = 'hero_wins';
+      newState.lastVillainAction = 'Fold';
+      return newState;
+    }
+    
+    // Villain calls all-in
+    newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call' }];
     newState.villainStack = (state.villainStack || 0) - allinAmount;
     newState.lastVillainAction = 'Call All-in';
+    newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'call', true);
     return runoutToShowdown(newState);
   }
   
@@ -385,45 +417,39 @@ export function processPostflopAction(
       newState.heroStack,
       betSize,
       villainIsIP,
-      []
+      [],
+      newState.villainMemory,
     );
     
     if (decision.action === 'call') {
       const callAmount = Math.min(betSize, state.villainStack || 0);
-      newState.actions = [
-        ...newState.actions,
-        { position: state.villainPosition!, action: 'call', amount: callAmount }
-      ];
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call', amount: callAmount }];
       newState.pot += callAmount;
       newState.villainStack = (state.villainStack || 0) - callAmount;
       newState.lastVillainAction = `Call ${callAmount.toFixed(1)}BB`;
+      newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'call', true, callAmount);
       return dealNextStreet(newState);
     } else if (decision.action === 'raise') {
       const raiseSize = Math.min((decision.betSizePct || 0.75) * newState.pot + betSize, state.villainStack || 0);
-      newState.actions = [
-        ...newState.actions,
-        { position: state.villainPosition!, action: 'raise', amount: raiseSize }
-      ];
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'raise', amount: raiseSize }];
       newState.pot += raiseSize;
       newState.villainStack = (state.villainStack || 0) - raiseSize;
       newState.lastVillainAction = `Raise ${raiseSize.toFixed(1)}BB`;
+      newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'raise', true, raiseSize);
       newState.awaitingPostflopAction = true;
       return newState;
     } else {
       // Villain folds
-      newState.actions = [
-        ...newState.actions,
-        { position: state.villainPosition!, action: 'fold' }
-      ];
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'fold' }];
       newState.isHandComplete = true;
       newState.result = 'hero_wins';
       newState.lastVillainAction = 'Fold';
+      newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
       return newState;
     }
   }
   
   // Check action
-  // On river, if hero checks, villain gets one action and hand ends
   const isRiver = state.street === 'river';
   
   const villainIsIP = isVillainInPosition(state);
@@ -436,32 +462,27 @@ export function processPostflopAction(
     state.heroStack,
     0, // hero checked
     villainIsIP,
-    []
+    [],
+    newState.villainMemory,
   );
   
   if (decision.action === 'bet') {
     const rawBetSize = (decision.betSizePct || 0.5) * state.pot;
     const villainBetSize = Math.min(Math.round(rawBetSize * 10) / 10, state.villainStack || 0, state.heroStack);
-    newState.actions = [
-      ...newState.actions,
-      { position: state.villainPosition!, action: 'bet', amount: villainBetSize }
-    ];
+    newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'bet', amount: villainBetSize }];
     newState.pot += villainBetSize;
     newState.villainStack = (state.villainStack || 0) - villainBetSize;
     newState.lastVillainAction = `Bet ${villainBetSize.toFixed(1)}BB`;
-    // Hero must respond
+    newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'bet', true, villainBetSize);
     newState.awaitingPostflopAction = true;
     return newState;
   } else {
     // Villain checks back
-    newState.actions = [
-      ...newState.actions,
-      { position: state.villainPosition!, action: 'check' }
-    ];
+    newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'check' }];
     newState.lastVillainAction = 'Check';
+    newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'check', true);
     
     if (isRiver) {
-      // River check-check = showdown immediately
       return goToShowdown(newState);
     }
     return dealNextStreet(newState);
@@ -495,7 +516,7 @@ function goToShowdown(state: HandState): HandState {
   return newState;
 }
 
-// Simular resposta do villain
+// Simular resposta do villain (GTO-based using real hand)
 function simulateVillainResponse(
   state: HandState,
   heroAction: ActionType,
@@ -503,16 +524,34 @@ function simulateVillainResponse(
 ): HandState {
   const newState = { ...state };
   
-  // Simplificado: villain call 60% das vezes, fold 40%
-  const villainCalls = Math.random() > 0.4;
+  // Use GTO preflop decision based on villain's actual cards
+  const effectiveStack = Math.min(state.heroStack, state.villainStack || state.heroStack);
+  const decision = makeVillainPreflopDecision(
+    state.villainCards || [],
+    heroAction,
+    state.pot,
+    effectiveStack,
+  );
   
-  if (villainCalls) {
+  // Update memory
+  const memory = updateMemory(
+    state.villainMemory || createVillainMemory(),
+    'preflop',
+    decision.calls ? 'call' : 'fold',
+    true
+  );
+  newState.villainMemory = memory;
+  
+  if (decision.calls) {
     newState.actions = [
       ...state.actions,
       { position: state.villainPosition!, action: 'call' }
     ];
     
-    // Villain call - vamos ao flop
+    // Update villain stack for the call
+    const callAmount = Math.max(...state.activeBets.map(b => b.amount), 0);
+    newState.villainStack = (state.villainStack || effectiveStack) - callAmount;
+    
     return dealNextStreet(newState);
   } else {
     newState.actions = [
