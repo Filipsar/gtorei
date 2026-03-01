@@ -393,6 +393,24 @@ export default function TrainPage() {
       handData,
       feedback
     });
+
+    // In simulation mode, skip popup for correct non-fold actions — continue directly to postflop
+    if (isSimulation && isCorrect && action !== 'fold') {
+      const newState = processHeroAction(handState, action, scenario);
+      setHandState(newState);
+      
+      if (newState.isHandComplete) {
+        // Hand completed at preflop (e.g., villain folds) — score will be applied via useEffect
+        setPhase('review');
+      } else {
+        setPhase('transitioning');
+        setTimeout(() => {
+          setPhase('postflop');
+        }, 500);
+      }
+      return;
+    }
+
     setPhase('feedback');
   }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore]);
 
@@ -464,7 +482,13 @@ export default function TrainPage() {
     setPendingSimulationScore(null);
   }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements]);
 
-  // Handle closing feedback in simulation mode — transition to postflop with delay
+  // Auto-apply pending simulation score when hand completes and enters review
+  useEffect(() => {
+    if (phase === 'review' && pendingSimulationScore && handState?.isHandComplete) {
+      applyPendingScore();
+    }
+  }, [phase, pendingSimulationScore, handState?.isHandComplete, applyPendingScore]);
+
   const handleFeedbackClose = useCallback(() => {
     if (scenario === 'simulation' && handState && lastFeedback?.userAction) {
       const isCorrect = lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct';
@@ -1174,8 +1198,9 @@ export default function TrainPage() {
             {/* Post-flop action buttons for simulation mode */}
             {phase === 'postflop' && handState.isSimulation && !handState.isHandComplete && (
               <div className="space-y-3">
-                <div className="text-center space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <div className="text-center space-y-2">
+                  {/* Street indicator - above everything */}
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider block">
                     {handState.street} — Sua vez
                   </span>
                   {/* Show last villain action prominently */}
@@ -1188,12 +1213,12 @@ export default function TrainPage() {
                   )}
                   {/* Hero cards display above postflop actions */}
                   {handState.heroCards && handState.heroCards.length > 0 && (
-                    <div className="flex justify-center pt-1">
+                    <div className="flex justify-center pt-2">
                       <HandDisplay cards={handState.heroCards} size="md" />
                     </div>
                   )}
                   {/* Stack info */}
-                  <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex justify-center gap-4 text-xs text-muted-foreground pt-1">
                     <span>Seu stack: <strong className="text-foreground">{handState.heroStack.toFixed(1)} BB</strong></span>
                     <span>Vilão stack: <strong className="text-foreground">{(handState.villainStack || 0).toFixed(1)} BB</strong></span>
                     <span>Pot: <strong className="text-primary">{handState.pot.toFixed(1)} BB</strong></span>
