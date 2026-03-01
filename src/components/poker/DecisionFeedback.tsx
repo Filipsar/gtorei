@@ -249,7 +249,7 @@ export function DecisionFeedback({
                   onClick={onClose}
                   className="flex-1 h-12 text-base"
                 >
-                  {isSimulation && isCorrect ? 'Continuar Simulação' : 'Rever'}
+                  {isSimulation && isCorrect && userAction !== 'fold' ? 'Continuar Simulação' : 'Rever'}
                 </Button>
               )}
               {scenario && position && stack && (
