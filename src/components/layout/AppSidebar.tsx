@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -26,6 +26,7 @@ const navItems = [
 { title: 'Análise', url: '/analise', icon: BarChart3, locked: false },
 { title: 'Ranking', url: '/ranking', icon: Trophy, locked: false },
 { title: 'Conquistas', url: '/conquistas', icon: Award, locked: false },
+{ title: 'Comunidade', url: '/comunidade', icon: Users, locked: false },
 { title: 'Favoritos', url: '/favoritos', icon: Heart, locked: false },
 { title: 'Perfil', url: '/perfil', icon: User, locked: false },
 { title: 'Buscar', url: '/buscar', icon: Search, locked: false },
