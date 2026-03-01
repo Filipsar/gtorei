@@ -707,16 +707,10 @@ export default function TrainPage() {
           if (!hasEarlier) invalid.push(pos);
           break;
         case 'vs3bet':
-          // First position can't face 3-bet (they open, but in shorthanded they're the opener not the 3-bet facer)
-          // Also need at least someone before AND after: hero must NOT be first, and must have opened then been 3-bet
-          // In shorthanded (HU/Three Hand): only non-first, non-last positions or BB can face 3-bet
-          if (isFirst) {
-            invalid.push(pos);
-          } else if (!hasLater && available.length <= 3) {
-            // In shorthanded, last position (BB) CAN face 3-bet (BTN opens, SB 3-bets, BB faces it)
-            // So BB is valid — don't block
-          } else if (!hasLater && available.length > 3) {
-            // In full ring, last position can't be 3-bet
+          // Hero opens, then someone AFTER hero 3-bets. So hero needs someone acting after them.
+          // First position can't face 3-bet (no one opened before them to re-raise)
+          // Last position can't face 3-bet (no one acts after them to 3-bet)
+          if (isFirst || !hasLater) {
             invalid.push(pos);
           }
           break;
