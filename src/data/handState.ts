@@ -429,6 +429,7 @@ export function processPostflopAction(
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call', amount: callAmount }];
       newState.pot += callAmount;
       newState.villainStack = (state.villainStack || 0) - callAmount;
+      newState.activeBets = [];
       newState.lastVillainAction = `Call ${callAmount.toFixed(1)}BB`;
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'call', true, callAmount);
       return dealNextStreet(newState);
@@ -437,7 +438,11 @@ export function processPostflopAction(
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'raise', amount: raiseSize }];
       newState.pot += raiseSize;
       newState.villainStack = (state.villainStack || 0) - raiseSize;
+      newState.activeBets = [
+        { position: state.villainPosition!, amount: raiseSize }
+      ];
       newState.lastVillainAction = `Raise ${raiseSize.toFixed(1)}BB`;
+      newState.villainAction = { action: 'Raise', amount: raiseSize };
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'raise', true, raiseSize);
       newState.awaitingPostflopAction = true;
       return newState;
@@ -446,6 +451,7 @@ export function processPostflopAction(
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'fold' }];
       newState.isHandComplete = true;
       newState.result = 'hero_wins';
+      newState.activeBets = [];
       newState.lastVillainAction = 'Fold';
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
       return newState;
@@ -475,7 +481,11 @@ export function processPostflopAction(
     newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'bet', amount: villainBetSize }];
     newState.pot += villainBetSize;
     newState.villainStack = (state.villainStack || 0) - villainBetSize;
+    newState.activeBets = [
+      { position: state.villainPosition!, amount: villainBetSize }
+    ];
     newState.lastVillainAction = `Bet ${villainBetSize.toFixed(1)}BB`;
+    newState.villainAction = { action: 'Bet', amount: villainBetSize };
     newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'bet', true, villainBetSize);
     newState.awaitingPostflopAction = true;
     return newState;
