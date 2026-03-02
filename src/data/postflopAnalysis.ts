@@ -67,16 +67,24 @@ function analyzeBoardTexture(board: CardType[]): BoardTextureInfo {
   }
   const connectivity = Math.max(0, 1 - gaps / (values.length * 3));
 
-  const isMonotone = maxSuitCount >= 3;
+  const isMonotone = board.length >= 3 && maxSuitCount >= board.length; // All cards same suit
   const isTwoTone = maxSuitCount === 2 && !isMonotone;
+  const isRainbow = Object.keys(suitCounts).length >= board.length; // All different suits
   const flushDrawPossible = maxSuitCount >= 2;
   const straightDrawPossible = connectivity > 0.3;
 
   let type: 'dry' | 'semi-wet' | 'wet' = 'dry';
-  let label = 'Board Seco';
-  if (isMonotone || (connectivity > 0.6 && !isPaired)) {
+  let label = isRainbow ? 'Board Rainbow (Seco)' : 'Board Seco';
+  if (isMonotone) {
     type = 'wet';
-    label = isMonotone ? 'Board Monotone (Wet)' : 'Board Conectado (Wet)';
+    label = 'Board Monotone (Wet)';
+  } else if (maxSuitCount >= 3 && board.length >= 4) {
+    // 3+ of same suit on turn/river = flush possible
+    type = 'wet';
+    label = 'Board com Flush Possível (Wet)';
+  } else if (!isRainbow && (connectivity > 0.6 && !isPaired)) {
+    type = 'wet';
+    label = 'Board Conectado (Wet)';
   } else if (isTwoTone || connectivity > 0.3) {
     type = 'semi-wet';
     label = 'Board Semi-Wet';
@@ -303,6 +311,8 @@ function getVerdict(tier: number, action: string, boardTexture: BoardTextureInfo
   // Board texture context
   if (boardTexture.isMonotone && tier < 7) {
     reasons.push('Atenção: board monotone — flush possível');
+  } else if (boardTexture.flushDrawPossible && boardTexture.type === 'wet' && !boardTexture.isMonotone && tier < 7) {
+    reasons.push('Atenção: flush possível no board');
   }
   if (boardTexture.isPaired && tier < 6) {
     reasons.push('Board pareado — full house possível para o adversário');

@@ -1164,6 +1164,14 @@ export default function TrainPage() {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 space-y-3" side="bottom" align="end">
+                    {/* Hand ID */}
+                    {currentUniqueHandId && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground">ID</span>
+                        <span className="text-xs font-mono text-foreground select-all">{currentUniqueHandId}</span>
+                      </div>
+                    )}
+
                     {/* Street */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold uppercase text-muted-foreground">Street</span>
