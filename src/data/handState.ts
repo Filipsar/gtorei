@@ -714,15 +714,16 @@ function dealNextStreet(state: HandState): HandState {
 function runoutToShowdown(state: HandState): HandState {
   const newState = { ...state };
   
-  // Gerar board se necessário
-  if (state.communityCards.length === 0) {
+  // Gerar board completo se necessário (completar até 5 cartas)
+  if (state.communityCards.length < 5) {
     const deck = generateDeck();
-    const usedCards = [...state.heroCards, ...(state.villainCards || [])];
+    const usedCards = [...state.heroCards, ...(state.villainCards || []), ...state.communityCards];
     const availableCards = deck.filter(c => 
       !usedCards.some(used => used.rank === c.rank && used.suit === c.suit)
     );
     const shuffledDeck = shuffle(availableCards);
-    newState.communityCards = shuffledDeck.slice(0, 5);
+    const remaining = 5 - state.communityCards.length;
+    newState.communityCards = [...state.communityCards, ...shuffledDeck.slice(0, remaining)];
   }
   
   newState.street = 'showdown';
