@@ -14,20 +14,20 @@
    newConsecutiveErrors: number;
  }
  
- // Multiplicadores por nível (1 = Iniciante, 7 = Lenda)
- const LEVEL_MULTIPLIERS = {
-   gain: [1.0, 1.0, 0.9, 0.7, 0.5, 0.25, 0.25], // Quanto maior nível, menos ganha
-   loss: [1.0, 1.1, 1.2, 1.3, 1.5, 1.7, 2.0], // Quanto maior nível, mais perde
- };
- 
- // Base points for each feedback type
- const BASE_POINTS: Record<FeedbackType, number> = {
-   best: 15,
-   correct: 10,
-   inaccuracy: 6,
-   mistake: 3,
-   blunder: -30,
- };
+// Multiplicadores por nível (1 = Iniciante, 7 = Lenda)
+const LEVEL_MULTIPLIERS = {
+  gain: [1.3, 1.15, 1.0, 0.8, 0.6, 0.35, 0.2], // Iniciante ganha muito, Lenda ganha pouco
+  loss: [0.3, 0.5, 0.8, 1.0, 1.4, 1.8, 2.5],    // Iniciante perde pouco, Lenda perde muito
+};
+
+// Base points for each feedback type
+const BASE_POINTS: Record<FeedbackType, number> = {
+  best: 15,
+  correct: 10,
+  inaccuracy: -3,
+  mistake: -8,
+  blunder: -30,
+};
  
  export function calculatePoints(
    feedback: FeedbackType,
@@ -59,10 +59,7 @@
      newConsecutiveErrors = config.consecutiveErrors + 1;
    }
  
-   // For inaccuracy and mistake, they're "neutral-ish" but still count as errors for streak
-   if (feedback === 'inaccuracy' || feedback === 'mistake') {
-     newConsecutiveErrors = config.consecutiveErrors + 1;
-   }
+    // inaccuracy and mistake are already negative and handled by loss multiplier above
  
    return { points, newConsecutiveErrors };
  }
