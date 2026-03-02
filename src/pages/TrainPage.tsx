@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
 // Locked scenarios (under maintenance)
 const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
@@ -96,15 +97,7 @@ export default function TrainPage() {
     feedback: ReturnType<typeof calculateFeedback>;
   } | null>(null);
   const [selectedBetSize, setSelectedBetSize] = useState(0.5);
-  const [simulationStreetActions, setSimulationStreetActions] = useState<Array<{
-    street: string;
-    heroAction: string;
-    heroAmount?: number;
-    villainAction?: string;
-    villainAmount?: number;
-    pot: number;
-    effectiveStack?: number;
-  }>>([]);
+  const [simulationStreetActions, setSimulationStreetActions] = useState<Array<StreetActionData>>([]);
   const [summaryRangeViewer, setSummaryRangeViewer] = useState<{ open: boolean; stack: number } | null>(null);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -418,6 +411,8 @@ export default function TrainPage() {
         villainAction: villainResponse ? (villainResponse.action === 'call' ? 'Call' : villainResponse.action === 'fold' ? 'Fold' : villainResponse.action) : undefined,
         pot: newState.pot,
         effectiveStack: handState.heroStack,
+        boardCards: [],
+        heroCards: handState.heroCards,
       }]);
       
       setHandState(newState);
@@ -575,6 +570,8 @@ export default function TrainPage() {
       villainAction: villainActionLabel,
       pot: newState.pot,
       effectiveStack: handState.heroStack,
+      boardCards: [...handState.communityCards],
+      heroCards: handState.heroCards,
     }]);
     
     // Show transitioning phase for delay effect
@@ -1403,31 +1400,66 @@ export default function TrainPage() {
                         📋 Resumo da Mão
                       </h3>
                       <div className="space-y-2">
-                        {simulationStreetActions.map((sa, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/50">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-primary uppercase w-14">{sa.street}</span>
-                              <div className="text-sm">
-                                <span className="font-medium">Hero: {sa.heroAction}</span>
-                                {sa.villainAction && (
-                                  <span className="text-muted-foreground ml-2">→ Vilão: {sa.villainAction}</span>
-                                )}
+                        {simulationStreetActions.map((sa, idx) => {
+                          const analysis = analyzeStreetAction(sa);
+                          const isPostflop = sa.street.toLowerCase() !== 'preflop';
+                          return (
+                            <div key={idx} className="rounded-lg border border-border/50 overflow-hidden">
+                              <div className="flex items-center justify-between p-2 bg-muted/50">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-bold text-primary uppercase w-14">{sa.street}</span>
+                                  <div className="text-sm">
+                                    <span className="font-medium">Hero: {sa.heroAction}</span>
+                                    {sa.villainAction && (
+                                      <span className="text-muted-foreground ml-2">→ Vilão: {sa.villainAction}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
+                                  {sa.street === 'Preflop' && handState && (
+                                    <button
+                                      className="p-1 rounded hover:bg-primary/20 transition-colors group relative"
+                                      title="Ver Range GTO"
+                                      onClick={() => setSummaryRangeViewer({ open: true, stack: sa.effectiveStack || handState.heroStack })}
+                                    >
+                                      <BarChart3 className="h-4 w-4 text-primary" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
-                              {sa.street === 'Preflop' && handState && (
-                                <button
-                                  className="p-1 rounded hover:bg-primary/20 transition-colors group relative"
-                                  title="Ver Range GTO"
-                                  onClick={() => setSummaryRangeViewer({ open: true, stack: sa.effectiveStack || handState.heroStack })}
-                                >
-                                  <BarChart3 className="h-4 w-4 text-primary" />
-                                </button>
+                              {/* Post-flop analysis */}
+                              {isPostflop && (
+                                <div className={cn('px-3 py-2 space-y-1', getVerdictBgColor(analysis.verdict))}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm">{analysis.verdictEmoji}</span>
+                                    <span className={cn('text-sm font-semibold', getVerdictColor(analysis.verdict))}>
+                                      {analysis.verdictLabel}
+                                    </span>
+                                    {analysis.handStrength && (
+                                      <span className="text-xs text-muted-foreground">• {analysis.handStrength}</span>
+                                    )}
+                                  </div>
+                                  {analysis.boardTexture && (
+                                    <p className="text-xs text-muted-foreground">
+                                      🃏 {analysis.boardTexture.label}
+                                    </p>
+                                  )}
+                                  {analysis.betSizingAnalysis && (
+                                    <p className="text-xs text-muted-foreground">
+                                      💰 {analysis.betSizingAnalysis}
+                                    </p>
+                                  )}
+                                  {analysis.reasoning.map((r, ri) => (
+                                    <p key={ri} className="text-xs text-muted-foreground">
+                                      → {r}
+                                    </p>
+                                  ))}
+                                </div>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       {/* Preflop GTO result */}
                       {pendingSimulationScore === null && lastFeedback && (
