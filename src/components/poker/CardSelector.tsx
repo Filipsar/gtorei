@@ -22,10 +22,10 @@ interface CardSelectorProps {
 
 const RANKS: Rank[] = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
 const SUITS: { suit: Suit; symbol: string; color: string; bg: string }[] = [
-  { suit: 's', symbol: '♠', color: 'text-slate-900 dark:text-slate-200', bg: 'bg-slate-100 dark:bg-slate-700' },
-  { suit: 'h', symbol: '♥', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950/30' },
-  { suit: 'd', symbol: '♦', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/30' },
-  { suit: 'c', symbol: '♣', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/30' },
+  { suit: 's', symbol: '♠', color: 'text-slate-900 dark:text-slate-100', bg: 'bg-white dark:bg-slate-100' },
+  { suit: 'h', symbol: '♥', color: 'text-red-500', bg: 'bg-white dark:bg-slate-100' },
+  { suit: 'd', symbol: '♦', color: 'text-blue-500', bg: 'bg-white dark:bg-slate-100' },
+  { suit: 'c', symbol: '♣', color: 'text-green-600 dark:text-green-500', bg: 'bg-white dark:bg-slate-100' },
 ];
 
 type SlotType = 'hero' | 'board';
@@ -214,13 +214,13 @@ export function CardSelector({ heroCards, boardCards, onHeroCardsChange, onBoard
                     disabled={used}
                     onClick={() => handleCardClick(rank, suit)}
                     className={cn(
-                      'w-full aspect-[3/4] rounded text-[10px] sm:text-xs font-semibold flex flex-col items-center justify-center gap-0 transition-all',
+                      'w-full aspect-[3/4] rounded text-[10px] sm:text-xs font-semibold flex flex-col items-center justify-center gap-0 transition-all border border-border/50',
                       used
                         ? 'opacity-20 cursor-not-allowed bg-muted'
                         : cn('cursor-pointer hover:scale-110 hover:shadow-md', bg)
                     )}
                   >
-                    <span>{rank}</span>
+                    <span className="text-slate-900">{rank}</span>
                     <span className={cn('text-[8px] sm:text-[10px]', color)}>{symbol}</span>
                   </button>
                 );

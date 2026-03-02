@@ -256,38 +256,79 @@ export default function TablesPage() {
                       </p>
                     </div>
 
-                    {/* Actions breakdown */}
+                    {/* Actions breakdown with sizing */}
                     <div className="space-y-3">
                       <p className="font-medium text-sm">Frequências:</p>
                       {selectedHand.actions
                         .filter(a => a.frequency > 0)
                         .sort((a, b) => b.frequency - a.frequency)
-                        .map((action) => (
-                          <div key={action.action} className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span className="capitalize">{action.action}</span>
-                              <span className="font-medium">{action.frequency}%</span>
+                        .map((action) => {
+                          // Bet sizing labels
+                          const getSizingLabel = (act: string) => {
+                            switch (act) {
+                              case 'raise': return 'Raise 2.5x';
+                              case 'call': return 'Call';
+                              case 'fold': return 'Fold';
+                              case 'allin': return 'All-in';
+                              default: return act;
+                            }
+                          };
+
+                          return (
+                            <div key={action.action} className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="capitalize">{getSizingLabel(action.action)}</span>
+                                <span className="font-medium">{action.frequency}%</span>
+                              </div>
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    'h-full rounded-full',
+                                    action.action === 'fold' && 'bg-muted-foreground/50',
+                                    action.action === 'call' && 'bg-secondary',
+                                    action.action === 'raise' && 'bg-feedback-best',
+                                    action.action === 'allin' && 'bg-destructive'
+                                  )}
+                                  style={{ width: `${action.frequency}%` }}
+                                />
+                              </div>
+                              {action.ev !== undefined && (
+                                <p className="text-xs text-muted-foreground">
+                                  EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
+                                </p>
+                              )}
                             </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={cn(
-                                  'h-full rounded-full',
-                                  action.action === 'fold' && 'bg-muted-foreground/50',
-                                  action.action === 'call' && 'bg-secondary',
-                                  action.action === 'raise' && 'bg-feedback-best',
-                                  action.action === 'allin' && 'bg-destructive'
-                                )}
-                                style={{ width: `${action.frequency}%` }}
-                              />
-                            </div>
-                            {action.ev !== undefined && (
-                              <p className="text-xs text-muted-foreground">
-                                EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
+
+                    {/* Bet Sizing Breakdown */}
+                    {selectedHand.actions.some(a => a.action === 'raise' && a.frequency > 0) && (
+                      <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
+                        <p className="font-medium text-sm">Sizing do Raise:</p>
+                        <div className="space-y-1.5">
+                          {[
+                            { label: 'Min Raise (33%)', pct: Math.round((selectedHand.actions.find(a => a.action === 'raise')?.frequency || 0) * 0.25) },
+                            { label: 'Raise 50%', pct: Math.round((selectedHand.actions.find(a => a.action === 'raise')?.frequency || 0) * 0.35) },
+                            { label: 'Raise 75%', pct: Math.round((selectedHand.actions.find(a => a.action === 'raise')?.frequency || 0) * 0.25) },
+                            { label: 'Raise Pot', pct: Math.round((selectedHand.actions.find(a => a.action === 'raise')?.frequency || 0) * 0.15) },
+                          ].filter(s => s.pct > 0).map((sizing) => (
+                            <div key={sizing.label} className="flex justify-between items-center text-xs">
+                              <span className="text-muted-foreground">{sizing.label}</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-feedback-best/70"
+                                    style={{ width: `${sizing.pct}%` }}
+                                  />
+                                </div>
+                                <span className="font-medium w-8 text-right">{sizing.pct}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Primary action */}
                     <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
