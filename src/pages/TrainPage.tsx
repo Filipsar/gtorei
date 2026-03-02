@@ -37,9 +37,9 @@ const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
 // Scenarios available per mode
 const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
   rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
-  hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
-  threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet'],
-  bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'],
+  hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
+  threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet', 'simulation'],
+  bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
 };
 
 // Positions available per mode
