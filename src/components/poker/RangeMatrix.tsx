@@ -43,6 +43,54 @@ export const COLOR_PALETTES: { id: ColorPalette; label: string; colors: Record<A
   },
 ];
 
+interface BlockedCard {
+  rank: string;
+  suit: string;
+}
+
+// Calculate available combos for a hand given blocked cards
+function getAvailableCombos(handName: string, blockedCards: BlockedCard[]): { available: number; total: number } {
+  const isPair = handName.length === 2 && handName[0] === handName[1];
+  const isSuited = handName.endsWith('s');
+  const isOffsuit = handName.endsWith('o');
+
+  const rank1 = handName[0];
+  const rank2 = isPair ? handName[1] : handName[1];
+  const allSuits: string[] = ['s', 'h', 'd', 'c'];
+
+  const blockedRankSuits = new Set(blockedCards.map(c => `${c.rank}${c.suit}`));
+
+  if (isPair) {
+    // 6 combos total (4 choose 2)
+    const availSuits = allSuits.filter(s => !blockedRankSuits.has(`${rank1}${s}`));
+    const n = availSuits.length;
+    return { available: (n * (n - 1)) / 2, total: 6 };
+  }
+
+  if (isSuited) {
+    // 4 combos total (one per suit)
+    let count = 0;
+    for (const s of allSuits) {
+      if (!blockedRankSuits.has(`${rank1}${s}`) && !blockedRankSuits.has(`${rank2}${s}`)) {
+        count++;
+      }
+    }
+    return { available: count, total: 4 };
+  }
+
+  // Offsuit: 12 combos total
+  let count = 0;
+  for (const s1 of allSuits) {
+    for (const s2 of allSuits) {
+      if (s1 === s2) continue;
+      if (!blockedRankSuits.has(`${rank1}${s1}`) && !blockedRankSuits.has(`${rank2}${s2}`)) {
+        count++;
+      }
+    }
+  }
+  return { available: count, total: 12 };
+}
+
 interface RangeMatrixProps {
   scenario: Scenario;
   position: Position;
@@ -53,6 +101,7 @@ interface RangeMatrixProps {
   onHandClick?: (hand: HandData) => void;
   selectedHand?: string;
   colorPalette?: ColorPalette;
+  blockedCards?: BlockedCard[];
 }
 
 export function RangeMatrix({
@@ -65,6 +114,7 @@ export function RangeMatrix({
   onHandClick,
   selectedHand,
   colorPalette = 'classic',
+  blockedCards = [],
 }: RangeMatrixProps) {
   const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
@@ -151,20 +201,25 @@ export function RangeMatrix({
                 const isSelected = selectedHand === hand.hand;
                 const isHovered = hoveredHand === hand.hand;
 
+                const combos = blockedCards.length > 0 ? getAvailableCombos(hand.hand, blockedCards) : null;
+                const isFullyBlocked = combos !== null && combos.available === 0;
+                const isPartiallyBlocked = combos !== null && combos.available > 0 && combos.available < combos.total;
+
                 const bg = getProportionalGradient(hand);
-                const isGradient = bg.startsWith('linear-gradient');
 
                 return (
                   <Tooltip key={hand.hand}>
                     <TooltipTrigger asChild>
                       <button
                         className={cn(
-                          'h-8 flex items-center justify-center text-[10px] sm:text-xs font-medium rounded-sm',
+                          'h-8 flex items-center justify-center text-[10px] sm:text-xs font-medium rounded-sm relative',
                           'transition-all duration-150 cursor-pointer',
                           'border border-transparent text-white',
                           isSelected && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
                           isHovered && !isSelected && 'border-white/50',
                           isPair && 'font-bold',
+                          isFullyBlocked && 'opacity-15 pointer-events-none',
+                          isPartiallyBlocked && 'opacity-70',
                         )}
                         style={{
                           background: bg,
@@ -175,6 +230,11 @@ export function RangeMatrix({
                         onMouseLeave={() => setHoveredHand(null)}
                       >
                         {hand.hand.replace('o', '').replace('s', '')}
+                        {isPartiallyBlocked && (
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-amber-500 text-[7px] text-white font-bold rounded-full flex items-center justify-center leading-none">
+                            {combos.available}
+                          </span>
+                        )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent
@@ -193,6 +253,12 @@ export function RangeMatrix({
                             {isPair ? 'Par' : isSuited ? 'Suited' : 'Offsuit'}
                           </span>
                         </div>
+
+                        {combos !== null && (
+                          <div className="text-xs text-muted-foreground">
+                            Combos: <span className="font-semibold text-foreground">{combos.available}</span>/{combos.total}
+                          </div>
+                        )}
 
                         <div className="space-y-1">
                           {hand.actions

@@ -12,7 +12,6 @@ interface UpdateNote {
 }
 
 const UPCOMING: string[] = [
-  'Filtrar combos bloqueados na matriz baseado nas cartas do board/herói',
   'Análise de straight draw (OESD, gutshot) no board',
   'Aulas gratuitas de poker GTO',
   'Autoanálise com IA',
@@ -20,6 +19,13 @@ const UPCOMING: string[] = [
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.6.1',
+    date: '02/03/2026',
+    type: 'feature',
+    title: 'Filtro de Combos Bloqueados',
+    description: 'Na simulação, a matriz agora filtra automaticamente combos impossíveis baseado nas cartas do herói e board. Mãos totalmente bloqueadas ficam esmaecidas e parcialmente bloqueadas mostram a quantidade de combos disponíveis.',
+  },
   {
     version: '1.6.0',
     date: '02/03/2026',

@@ -30,6 +30,12 @@ export default function TablesPage() {
   // Auto-select hand in matrix based on hero cards
   const heroHandName = useMemo(() => getHandName(heroCards), [heroCards]);
 
+  // Build blocked cards for combo filtering
+  const blockedCards = useMemo(() => {
+    if (!isSimulation) return [];
+    return [...heroCards, ...boardCards].map(c => ({ rank: c.rank, suit: c.suit }));
+  }, [isSimulation, heroCards, boardCards]);
+
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
@@ -163,6 +169,7 @@ export default function TablesPage() {
                       selectedHand={heroHandName || selectedHand?.hand}
                       onHandClick={setSelectedHand}
                       colorPalette={colorPalette}
+                      blockedCards={blockedCards}
                     />
                    </div>
                    <ScrollBar orientation="horizontal" />
