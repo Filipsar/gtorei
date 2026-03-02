@@ -697,8 +697,10 @@ function dealNextStreet(state: HandState): HandState {
       break;
   }
   
-  // Limpar apostas ativas ao mudar de street
+  // Limpar apostas ativas e ação do vilão ao mudar de street
   newState.activeBets = [];
+  newState.villainAction = undefined;
+  newState.lastVillainAction = undefined;
   
   // Em simulação, marcar que herói precisa agir no pós-flop
   if (state.isSimulation && !newState.isHandComplete && newState.street !== 'preflop') {
