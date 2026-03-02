@@ -26,7 +26,9 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
+import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Locked scenarios (under maintenance)
 const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
@@ -101,7 +103,9 @@ export default function TrainPage() {
     villainAction?: string;
     villainAmount?: number;
     pot: number;
+    effectiveStack?: number;
   }>>([]);
+  const [summaryRangeViewer, setSummaryRangeViewer] = useState<{ open: boolean; stack: number } | null>(null);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
@@ -413,6 +417,7 @@ export default function TrainPage() {
         heroAction: action === 'allin' ? 'All-in' : action.charAt(0).toUpperCase() + action.slice(1),
         villainAction: villainResponse ? (villainResponse.action === 'call' ? 'Call' : villainResponse.action === 'fold' ? 'Fold' : villainResponse.action) : undefined,
         pot: newState.pot,
+        effectiveStack: handState.heroStack,
       }]);
       
       setHandState(newState);
@@ -569,6 +574,7 @@ export default function TrainPage() {
       heroAction: heroActionLabel,
       villainAction: villainActionLabel,
       pot: newState.pot,
+      effectiveStack: handState.heroStack,
     }]);
     
     // Show transitioning phase for delay effect
@@ -1408,7 +1414,18 @@ export default function TrainPage() {
                                 )}
                               </div>
                             </div>
-                            <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
+                              {sa.street === 'Preflop' && handState && (
+                                <button
+                                  className="p-1 rounded hover:bg-primary/20 transition-colors group relative"
+                                  title="Ver Range GTO"
+                                  onClick={() => setSummaryRangeViewer({ open: true, stack: sa.effectiveStack || handState.heroStack })}
+                                >
+                                  <BarChart3 className="h-4 w-4 text-primary" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1430,6 +1447,20 @@ export default function TrainPage() {
                       )}
                     </CardContent>
                   </Card>
+                )}
+
+                {/* Range Viewer Modal from summary */}
+                {summaryRangeViewer?.open && handState && lastFeedback && (
+                  <RangeViewerModal
+                    open={summaryRangeViewer.open}
+                    onClose={() => setSummaryRangeViewer(null)}
+                    scenario={scenario}
+                    position={handState.heroPosition}
+                    stack={summaryRangeViewer.stack}
+                    finalTable={finalTable}
+                    heroHand={lastFeedback.handData?.hand || ''}
+                    heroAction={lastFeedback.userAction}
+                  />
                 )}
               </>
             )}
