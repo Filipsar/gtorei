@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Hand, LayoutGrid } from 'lucide-react';
+import { X, Hand, LayoutGrid, Droplets, Sun, Rainbow } from 'lucide-react';
 
 type Suit = 's' | 'h' | 'd' | 'c';
 type Rank = 'A' | 'K' | 'Q' | 'J' | 'T' | '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2';
@@ -97,6 +97,74 @@ export function CardSelector({ heroCards, boardCards, onHeroCardsChange, onBoard
   };
 
   const handName = getHandName(heroCards);
+
+  // Board texture analysis
+  const boardTexture = useMemo(() => {
+    if (boardCards.length < 3) return null;
+
+    const flopCards = boardCards.slice(0, 3);
+    const allBoardCards = boardCards;
+    const suits = allBoardCards.map(c => c.suit);
+    const flopSuits = flopCards.map(c => c.suit);
+    const uniqueFlopSuits = new Set(flopSuits).size;
+    const uniqueSuits = new Set(suits).size;
+
+    // Suit texture
+    let suitTexture: 'monotone' | 'two-tone' | 'rainbow';
+    if (uniqueFlopSuits === 1) suitTexture = 'monotone';
+    else if (uniqueFlopSuits === 2) suitTexture = 'two-tone';
+    else suitTexture = 'rainbow';
+
+    // Flush draw possibility
+    const suitCounts: Record<string, number> = {};
+    suits.forEach(s => { suitCounts[s] = (suitCounts[s] || 0) + 1; });
+    const maxSuitCount = Math.max(...Object.values(suitCounts));
+    const flushComplete = maxSuitCount >= 5;
+    const flushDraw = maxSuitCount >= 4 && !flushComplete;
+    const backdoorFlush = maxSuitCount === 3 && allBoardCards.length === 3;
+
+    // Connectedness / straight potential
+    const rankValues = allBoardCards.map(c => {
+      const idx = RANKS.indexOf(c.rank);
+      return 12 - idx; // A=12, K=11, ..., 2=0
+    }).sort((a, b) => a - b);
+
+    const gaps = [];
+    for (let i = 1; i < rankValues.length; i++) {
+      gaps.push(rankValues[i] - rankValues[i - 1]);
+    }
+    const maxGap = gaps.length > 0 ? Math.max(...gaps) : 0;
+    const spread = rankValues.length > 0 ? rankValues[rankValues.length - 1] - rankValues[0] : 0;
+
+    let connectivity: 'connected' | 'semi-connected' | 'disconnected';
+    if (spread <= 4 && maxGap <= 2) connectivity = 'connected';
+    else if (spread <= 7 && maxGap <= 3) connectivity = 'semi-connected';
+    else connectivity = 'disconnected';
+
+    // Pairing
+    const rankCounts: Record<string, number> = {};
+    allBoardCards.forEach(c => { rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1; });
+    const paired = Object.values(rankCounts).some(v => v >= 2);
+    const trips = Object.values(rankCounts).some(v => v >= 3);
+
+    // High cards
+    const highCards = allBoardCards.filter(c => ['A', 'K', 'Q'].includes(c.rank)).length;
+    let highness: 'high' | 'medium' | 'low';
+    if (highCards >= 2) highness = 'high';
+    else if (highCards === 1) highness = 'medium';
+    else highness = 'low';
+
+    return {
+      suitTexture,
+      connectivity,
+      paired,
+      trips,
+      highness,
+      flushDraw,
+      flushComplete,
+      backdoorFlush,
+    };
+  }, [boardCards]);
 
   return (
     <Card>
@@ -201,6 +269,77 @@ export function CardSelector({ heroCards, boardCards, onHeroCardsChange, onBoard
             })}
           </div>
         </div>
+
+        {/* Board Texture Analysis */}
+        {boardTexture && (
+          <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Textura do Board</p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {/* Suit texture badge */}
+              <span className={cn(
+                'inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold border',
+                boardTexture.suitTexture === 'monotone' && 'bg-destructive/15 text-destructive border-destructive/30',
+                boardTexture.suitTexture === 'two-tone' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+                boardTexture.suitTexture === 'rainbow' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+              )}>
+                {boardTexture.suitTexture === 'monotone' && <Droplets className="h-3 w-3" />}
+                {boardTexture.suitTexture === 'two-tone' && <Sun className="h-3 w-3" />}
+                {boardTexture.suitTexture === 'rainbow' && <Rainbow className="h-3 w-3" />}
+                {boardTexture.suitTexture === 'monotone' ? 'Monotone' : boardTexture.suitTexture === 'two-tone' ? 'Two-Tone' : 'Rainbow'}
+              </span>
+
+              {/* Connectivity */}
+              <span className={cn(
+                'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border',
+                boardTexture.connectivity === 'connected' && 'bg-destructive/15 text-destructive border-destructive/30',
+                boardTexture.connectivity === 'semi-connected' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+                boardTexture.connectivity === 'disconnected' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+              )}>
+                {boardTexture.connectivity === 'connected' ? 'Conectado' : boardTexture.connectivity === 'semi-connected' ? 'Semi-conectado' : 'Desconectado'}
+              </span>
+
+              {/* Highness */}
+              <span className={cn(
+                'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border',
+                boardTexture.highness === 'high' && 'bg-primary/15 text-primary border-primary/30',
+                boardTexture.highness === 'medium' && 'bg-muted text-muted-foreground border-border',
+                boardTexture.highness === 'low' && 'bg-muted text-muted-foreground border-border',
+              )}>
+                {boardTexture.highness === 'high' ? 'High Board' : boardTexture.highness === 'medium' ? 'Medium' : 'Low Board'}
+              </span>
+
+              {/* Pairing */}
+              {boardTexture.trips && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border bg-destructive/15 text-destructive border-destructive/30">
+                  Trips no Board
+                </span>
+              )}
+              {boardTexture.paired && !boardTexture.trips && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                  Pareado
+                </span>
+              )}
+
+              {/* Draws */}
+              {boardTexture.flushComplete && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border bg-destructive/15 text-destructive border-destructive/30">
+                  Flush Completo
+                </span>
+              )}
+              {boardTexture.flushDraw && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                  Flush Draw
+                </span>
+              )}
+              {boardTexture.backdoorFlush && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border bg-muted text-muted-foreground border-border">
+                  Backdoor Flush
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Card picker grid */}
         <div className="space-y-1">
