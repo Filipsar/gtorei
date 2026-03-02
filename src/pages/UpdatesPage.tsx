@@ -1,7 +1,7 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Sparkles, Bug, Wrench } from 'lucide-react';
+import { Bell, Sparkles, Bug, Wrench, Rocket } from 'lucide-react';
 
 interface UpdateNote {
   version: string;
@@ -11,7 +11,22 @@ interface UpdateNote {
   description: string;
 }
 
+const UPCOMING: string[] = [
+  'Filtrar combos bloqueados na matriz baseado nas cartas do board/herói',
+  'Análise de straight draw (OESD, gutshot) no board',
+  'Aulas gratuitas de poker GTO',
+  'Autoanálise com IA',
+  'Cenário Multiway',
+];
+
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.6.0',
+    date: '02/03/2026',
+    type: 'feature',
+    title: 'Simulação Avançada em Tabelas',
+    description: 'Novo modo Simulação com seletor de cartas do herói e board, análise de textura automática (monotone, two-tone, rainbow, conectividade, pareamento, draws) e detalhamento de sizing por raise.',
+  },
   {
     version: '1.5.0',
     date: '11/02/2026',
@@ -153,6 +168,28 @@ export default function UpdatesPage() {
             Novidades e melhorias do GTORei
           </p>
         </div>
+
+        {/* Upcoming */}
+        <Card className="mb-6 border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20 text-primary">
+                <Rocket className="h-4 w-4" />
+              </div>
+              <CardTitle className="text-heading-xs">Próximos Passos</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {UPCOMING.map((item, i) => (
+                <li key={i} className="flex items-center gap-2 text-body-sm text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
 
         {/* Updates list */}
         <div className="space-y-4">
