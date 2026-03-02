@@ -94,6 +94,14 @@ export default function TrainPage() {
     feedback: ReturnType<typeof calculateFeedback>;
   } | null>(null);
   const [selectedBetSize, setSelectedBetSize] = useState(0.5);
+  const [simulationStreetActions, setSimulationStreetActions] = useState<Array<{
+    street: string;
+    heroAction: string;
+    heroAmount?: number;
+    villainAction?: string;
+    villainAmount?: number;
+    pot: number;
+  }>>([]);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
@@ -397,11 +405,24 @@ export default function TrainPage() {
     // In simulation mode, skip popup for correct non-fold actions — continue directly to postflop
     if (isSimulation && isCorrect && action !== 'fold') {
       const newState = processHeroAction(handState, action, scenario);
+      
+      // Record preflop action
+      const villainResponse = newState.actions.filter(a => !a.isHero).slice(-1)[0];
+      setSimulationStreetActions([{
+        street: 'Preflop',
+        heroAction: action === 'allin' ? 'All-in' : action.charAt(0).toUpperCase() + action.slice(1),
+        villainAction: villainResponse ? (villainResponse.action === 'call' ? 'Call' : villainResponse.action === 'fold' ? 'Fold' : villainResponse.action) : undefined,
+        pot: newState.pot,
+      }]);
+      
       setHandState(newState);
       
       if (newState.isHandComplete) {
-        // Hand completed at preflop (e.g., villain folds) — score will be applied via useEffect
-        setPhase('review');
+        // Show villain response for a moment before entering review
+        setPhase('transitioning');
+        setTimeout(() => {
+          setPhase('review');
+        }, 1200);
       } else {
         setPhase('transitioning');
         setTimeout(() => {
@@ -530,7 +551,25 @@ export default function TrainPage() {
     if (!handState) return;
     
     const betSize = action === 'bet' ? selectedBetSize : undefined;
+    const currentStreet = handState.street;
     const newState = processPostflopAction(handState, action, betSize);
+    
+    // Determine hero's action label and amount
+    const heroActionLabel = action === 'allin' ? 'All-in' : action === 'bet' 
+      ? `Bet ${(handState.pot * (betSize || 0.5)).toFixed(1)}BB` 
+      : action.charAt(0).toUpperCase() + action.slice(1);
+    
+    // Determine villain's response from the new state
+    const villainActionLabel = newState.lastVillainAction || undefined;
+    
+    // Record street action
+    const streetLabel = currentStreet.charAt(0).toUpperCase() + currentStreet.slice(1);
+    setSimulationStreetActions(prev => [...prev, {
+      street: streetLabel,
+      heroAction: heroActionLabel,
+      villainAction: villainActionLabel,
+      pot: newState.pot,
+    }]);
     
     // Show transitioning phase for delay effect
     setPhase('transitioning');
@@ -539,8 +578,11 @@ export default function TrainPage() {
       setHandState(newState);
       
       if (newState.isHandComplete) {
-        applyPendingScore();
-        setPhase('review');
+        // Show villain's final action for a moment before review
+        setTimeout(() => {
+          applyPendingScore();
+          setPhase('review');
+        }, 1200);
       } else if (newState.awaitingPostflopAction) {
         // Villain bet, hero must respond — add another delay
         setTimeout(() => {
@@ -598,6 +640,7 @@ export default function TrainPage() {
     setIsCurrentHandFavorited(isHandFavorited(hand, selectedScenario, pos, stk));
     setLastFeedback(null);
     setPendingSimulationScore(null);
+    setSimulationStreetActions([]);
     setPhase('playing');
   }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, heroBounty]);
 
@@ -1188,9 +1231,14 @@ export default function TrainPage() {
               </>
             )}
 
-            {/* Transitioning indicator */}
+            {/* Transitioning indicator - show villain action when hand is completing */}
             {phase === 'transitioning' && (
-              <div className="flex justify-center py-6">
+              <div className="flex flex-col items-center justify-center py-6 gap-3">
+                {handState.lastVillainAction && handState.isHandComplete && (
+                  <div className="bg-destructive/20 border border-destructive/40 text-destructive-foreground px-4 py-2 rounded-lg text-sm font-semibold animate-fade-in">
+                    Vilão: {handState.lastVillainAction}
+                  </div>
+                )}
                 <div className="animate-pulse text-sm text-muted-foreground">Aguarde...</div>
               </div>
             )}
@@ -1293,42 +1341,97 @@ export default function TrainPage() {
             )}
 
             {/* Showdown result for simulation */}
-            {handState.isHandComplete && handState.isSimulation && handState.street === 'showdown' && phase === 'review' && (
-              <Card className={cn(
-                'border-2',
-                handState.result === 'hero_wins' ? 'border-feedback-best bg-feedback-best/10' :
-                handState.result === 'villain_wins' ? 'border-feedback-blunder bg-feedback-blunder/10' :
-                'border-primary bg-primary/10'
-              )}>
-                <CardContent className="p-4 text-center space-y-2">
-                  <p className={cn('text-xl font-bold',
-                    handState.result === 'hero_wins' ? 'text-feedback-best' :
-                    handState.result === 'villain_wins' ? 'text-feedback-blunder' :
-                    'text-primary'
-                  )}>
-                    {handState.result === 'hero_wins' ? '🏆 Você Ganhou!' :
-                     handState.result === 'villain_wins' ? '💀 Você Perdeu' :
-                     '🤝 Empate'}
-                  </p>
-                  <div className="flex justify-center gap-6 text-sm">
-                    {handState.heroEval && (
-                      <div>
-                        <span className="text-muted-foreground">Você: </span>
-                        <span className="font-medium">{handState.heroEval.rankName}</span>
+            {handState.isHandComplete && handState.isSimulation && phase === 'review' && (
+              <>
+                {/* Result banner */}
+                <Card className={cn(
+                  'border-2',
+                  handState.result === 'hero_wins' ? 'border-feedback-best bg-feedback-best/10' :
+                  handState.result === 'villain_wins' ? 'border-feedback-blunder bg-feedback-blunder/10' :
+                  'border-primary bg-primary/10'
+                )}>
+                  <CardContent className="p-4 text-center space-y-2">
+                    <p className={cn('text-xl font-bold',
+                      handState.result === 'hero_wins' ? 'text-feedback-best' :
+                      handState.result === 'villain_wins' ? 'text-feedback-blunder' :
+                      'text-primary'
+                    )}>
+                      {handState.result === 'hero_wins' ? '🏆 Você Ganhou!' :
+                       handState.result === 'villain_wins' ? '💀 Você Perdeu' :
+                       '🤝 Empate'}
+                    </p>
+                    {handState.street === 'showdown' && (
+                      <div className="flex justify-center gap-6 text-sm">
+                        {handState.heroEval && (
+                          <div>
+                            <span className="text-muted-foreground">Você: </span>
+                            <span className="font-medium">{handState.heroEval.rankName}</span>
+                          </div>
+                        )}
+                        {handState.villainEval && (
+                          <div>
+                            <span className="text-muted-foreground">Vilão: </span>
+                            <span className="font-medium">{handState.villainEval.rankName}</span>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {handState.villainEval && (
-                      <div>
+                    {/* Show last villain action if not showdown */}
+                    {handState.lastVillainAction && handState.street !== 'showdown' && (
+                      <p className="text-sm">
                         <span className="text-muted-foreground">Vilão: </span>
-                        <span className="font-medium">{handState.villainEval.rankName}</span>
-                      </div>
+                        <span className="font-semibold">{handState.lastVillainAction}</span>
+                      </p>
                     )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Pot: {handState.pot.toFixed(1)} BB
-                  </p>
-                </CardContent>
-              </Card>
+                    <p className="text-sm text-muted-foreground">
+                      Pot: {handState.pot.toFixed(1)} BB
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Simulation street-by-street summary */}
+                {simulationStreetActions.length > 0 && (
+                  <Card className="border border-border">
+                    <CardContent className="p-4 space-y-3">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        📋 Resumo da Mão
+                      </h3>
+                      <div className="space-y-2">
+                        {simulationStreetActions.map((sa, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/50">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-primary uppercase w-14">{sa.street}</span>
+                              <div className="text-sm">
+                                <span className="font-medium">Hero: {sa.heroAction}</span>
+                                {sa.villainAction && (
+                                  <span className="text-muted-foreground ml-2">→ Vilão: {sa.villainAction}</span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Preflop GTO result */}
+                      {pendingSimulationScore === null && lastFeedback && (
+                        <div className={cn(
+                          'p-2 rounded-lg text-center text-sm font-medium',
+                          (lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct')
+                            ? 'bg-feedback-best/20 text-feedback-best'
+                            : 'bg-feedback-blunder/20 text-feedback-blunder'
+                        )}>
+                          Preflop GTO: {lastFeedback.feedback.type === 'best' ? '✅ Melhor jogada' : 
+                            lastFeedback.feedback.type === 'correct' ? '✅ Jogada correta' : 
+                            `❌ ${lastFeedback.feedback.message}`}
+                          {lastFeedback.feedback.points !== 0 && (
+                            <span className="ml-2">({lastFeedback.feedback.points > 0 ? '+' : ''}{lastFeedback.feedback.points} pts)</span>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
             
             {/* Review mode - only show next hand button */}
