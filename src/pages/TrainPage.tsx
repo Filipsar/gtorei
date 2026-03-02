@@ -1357,8 +1357,8 @@ export default function TrainPage() {
                     </Button>
                   </div>
                 ) : (
-                  /* No villain bet: show Check, Bet, Fold */
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  /* No villain bet: show Check, Bet, Fold, All-in */
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
                     <Button
                       variant="outline"
                       onClick={() => handlePostflopAction('check')}
@@ -1385,6 +1385,14 @@ export default function TrainPage() {
                     >
                       <span className="text-lg">✕</span>
                       <span className="text-xs sm:text-sm">Fold</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('allin')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground font-semibold"
+                    >
+                      <span className="text-lg">💥</span>
+                      <span className="text-xs sm:text-sm">All-in</span>
                     </Button>
                   </div>
                 )}
