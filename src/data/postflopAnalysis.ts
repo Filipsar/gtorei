@@ -32,6 +32,7 @@ export interface StreetAnalysis {
   handStrength?: string;
   potOdds?: number; // percentage
   betSizingAnalysis?: string;
+  idealPlay?: string; // Suggested optimal action when verdict is not optimal
 }
 
 // ============================================================
@@ -334,6 +335,82 @@ function getVerdict(tier: number, action: string, boardTexture: BoardTextureInfo
 }
 
 // ============================================================
+// IDEAL PLAY SUGGESTION
+// ============================================================
+
+function suggestIdealPlay(tier: number, boardTexture: BoardTextureInfo, draws: { outs: number; hasFlushDraw: boolean; hasStraightDraw: boolean }, pot: number, heroAction: string): string {
+  const lower = heroAction.toLowerCase();
+
+  // Monster / very strong hands (tier >= 6): should bet for value
+  if (tier >= 6) {
+    if (lower === 'check' || lower === 'fold') {
+      const sizePct = boardTexture.type === 'wet' ? 75 : 66;
+      const betAmount = (pot * sizePct / 100).toFixed(1);
+      return `Raise ~${sizePct}% do pote (${betAmount} BB) para extrair valor máximo`;
+    }
+    return `Bet de valor — sizing ideal: 66-75% do pote (${(pot * 0.66).toFixed(1)}-${(pot * 0.75).toFixed(1)} BB)`;
+  }
+
+  // Strong hands (tier 4-5): bet for value/protection
+  if (tier >= 4) {
+    if (lower === 'fold') {
+      return 'Call ou Raise — mão forte demais para foldar';
+    }
+    if (lower === 'check') {
+      if (boardTexture.type === 'wet') {
+        const betAmount = (pot * 0.60).toFixed(1);
+        return `Bet ~60% do pote (${betAmount} BB) para proteger contra draws`;
+      }
+      return 'Bet 50-66% do pote para valor, ou check para trap em board seco';
+    }
+    const idealPct = boardTexture.type === 'wet' ? 66 : 50;
+    const betAmount = (pot * idealPct / 100).toFixed(1);
+    return `Sizing ideal: ~${idealPct}% do pote (${betAmount} BB)`;
+  }
+
+  // Medium hands (tier 2-3): pot control or thin value
+  if (tier >= 2) {
+    if (lower.includes('all-in')) {
+      return 'Check ou Bet pequeno (~33% do pote) para controle de pote';
+    }
+    if (lower === 'fold' && draws.outs > 0) {
+      return 'Call — pot odds podem justificar com draws disponíveis';
+    }
+    if (boardTexture.type === 'dry') {
+      return `Check para controle de pote ou Bet ~33% do pote (${(pot * 0.33).toFixed(1)} BB)`;
+    }
+    const betAmount = (pot * 0.50).toFixed(1);
+    return `Bet ~50% do pote (${betAmount} BB) para proteção, ou Check para controle`;
+  }
+
+  // Weak hands with draws (tier 0-1 + draws)
+  if (draws.outs >= 8) {
+    if (lower === 'fold') {
+      return 'Call ou Semi-bluff — draw forte com outs suficientes';
+    }
+    if (lower === 'check') {
+      const betAmount = (pot * 0.66).toFixed(1);
+      return `Semi-bluff: Bet ~66% do pote (${betAmount} BB) com draw forte`;
+    }
+    return `Semi-bluff válido — sizing ideal: 50-66% do pote`;
+  }
+
+  // Weak hands without draws
+  if (tier <= 1 && draws.outs < 4) {
+    if (lower.includes('bet') || lower.includes('raise') || lower.includes('all-in')) {
+      if (boardTexture.type === 'dry') {
+        const betAmount = (pot * 0.33).toFixed(1);
+        return `Se for bluffar, sizing ~33% do pote (${betAmount} BB) em board seco`;
+      }
+      return 'Check/Fold — bluff em board wet tem baixa fold equity';
+    }
+    return 'Check/Fold é a linha ideal com mão fraca';
+  }
+
+  return 'Check ou Fold dependendo da ação do vilão';
+}
+
+// ============================================================
 // VERDICT DISPLAY
 // ============================================================
 
@@ -394,6 +471,12 @@ export function analyzeStreetAction(data: StreetActionData): StreetAnalysis {
     reasons.push(`Straight draw detectado`);
   }
 
+  // Generate ideal play suggestion when verdict is not optimal
+  let idealPlay: string | undefined;
+  if (verdict !== 'optimal') {
+    idealPlay = suggestIdealPlay(handStrength.tier, boardTexture, draws, pot, heroAction);
+  }
+
   return {
     street,
     verdict,
@@ -403,6 +486,7 @@ export function analyzeStreetAction(data: StreetActionData): StreetAnalysis {
     boardTexture,
     handStrength: handStrength.label,
     betSizingAnalysis: sizing.label !== '-' ? sizing.label : undefined,
+    idealPlay,
   };
 }
 

@@ -1520,6 +1520,13 @@ export default function TrainPage() {
                                         → {r}
                                       </p>
                                     ))}
+                                    {analysis.idealPlay && analysis.verdict !== 'optimal' && (
+                                      <div className="mt-1.5 px-2 py-1.5 rounded-md bg-primary/10 border border-primary/20">
+                                        <p className="text-xs font-medium text-primary">
+                                          💡 Jogada ideal: {analysis.idealPlay}
+                                        </p>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
