@@ -560,6 +560,7 @@ function simulateVillainResponse(
       ...state.actions,
       { position: state.villainPosition!, action: 'call' }
     ];
+    newState.lastVillainAction = 'Call';
     
     // Update villain stack for the call
     const callAmount = Math.max(...state.activeBets.map(b => b.amount), 0);
@@ -573,6 +574,7 @@ function simulateVillainResponse(
     ];
     newState.isHandComplete = true;
     newState.result = 'hero_wins';
+    newState.lastVillainAction = 'Fold';
     return newState;
   }
 }
