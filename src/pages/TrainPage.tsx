@@ -29,6 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
+import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
@@ -54,6 +55,9 @@ const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
 type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning';
 
 export default function TrainPage() {
+  // Onboarding
+  const { needsOnboarding, completeOnboarding } = useOnboardingStatus();
+
   // Mode state
   const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
   const [heroBounty, setHeroBounty] = useState<BountyTier>(5);
@@ -1590,6 +1594,7 @@ export default function TrainPage() {
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
       } : undefined} />}
+      {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
       </div>
     </MainLayout>;
 }
