@@ -402,8 +402,9 @@ export default function TrainPage() {
       feedback
     });
 
-    // In simulation mode, skip popup for correct non-fold actions — continue directly to postflop
-    if (isSimulation && isCorrect && action !== 'fold') {
+    // In simulation mode, skip popup for non-fold actions — continue directly to postflop
+    // Even if the preflop action was incorrect, the simulation continues (score is deferred)
+    if (isSimulation && action !== 'fold') {
       const newState = processHeroAction(handState, action, scenario);
       
       // Record preflop action
@@ -515,15 +516,7 @@ export default function TrainPage() {
 
   const handleFeedbackClose = useCallback(() => {
     if (scenario === 'simulation' && handState && lastFeedback?.userAction) {
-      const isCorrect = lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct';
-      
-      // If hero made wrong preflop decision, end simulation — don't allow continuing
-      if (!isCorrect) {
-        applyPendingScore();
-        setPhase('review');
-        return;
-      }
-      
+      // In simulation, feedback modal only shows for fold — go to review
       if (lastFeedback.userAction === 'fold') {
         applyPendingScore();
         setPhase('review');
