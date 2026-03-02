@@ -79,11 +79,14 @@ const feedbackConfig: Record<FeedbackType, {
   },
 };
 
-const actionLabels: Record<ActionType, string> = {
-  fold: 'Fold',
-  call: 'Call',
-  raise: 'Raise',
-  allin: 'All-in',
+const getActionLabel = (action: ActionType, scenario?: Scenario) => {
+  const labels: Record<ActionType, string> = {
+    fold: 'Fold',
+    call: scenario === 'openRaise' ? 'Limp' : 'Call',
+    raise: 'Raise',
+    allin: 'All-in',
+  };
+  return labels[action];
 };
 
 export function DecisionFeedback({
@@ -143,7 +146,7 @@ export function DecisionFeedback({
                 </p>
                 {previousResult && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Resultado anterior: {actionLabels[previousResult.action]} ({previousResult.points > 0 ? '+' : ''}{previousResult.points} pts)
+                    Resultado anterior: {getActionLabel(previousResult.action, scenario)} ({previousResult.points > 0 ? '+' : ''}{previousResult.points} pts)
                   </p>
                 )}
               </div>
@@ -169,12 +172,12 @@ export function DecisionFeedback({
                 isCorrect ? 'border-feedback-best bg-feedback-best/10' : 'border-feedback-blunder bg-feedback-blunder/10'
               )}>
                 <p className="text-xs text-muted-foreground mb-1">Sua Jogada</p>
-                <p className="font-bold text-lg capitalize">{actionLabels[userAction]}</p>
+                <p className="font-bold text-lg capitalize">{getActionLabel(userAction, scenario)}</p>
               </div>
 
               <div className="p-3 rounded-lg text-center border-2 border-primary bg-primary/10">
                 <p className="text-xs text-muted-foreground mb-1">Jogada GTO</p>
-                <p className="font-bold text-lg capitalize">{actionLabels[gtoAction]}</p>
+                <p className="font-bold text-lg capitalize">{getActionLabel(gtoAction, scenario)}</p>
               </div>
             </div>
 
@@ -188,7 +191,7 @@ export function DecisionFeedback({
                 })
                 .map((action) => (
                   <div key={action.action} className="flex items-center gap-3">
-                    <span className="text-sm w-16 capitalize">{actionLabels[action.action]}</span>
+                    <span className="text-sm w-16 capitalize">{getActionLabel(action.action, scenario)}</span>
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={cn(

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ActionType } from '@/data/gtoRanges';
+import { ActionType, Scenario } from '@/data/gtoRanges';
 interface ActionButtonsProps {
   onAction: (action: ActionType, raiseSize?: number) => void;
   pot: number;
@@ -10,6 +10,7 @@ interface ActionButtonsProps {
   minRaise?: number;
   disabled?: boolean;
   showRaiseSlider?: boolean;
+  scenario?: Scenario;
 }
 export function ActionButtons({
   onAction,
@@ -17,7 +18,8 @@ export function ActionButtons({
   stack,
   minRaise = 2,
   disabled = false,
-  showRaiseSlider = true
+  showRaiseSlider = true,
+  scenario,
 }: ActionButtonsProps) {
   const [raiseSize, setRaiseSize] = useState(minRaise);
   const [showSlider, setShowSlider] = useState(false);
@@ -69,7 +71,7 @@ export function ActionButtons({
 
         <Button variant="outline" onClick={() => onAction('call')} disabled={disabled} className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1', 'bg-secondary hover:bg-secondary/90 border-secondary', 'text-white font-semibold')}>
           <span className="text-lg">✓</span>
-          <span className="text-xs sm:text-sm">Call</span>
+          <span className="text-xs sm:text-sm">{scenario === 'openRaise' ? 'Limp' : 'Call'}</span>
         </Button>
 
         <Button variant="outline" onClick={handleRaise} disabled={disabled} className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1', 'bg-poker-raise hover:bg-poker-raise/90 border-emerald-500', 'text-white font-semibold', showSlider && 'ring-2 ring-primary')}>

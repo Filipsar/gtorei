@@ -1239,7 +1239,7 @@ export default function TrainPage() {
                     <HandDisplay cards={handState.heroCards} size="md" />
                   </div>
                 )}
-                <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} />
+                <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} scenario={scenario} />
               </>
             )}
 
