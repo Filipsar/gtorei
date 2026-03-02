@@ -245,6 +245,21 @@ function getScenarioConfig(
   } else if (scenario === 'vsOpenRaise' || scenario === 'simulation') {
     raisePercent *= sm.raise3bet;
     callPercent *= sm.call;
+    // 3-bet shove range: at ≤40bb, convert a portion of raises to all-ins
+    // Premium hands (AA, KK, QQ, AKs) should have all-in frequency
+    if (stack <= 40) {
+      // Progressive shove ratio: more all-ins at lower stacks
+      const shoveRatio = Math.max(0, Math.min(0.6, (40 - stack) / 30));
+      const shoveFromRaise = raisePercent * shoveRatio;
+      allinPercent += shoveFromRaise;
+      raisePercent -= shoveFromRaise;
+      // At very short stacks (≤20bb), add extra all-in width
+      if (stack <= 20) {
+        const extraShove = raisePercent * 0.3;
+        allinPercent += extraShove;
+        raisePercent -= extraShove;
+      }
+    }
   } else if (scenario === 'vs3bet') {
     allinPercent *= sm.allin;
     callPercent *= sm.call;
