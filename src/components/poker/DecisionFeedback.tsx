@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ActionType, FeedbackType, HandData, Scenario, Position, GameMode } from '@/data/gtoRanges';
 import { RangeViewerModal } from './RangeViewerModal';
-import { CheckCircle2, XCircle, AlertTriangle, Skull, Trophy, BarChart3 } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, Skull, Trophy, BarChart3, Copy, Check } from 'lucide-react';
 
 interface DecisionFeedbackProps {
   open: boolean;
@@ -37,8 +37,8 @@ interface DecisionFeedbackProps {
   };
   // Flag para modo de revisão (após clicar em "Rever")
   isReviewMode?: boolean;
-  // Flag para simulação — controls button behavior
   isSimulation?: boolean;
+  uniqueHandId?: string;
 }
 
 const feedbackConfig: Record<FeedbackType, {
@@ -105,15 +105,23 @@ export function DecisionFeedback({
   previousResult,
   isReviewMode = false,
   isSimulation = false,
+  uniqueHandId,
 }: DecisionFeedbackProps) {
   const [showRangeModal, setShowRangeModal] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   
   const config = feedbackConfig[feedback.type];
   const gtoAction = handData.primaryAction;
   const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
-
-  // Ajustar pontos se mão já foi jogada
   const displayPoints = alreadyPlayed ? 0 : feedback.points;
+
+  const handleCopyId = () => {
+    if (uniqueHandId) {
+      navigator.clipboard.writeText(uniqueHandId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  };
 
   return (
     <>
@@ -224,6 +232,20 @@ export function DecisionFeedback({
                 <span className="text-xs text-primary ml-2">(já jogada)</span>
               )}
             </div>
+
+            {/* Hand ID */}
+            {uniqueHandId && (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xs text-muted-foreground font-mono">ID: {uniqueHandId}</span>
+                <button
+                  onClick={handleCopyId}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Copiar ID"
+                >
+                  {copiedId ? <Check className="h-3 w-3 text-feedback-best" /> : <Copy className="h-3 w-3" />}
+                </button>
+              </div>
+            )}
 
             {/* Session progress */}
             <div className="space-y-2">

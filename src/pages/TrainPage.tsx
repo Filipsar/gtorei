@@ -21,6 +21,7 @@ import { initializeHandState, getVillainPosition, getScenarioDescription, proces
 import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
+import { generateUniqueHandId } from '@/data/handIdGenerator';
 import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
 import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +74,7 @@ export default function TrainPage() {
   const [sessionScore, setSessionScore] = useState(0);
   const [handsPlayed, setHandsPlayed] = useState(0);
   const [currentHandId, setCurrentHandId] = useState<string | null>(null);
+  const [currentUniqueHandId, setCurrentUniqueHandId] = useState<string | null>(null);
   const [isHandAlreadyPlayedState, setIsHandAlreadyPlayedState] = useState(false);
   const [previousHandResult, setPreviousHandResult] = useState<{
     action: ActionType;
@@ -259,6 +261,7 @@ export default function TrainPage() {
       heroStack: stk
     });
     setCurrentHandId(handId);
+    setCurrentUniqueHandId(generateUniqueHandId());
     setIsHandAlreadyPlayedState(alreadyPlayed);
     setPreviousHandResult(previousResult ? {
       action: previousResult.action,
@@ -634,6 +637,7 @@ export default function TrainPage() {
       heroStack: stk
     });
     setCurrentHandId(handId);
+    setCurrentUniqueHandId(generateUniqueHandId());
     setIsHandAlreadyPlayedState(alreadyPlayed);
     setPreviousHandResult(previousResult ? {
       action: previousResult.action,
@@ -739,6 +743,7 @@ export default function TrainPage() {
     setHandState(null);
     setLastFeedback(null);
     setCurrentHandId(null);
+    setCurrentUniqueHandId(null);
     setIsHandAlreadyPlayedState(false);
     setPreviousHandResult(null);
     setCurrentStreak(0);
@@ -1512,7 +1517,7 @@ export default function TrainPage() {
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} previousResult={previousHandResult ? {
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} uniqueHandId={currentUniqueHandId || undefined} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
