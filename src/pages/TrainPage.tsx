@@ -344,7 +344,7 @@ export default function TrainPage() {
             user_action: action,
             correct_action: handData.primaryAction,
             feedback: feedback.type,
-            points: feedback.points,
+            points: Math.round(feedback.points),
             ev_loss: feedback.evLoss,
           })
           .then(({ error }) => {
@@ -408,7 +408,7 @@ export default function TrainPage() {
       const newState = processHeroAction(handState, action, scenario);
       
       // Record preflop action
-      const villainResponse = newState.actions.filter(a => !a.isHero).slice(-1)[0];
+      const villainResponse = newState.actions.filter(a => !a.isHero && a.position === handState.villainPosition).slice(-1)[0];
       setSimulationStreetActions([{
         street: 'Preflop',
         heroAction: action === 'allin' ? 'All-in' : action.charAt(0).toUpperCase() + action.slice(1),
@@ -471,7 +471,7 @@ export default function TrainPage() {
           user_action: action,
           correct_action: pendingSimulationScore.handData?.primaryAction || 'fold',
           feedback: feedback.type,
-          points,
+          points: Math.round(points),
           ev_loss: feedback.evLoss,
         })
         .then(({ error }) => {
