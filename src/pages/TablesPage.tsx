@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { RangeMatrix, COLOR_PALETTES, type ColorPalette } from '@/components/poker/RangeMatrix';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, HandData } from 
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Lock, Palette } from 'lucide-react';
+import { CardSelector, type SelectedCard, getHandName } from '@/components/poker/CardSelector';
 
 // Locked scenarios (under maintenance)
 const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
@@ -21,6 +22,13 @@ export default function TablesPage() {
   const [finalTable, setFinalTable] = useState(false);
   const [selectedHand, setSelectedHand] = useState<HandData | null>(null);
   const [colorPalette, setColorPalette] = useState<ColorPalette>('classic');
+  const [heroCards, setHeroCards] = useState<SelectedCard[]>([]);
+  const [boardCards, setBoardCards] = useState<SelectedCard[]>([]);
+
+  const isSimulation = scenario === 'simulation';
+
+  // Auto-select hand in matrix based on hero cards
+  const heroHandName = useMemo(() => getHandName(heroCards), [heroCards]);
 
   return (
     <MainLayout>
@@ -147,12 +155,12 @@ export default function TablesPage() {
               <CardContent className="p-4">
                 <ScrollArea className="w-full">
                   <div className="min-w-[320px]">
-                    <RangeMatrix
+                     <RangeMatrix
                       scenario={scenario}
                       position={position}
                       stack={stack}
                       finalTable={finalTable}
-                      selectedHand={selectedHand?.hand}
+                      selectedHand={heroHandName || selectedHand?.hand}
                       onHandClick={setSelectedHand}
                       colorPalette={colorPalette}
                     />
@@ -183,6 +191,17 @@ export default function TablesPage() {
 
           {/* Sidebar - Palette + Hand details */}
           <div className="lg:sticky lg:top-6 lg:self-start space-y-4">
+          {/* Card selector for simulation */}
+            {isSimulation && (
+              <CardSelector
+                heroCards={heroCards}
+                boardCards={boardCards}
+                onHeroCardsChange={setHeroCards}
+                onBoardCardsChange={setBoardCards}
+                onClear={() => { setHeroCards([]); setBoardCards([]); }}
+              />
+            )}
+
             {/* Color palette selector */}
             <Card>
               <CardHeader className="pb-2">
