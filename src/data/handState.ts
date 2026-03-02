@@ -338,10 +338,10 @@ export function processHeroAction(
   return newState;
 }
 
-// Processar ação pós-flop do herói (check/bet/fold) para modo simulação
+// Processar ação pós-flop do herói (check/bet/call/raise/fold/allin) para modo simulação
 export function processPostflopAction(
   state: HandState,
-  action: 'check' | 'bet' | 'fold' | 'allin',
+  action: 'check' | 'bet' | 'fold' | 'allin' | 'call' | 'raise',
   betSizePct?: number // percentual do pot (0.33, 0.5, 0.75, 1.0)
 ): HandState {
   const newState = { ...state, awaitingPostflopAction: false };
@@ -454,6 +454,82 @@ export function processPostflopAction(
       newState.activeBets = [];
       newState.lastVillainAction = 'Fold';
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
+      return newState;
+    }
+  }
+  
+  // Call action (facing villain bet/raise)
+  if (action === 'call') {
+    const villainBet = state.activeBets.find(b => b.position === state.villainPosition);
+    const callAmount = villainBet ? Math.min(villainBet.amount, state.heroStack) : 0;
+    newState.pot = state.pot + callAmount;
+    newState.heroStack = state.heroStack - callAmount;
+    newState.activeBets = [];
+    newState.lastVillainAction = undefined;
+    newState.villainAction = undefined;
+    
+    const isRiver = state.street === 'river';
+    if (isRiver) {
+      return goToShowdown(newState);
+    }
+    return dealNextStreet(newState);
+  }
+  
+  // Raise action (facing villain bet/raise)
+  if (action === 'raise') {
+    const pct = betSizePct || 0.75;
+    const rawRaise = state.pot * pct;
+    const effectiveStack = Math.min(state.heroStack, state.villainStack || state.heroStack);
+    const raiseSize = Math.min(Math.round(rawRaise * 10) / 10, effectiveStack);
+    newState.pot = state.pot + raiseSize;
+    newState.heroStack = state.heroStack - raiseSize;
+    newState.activeBets = [{ position: state.heroPosition, amount: raiseSize }];
+    newState.lastVillainAction = undefined;
+    newState.villainAction = undefined;
+    
+    // Villain responds to raise
+    const villainIsIP = isVillainInPosition(state);
+    const decision = makeVillainPostflopDecision(
+      state.villainCards || [],
+      state.communityCards,
+      state.street,
+      newState.pot,
+      state.villainStack || 0,
+      newState.heroStack,
+      raiseSize,
+      villainIsIP,
+      [],
+      newState.villainMemory,
+    );
+    
+    if (decision.action === 'call') {
+      const callAmt = Math.min(raiseSize, state.villainStack || 0);
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call', amount: callAmt }];
+      newState.pot += callAmt;
+      newState.villainStack = (state.villainStack || 0) - callAmt;
+      newState.activeBets = [];
+      newState.lastVillainAction = `Call ${callAmt.toFixed(1)}BB`;
+      newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'call', true, callAmt);
+      const isRiver = state.street === 'river';
+      if (isRiver) return goToShowdown(newState);
+      return dealNextStreet(newState);
+    } else if (decision.action === 'fold') {
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'fold' }];
+      newState.isHandComplete = true;
+      newState.result = 'hero_wins';
+      newState.lastVillainAction = 'Fold';
+      newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
+      return newState;
+    } else {
+      // Villain re-raises → all-in scenario, simplify to call
+      const reraiseAmt = Math.min(state.villainStack || 0, newState.pot);
+      newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'allin', amount: reraiseAmt }];
+      newState.pot += reraiseAmt;
+      newState.villainStack = 0;
+      newState.lastVillainAction = `All-in ${reraiseAmt.toFixed(1)}BB`;
+      newState.villainAction = { action: 'All-in', amount: reraiseAmt };
+      newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'allin', true, reraiseAmt);
+      newState.awaitingPostflopAction = true;
       return newState;
     }
   }

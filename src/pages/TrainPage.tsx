@@ -550,7 +550,7 @@ export default function TrainPage() {
   }, [scenario, handState, lastFeedback, applyPendingScore]);
 
   // Handle postflop action in simulation mode with delays
-  const handlePostflopAction = useCallback((action: 'check' | 'bet' | 'fold' | 'allin') => {
+  const handlePostflopAction = useCallback((action: 'check' | 'bet' | 'fold' | 'allin' | 'call' | 'raise') => {
     if (!handState) return;
     
     const betSize = action === 'bet' ? selectedBetSize : undefined;
@@ -558,8 +558,11 @@ export default function TrainPage() {
     const newState = processPostflopAction(handState, action, betSize);
     
     // Determine hero's action label and amount
-    const heroActionLabel = action === 'allin' ? 'All-in' : action === 'bet' 
-      ? `Bet ${(handState.pot * (betSize || 0.5)).toFixed(1)}BB` 
+    const facingBet = handState.awaitingPostflopAction && handState.villainAction;
+    const heroActionLabel = action === 'allin' ? 'All-in' 
+      : action === 'bet' ? `Bet ${(handState.pot * (betSize || 0.5)).toFixed(1)}BB`
+      : action === 'call' ? `Call ${facingBet ? handState.villainAction!.amount.toFixed(1) : '0'}BB`
+      : action === 'raise' ? `Raise ${(handState.pot * (betSize || 0.75)).toFixed(1)}BB`
       : action.charAt(0).toUpperCase() + action.slice(1);
     
     // Determine villain's response from the new state
@@ -1281,7 +1284,7 @@ export default function TrainPage() {
                   </div>
                 </div>
 
-                {/* Bet sizing selector - GGPoker style */}
+                {/* Bet/Raise sizing selector */}
                 <div className="flex items-center justify-center gap-2">
                   {[
                     { label: '33%', value: 0.33 },
@@ -1316,35 +1319,75 @@ export default function TrainPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePostflopAction('check')}
-                    className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-secondary hover:bg-secondary/90 border-secondary text-secondary-foreground font-semibold"
-                  >
-                    <span className="text-lg">✓</span>
-                    <span className="text-xs sm:text-sm">Check</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePostflopAction('bet')}
-                    className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
-                  >
-                    <span className="text-lg">💰</span>
-                    <span className="text-xs sm:text-sm">Bet {Math.min(
-                      Math.round(handState.pot * selectedBetSize * 10) / 10,
-                      Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
-                    ).toFixed(1)}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePostflopAction('fold')}
-                    className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-muted hover:bg-muted/80 border-muted text-foreground font-semibold"
-                  >
-                    <span className="text-lg">✕</span>
-                    <span className="text-xs sm:text-sm">Fold</span>
-                  </Button>
-                </div>
+                {/* Action buttons - adapt based on whether facing a villain bet */}
+                {handState.awaitingPostflopAction && handState.villainAction ? (
+                  /* Facing villain bet/raise: show Call, Raise, Fold, All-in */
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('fold')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-muted hover:bg-muted/80 border-muted text-foreground font-semibold"
+                    >
+                      <span className="text-lg">✕</span>
+                      <span className="text-xs sm:text-sm">Fold</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('call')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-secondary hover:bg-secondary/90 border-secondary text-secondary-foreground font-semibold"
+                    >
+                      <span className="text-lg">✓</span>
+                      <span className="text-xs sm:text-sm">Call {handState.villainAction.amount.toFixed(1)}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('raise')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
+                    >
+                      <span className="text-lg">↑</span>
+                      <span className="text-xs sm:text-sm">Raise</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('allin')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground font-semibold"
+                    >
+                      <span className="text-lg">💥</span>
+                      <span className="text-xs sm:text-sm">All-in</span>
+                    </Button>
+                  </div>
+                ) : (
+                  /* No villain bet: show Check, Bet, Fold */
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('check')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-secondary hover:bg-secondary/90 border-secondary text-secondary-foreground font-semibold"
+                    >
+                      <span className="text-lg">✓</span>
+                      <span className="text-xs sm:text-sm">Check</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('bet')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
+                    >
+                      <span className="text-lg">💰</span>
+                      <span className="text-xs sm:text-sm">Bet {Math.min(
+                        Math.round(handState.pot * selectedBetSize * 10) / 10,
+                        Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
+                      ).toFixed(1)}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePostflopAction('fold')}
+                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-muted hover:bg-muted/80 border-muted text-foreground font-semibold"
+                    >
+                      <span className="text-lg">✕</span>
+                      <span className="text-xs sm:text-sm">Fold</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1405,66 +1448,75 @@ export default function TrainPage() {
                         📋 Resumo da Mão
                       </h3>
                       <div className="space-y-2">
-                        {simulationStreetActions.map((sa, idx) => {
-                          const analysis = analyzeStreetAction(sa);
-                          const isPostflop = sa.street.toLowerCase() !== 'preflop';
-                          return (
-                            <div key={idx} className="rounded-lg border border-border/50 overflow-hidden">
-                              <div className="flex items-center justify-between p-2 bg-muted/50">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-xs font-bold text-primary uppercase w-14">{sa.street}</span>
-                                  <div className="text-sm">
-                                    <span className="font-medium">Hero: {sa.heroAction}</span>
-                                    {sa.villainAction && (
-                                      <span className="text-muted-foreground ml-2">→ Vilão: {sa.villainAction}</span>
-                                    )}
+                        {(() => {
+                          const seenReasons = new Set<string>();
+                          return simulationStreetActions.map((sa, idx) => {
+                            const analysis = analyzeStreetAction(sa);
+                            const isPostflop = sa.street.toLowerCase() !== 'preflop';
+                            // Filter out reasoning already shown in previous streets
+                            const uniqueReasons = analysis.reasoning.filter(r => {
+                              if (seenReasons.has(r)) return false;
+                              seenReasons.add(r);
+                              return true;
+                            });
+                            return (
+                              <div key={idx} className="rounded-lg border border-border/50 overflow-hidden">
+                                <div className="flex items-center justify-between p-2 bg-muted/50">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold text-primary uppercase w-14">{sa.street}</span>
+                                    <div className="text-sm">
+                                      <span className="font-medium">Hero: {sa.heroAction}</span>
+                                      {sa.villainAction && (
+                                        <span className="text-muted-foreground ml-2">→ Vilão: {sa.villainAction}</span>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
-                                  {sa.street === 'Preflop' && handState && (
-                                    <button
-                                      className="p-1 rounded hover:bg-primary/20 transition-colors group relative"
-                                      title="Ver Range GTO"
-                                      onClick={() => setSummaryRangeViewer({ open: true, stack: sa.effectiveStack || handState.heroStack })}
-                                    >
-                                      <BarChart3 className="h-4 w-4 text-primary" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                              {/* Post-flop analysis */}
-                              {isPostflop && (
-                                <div className={cn('px-3 py-2 space-y-1', getVerdictBgColor(analysis.verdict))}>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm">{analysis.verdictEmoji}</span>
-                                    <span className={cn('text-sm font-semibold', getVerdictColor(analysis.verdict))}>
-                                      {analysis.verdictLabel}
-                                    </span>
-                                    {analysis.handStrength && (
-                                      <span className="text-xs text-muted-foreground">• {analysis.handStrength}</span>
+                                    <span className="text-xs text-muted-foreground">Pot: {sa.pot.toFixed(1)}</span>
+                                    {sa.street === 'Preflop' && handState && (
+                                      <button
+                                        className="p-1 rounded hover:bg-primary/20 transition-colors group relative"
+                                        title="Ver Range GTO"
+                                        onClick={() => setSummaryRangeViewer({ open: true, stack: sa.effectiveStack || handState.heroStack })}
+                                      >
+                                        <BarChart3 className="h-4 w-4 text-primary" />
+                                      </button>
                                     )}
                                   </div>
-                                  {analysis.boardTexture && (
-                                    <p className="text-xs text-muted-foreground">
-                                      🃏 {analysis.boardTexture.label}
-                                    </p>
-                                  )}
-                                  {analysis.betSizingAnalysis && (
-                                    <p className="text-xs text-muted-foreground">
-                                      💰 {analysis.betSizingAnalysis}
-                                    </p>
-                                  )}
-                                  {analysis.reasoning.map((r, ri) => (
-                                    <p key={ri} className="text-xs text-muted-foreground">
-                                      → {r}
-                                    </p>
-                                  ))}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                                {/* Post-flop analysis */}
+                                {isPostflop && (
+                                  <div className={cn('px-3 py-2 space-y-1', getVerdictBgColor(analysis.verdict))}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{analysis.verdictEmoji}</span>
+                                      <span className={cn('text-sm font-semibold', getVerdictColor(analysis.verdict))}>
+                                        {analysis.verdictLabel}
+                                      </span>
+                                      {analysis.handStrength && (
+                                        <span className="text-xs text-muted-foreground">• {analysis.handStrength}</span>
+                                      )}
+                                    </div>
+                                    {analysis.boardTexture && (
+                                      <p className="text-xs text-muted-foreground">
+                                        🃏 {analysis.boardTexture.label}
+                                      </p>
+                                    )}
+                                    {analysis.betSizingAnalysis && (
+                                      <p className="text-xs text-muted-foreground">
+                                        💰 {analysis.betSizingAnalysis}
+                                      </p>
+                                    )}
+                                    {uniqueReasons.map((r, ri) => (
+                                      <p key={ri} className="text-xs text-muted-foreground">
+                                        → {r}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                       {/* Preflop GTO result */}
                       {pendingSimulationScore === null && lastFeedback && (
