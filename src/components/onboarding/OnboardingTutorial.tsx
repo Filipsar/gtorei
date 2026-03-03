@@ -75,7 +75,7 @@ const steps: OnboardingStep[] = [
   },
 ];
 
-const ONBOARDING_KEY = 'gtorei_onboarding_completed';
+const ONBOARDING_KEY = 'gtorei_onboarding_completed_v2';
 
 export function OnboardingTutorial({ onComplete }: { onComplete: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
