@@ -267,11 +267,23 @@ export default function TablesPage() {
                     <div className="space-y-3">
                       <p className="font-medium text-sm">Frequências:</p>
                       {(() => {
-                        const allActions: Array<{action: string; frequency: number; ev?: number}> = ['fold', 'call', 'raise', 'allin'].map(act => {
+                        const allActions: Array<{ action: string; frequency: number; ev: number }> = ['fold', 'call', 'raise', 'allin'].map((act) => {
                           const found = selectedHand.actions.find(a => a.action === act);
-                          return found || { action: act, frequency: 0, ev: 0 };
+                          return {
+                            action: act,
+                            frequency: found?.frequency ?? 0,
+                            ev: found?.ev ?? 0,
+                          };
                         });
-                        const gtoEv = Math.max(...allActions.map(a => a.ev ?? 0));
+                        const inRangeBestEv = Math.max(
+                          ...allActions.filter(a => a.frequency > 0).map(a => a.ev),
+                          0
+                        );
+                        const maxAbsEv = Math.max(
+                          1,
+                          ...allActions.map(a => Math.abs(a.ev))
+                        );
+
                         return allActions
                           .sort((a, b) => b.frequency - a.frequency)
                           .map((action) => {
@@ -284,7 +296,14 @@ export default function TablesPage() {
                                 default: return act;
                               }
                             };
-                            const evLoss = action.action === 'raise' && action.ev !== undefined ? Math.max(0, gtoEv - (action.ev ?? 0)) : null;
+                            const evLoss = action.action === 'raise'
+                              ? Math.max(0, inRangeBestEv - action.ev)
+                              : null;
+                            const negativeEvWidth = Math.max(
+                              6,
+                              Math.round((Math.abs(action.ev) / maxAbsEv) * 100)
+                            );
+
                             return (
                               <div key={action.action} className="space-y-1">
                                 <div className="flex justify-between text-sm">
@@ -303,13 +322,25 @@ export default function TablesPage() {
                                     style={{ width: `${action.frequency}%` }}
                                   />
                                 </div>
-                                {action.ev !== undefined && (
-                                  <p className="text-xs text-muted-foreground">
-                                    EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
-                                  </p>
+                                <p className={cn(
+                                  'text-xs',
+                                  action.ev < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                )}>
+                                  EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
+                                </p>
+                                {action.ev < 0 && (
+                                  <div className="h-1 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-destructive"
+                                      style={{ width: `${negativeEvWidth}%` }}
+                                    />
+                                  </div>
                                 )}
-                                {action.action === 'raise' && evLoss !== null && evLoss > 0 && (
-                                  <p className="text-xs text-destructive">
+                                {action.action === 'raise' && evLoss !== null && (
+                                  <p className={cn(
+                                    'text-xs',
+                                    evLoss > 0 ? 'text-destructive' : 'text-muted-foreground'
+                                  )}>
                                     EV Loss por Raise: -{evLoss.toFixed(2)} BB
                                   </p>
                                 )}
