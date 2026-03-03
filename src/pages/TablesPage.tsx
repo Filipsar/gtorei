@@ -322,20 +322,32 @@ export default function TablesPage() {
                                     style={{ width: `${action.frequency}%` }}
                                   />
                                 </div>
-                                <p className={cn(
-                                  'text-xs',
-                                  action.ev < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                )}>
-                                  EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
-                                </p>
-                                {action.ev < 0 && (
-                                  <div className="h-1 bg-muted rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full bg-destructive"
-                                      style={{ width: `${negativeEvWidth}%` }}
-                                    />
-                                  </div>
-                                )}
+                                {(() => {
+                                  const isNotCorrectPlay = action.frequency === 0;
+                                  const isPositiveButNotCorrect = isNotCorrectPlay && action.ev > 0;
+                                  const isNegativeEv = action.ev < 0;
+                                  return (
+                                    <>
+                                      <p className={cn(
+                                        'text-xs',
+                                        isNegativeEv ? 'text-destructive' : isPositiveButNotCorrect ? 'text-yellow-500' : 'text-muted-foreground'
+                                      )}>
+                                        EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
+                                      </p>
+                                      {(isNegativeEv || isPositiveButNotCorrect) && (
+                                        <div className="h-1 bg-muted rounded-full overflow-hidden">
+                                          <div
+                                            className={cn(
+                                              'h-full rounded-full',
+                                              isNegativeEv ? 'bg-destructive' : 'bg-yellow-500'
+                                            )}
+                                            style={{ width: `${negativeEvWidth}%` }}
+                                          />
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                                 {action.action === 'raise' && evLoss !== null && (
                                   <p className={cn(
                                     'text-xs',
