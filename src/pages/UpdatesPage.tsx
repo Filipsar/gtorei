@@ -15,7 +15,7 @@ const UPCOMING: string[] = [
   'Análise de straight draw (OESD, gutshot) no board',
   'Aulas gratuitas de poker GTO',
   'Autoanálise com IA',
-  'Cenário Multiway',
+  
 ];
 
 const UPDATES: UpdateNote[] = [
