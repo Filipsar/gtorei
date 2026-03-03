@@ -65,11 +65,12 @@ export function getRange(
   stack: number,
   finalTable: boolean = false,
   gameMode: GameMode = '8max',
-  bountyMultiplier: number = 0
+  bountyMultiplier: number = 0,
+  multiwayPlayers: number = 3
 ): RangeData {
-  const key = `${gameMode}-${scenario}-${position}-${stack}-${finalTable}-${bountyMultiplier}`;
+  const key = `${gameMode}-${scenario}-${position}-${stack}-${finalTable}-${bountyMultiplier}-${multiwayPlayers}`;
   if (!rangeCache.has(key)) {
-    rangeCache.set(key, interpolateRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier));
+    rangeCache.set(key, interpolateRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers));
   }
   return rangeCache.get(key)!;
 }
