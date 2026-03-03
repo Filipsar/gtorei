@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { RangeMatrix, COLOR_PALETTES, type ColorPalette } from '@/components/poker/RangeMatrix';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,11 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, HandData } from '@/data/gtoRanges';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Lock, Palette } from 'lucide-react';
-import { CardSelector, type SelectedCard, getHandName } from '@/components/poker/CardSelector';
+import { Palette, Users } from 'lucide-react';
 
-// Locked scenarios (under maintenance)
-const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
+// Scenarios hidden from Tables page
+const HIDDEN_SCENARIOS: Scenario[] = ['simulation'];
+
+// Multiway player count options
+const MULTIWAY_PLAYERS = [3, 4, 5, 6] as const;
 
 export default function TablesPage() {
   const [scenario, setScenario] = useState<Scenario>('openRaise');
@@ -22,19 +24,12 @@ export default function TablesPage() {
   const [finalTable, setFinalTable] = useState(false);
   const [selectedHand, setSelectedHand] = useState<HandData | null>(null);
   const [colorPalette, setColorPalette] = useState<ColorPalette>('classic');
-  const [heroCards, setHeroCards] = useState<SelectedCard[]>([]);
-  const [boardCards, setBoardCards] = useState<SelectedCard[]>([]);
+  const [multiwayPlayers, setMultiwayPlayers] = useState<number>(3);
 
-  const isSimulation = scenario === 'simulation';
+  const isMultiway = scenario === 'multiway';
 
-  // Auto-select hand in matrix based on hero cards
-  const heroHandName = useMemo(() => getHandName(heroCards), [heroCards]);
-
-  // Build blocked cards for combo filtering
-  const blockedCards = useMemo(() => {
-    if (!isSimulation) return [];
-    return [...heroCards, ...boardCards].map(c => ({ rank: c.rank, suit: c.suit }));
-  }, [isSimulation, heroCards, boardCards]);
+  // Filter scenarios: hide simulation from Tables
+  const availableScenarios = SCENARIOS.filter(s => !HIDDEN_SCENARIOS.includes(s.id));
 
   return (
     <MainLayout>
@@ -64,27 +59,16 @@ export default function TablesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {SCENARIOS.map((s) => {
-                          const isLocked = LOCKED_SCENARIOS.includes(s.id);
-                          return (
-                            <SelectItem 
-                              key={s.id} 
-                              value={s.id} 
-                              disabled={isLocked}
-                              className={cn(isLocked && 'opacity-50')}
-                            >
-                              <div className="flex flex-col">
-                                <span className="flex items-center gap-2">
-                                  {s.label}
-                                  {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {isLocked ? 'Em manutenção' : s.description}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
+                        {availableScenarios.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <div className="flex flex-col">
+                              <span>{s.label}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {s.description}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -147,6 +131,35 @@ export default function TablesPage() {
                     />
                   </div>
 
+                  {/* Multiway player count */}
+                  {isMultiway && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Jogadores no Pote
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {MULTIWAY_PLAYERS.map((n) => (
+                          <Button
+                            key={n}
+                            variant={multiwayPlayers === n ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setMultiwayPlayers(n)}
+                            className={cn(
+                              'min-w-[3rem]',
+                              multiwayPlayers === n && 'bg-primary text-primary-foreground'
+                            )}
+                          >
+                            {n}-way
+                          </Button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Quantidade de jogadores que entraram no pote
+                      </p>
+                    </div>
+                  )}
+
                 </div>
               </CardContent>
             </Card>
@@ -156,6 +169,7 @@ export default function TablesPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-heading-xs">
                   {SCENARIOS.find(s => s.id === scenario)?.label} - {position} - {stack}BB
+                  {isMultiway && ` (${multiwayPlayers}-way)`}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
@@ -166,10 +180,9 @@ export default function TablesPage() {
                       position={position}
                       stack={stack}
                       finalTable={finalTable}
-                      selectedHand={heroHandName || selectedHand?.hand}
+                      selectedHand={selectedHand?.hand}
                       onHandClick={setSelectedHand}
                       colorPalette={colorPalette}
-                      blockedCards={blockedCards}
                     />
                    </div>
                    <ScrollBar orientation="horizontal" />
@@ -198,17 +211,6 @@ export default function TablesPage() {
 
           {/* Sidebar - Palette + Hand details */}
           <div className="lg:sticky lg:top-6 lg:self-start space-y-4">
-          {/* Card selector for simulation */}
-            {isSimulation && (
-              <CardSelector
-                heroCards={heroCards}
-                boardCards={boardCards}
-                onHeroCardsChange={setHeroCards}
-                onBoardCardsChange={setBoardCards}
-                onClear={() => { setHeroCards([]); setBoardCards([]); }}
-              />
-            )}
-
             {/* Color palette selector */}
             <Card>
               <CardHeader className="pb-2">
@@ -253,7 +255,6 @@ export default function TablesPage() {
               <CardContent>
                 {selectedHand ? (
                   <div className="space-y-4">
-                    {/* Hand name */}
                     <div className="text-center p-4 bg-muted rounded-lg">
                       <span className="text-3xl font-bold text-primary">
                         {selectedHand.hand}
@@ -263,14 +264,12 @@ export default function TablesPage() {
                       </p>
                     </div>
 
-                    {/* Actions breakdown with sizing */}
                     <div className="space-y-3">
                       <p className="font-medium text-sm">Frequências:</p>
                       {selectedHand.actions
                         .filter(a => a.frequency > 0)
                         .sort((a, b) => b.frequency - a.frequency)
                         .map((action) => {
-                          // Bet sizing labels
                           const getSizingLabel = (act: string) => {
                             switch (act) {
                               case 'raise': return 'Raise 2.5x';
@@ -280,7 +279,6 @@ export default function TablesPage() {
                               default: return act;
                             }
                           };
-
                           return (
                             <div key={action.action} className="space-y-1">
                               <div className="flex justify-between text-sm">
@@ -309,7 +307,6 @@ export default function TablesPage() {
                         })}
                     </div>
 
-                    {/* Bet Sizing Breakdown */}
                     {selectedHand.actions.some(a => a.action === 'raise' && a.frequency > 0) && (
                       <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
                         <p className="font-medium text-sm">Sizing do Raise:</p>
@@ -337,7 +334,6 @@ export default function TablesPage() {
                       </div>
                     )}
 
-                    {/* Primary action */}
                     <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                       <p className="text-sm text-muted-foreground">Ação Principal</p>
                       <p className="font-bold text-primary capitalize text-lg">
