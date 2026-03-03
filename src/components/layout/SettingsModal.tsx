@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { Sun, Moon, Monitor, User, Palette, Save, Upload, Check, Lock } from 'lucide-react';
+import { Sun, Moon, Monitor, User, Palette, Save, Upload, Check, Lock, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getUserProfile, updateUserProfile, UserProfile } from '@/data/localStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -405,6 +406,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 checked={false}
                 disabled
               />
+            </div>
+
+            {/* Replay onboarding */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div>
+                <p className="font-medium text-sm flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  Tutorial de Onboarding
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Reveja o passo a passo das funcionalidades
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem('gtorei_onboarding_completed_v2');
+                  onOpenChange(false);
+                  window.location.href = '/treinar';
+                }}
+              >
+                Rever
+              </Button>
             </div>
 
             <p className="text-xs text-muted-foreground text-center pt-2">
