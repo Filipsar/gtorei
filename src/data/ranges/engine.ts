@@ -363,11 +363,11 @@ function assignHandActions(
   const sum = foldF + callF + raiseF + allinF;
   if (sum !== 100) foldF += 100 - sum;
 
-  const sn = strength / 100;
+  const normalizedStrength = (strength - 50) / 50; // -1 (muito fraca) a +1 (muito forte)
   const actions: ActionFrequency[] = [
-    { action: 'allin', frequency: allinF, ev: sn * 12 },
-    { action: 'raise', frequency: raiseF, ev: sn * 6 },
-    { action: 'call', frequency: callF, ev: sn * 3 },
+    { action: 'allin', frequency: allinF, ev: normalizedStrength * 12 },
+    { action: 'raise', frequency: raiseF, ev: normalizedStrength * 6 },
+    { action: 'call', frequency: callF, ev: normalizedStrength * 3 },
     { action: 'fold', frequency: foldF, ev: 0 },
   ];
   if (actions.every(a => a.frequency === 0)) actions[3].frequency = 100;
