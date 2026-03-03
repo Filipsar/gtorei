@@ -848,6 +848,7 @@ export default function TrainPage() {
           </div>
           <TrainingModeSelector onSelect={handleModeSelect} />
         </div>
+        {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
       </MainLayout>
     );
   }
