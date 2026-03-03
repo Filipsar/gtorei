@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, HandData } from '@/data/gtoRanges';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Palette, Users } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Settings, Users } from 'lucide-react';
 
 // Scenarios hidden from Tables page
 const HIDDEN_SCENARIOS: Scenario[] = ['simulation'];
@@ -166,11 +167,46 @@ export default function TablesPage() {
 
             {/* Range Matrix */}
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-heading-xs">
                   {SCENARIOS.find(s => s.id === scenario)?.label} - {position} - {stack}BB
                   {isMultiway && ` (${multiwayPlayers}-way)`}
                 </CardTitle>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-56">
+                    <p className="font-medium text-sm mb-2">Paleta de Cores</p>
+                    <div className="flex flex-col gap-1.5">
+                      {COLOR_PALETTES.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => setColorPalette(p.id)}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all w-full',
+                            colorPalette === p.id
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border bg-card text-muted-foreground hover:border-primary/50'
+                          )}
+                        >
+                          <div className="flex gap-0.5">
+                            {Object.values(p.colors).map((color, idx) => (
+                              <div
+                                key={idx}
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </CardHeader>
               <CardContent className="p-4">
                 <ScrollArea className="w-full">
@@ -211,43 +247,6 @@ export default function TablesPage() {
 
           {/* Sidebar - Palette + Hand details */}
           <div className="lg:sticky lg:top-6 lg:self-start space-y-4">
-            {/* Color palette selector */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-heading-xs flex items-center gap-2">
-                  <Palette className="h-4 w-4" />
-                  Paleta de Cores
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="flex flex-col gap-2">
-                  {COLOR_PALETTES.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setColorPalette(p.id)}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all w-full',
-                        colorPalette === p.id
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-card text-muted-foreground hover:border-primary/50'
-                      )}
-                    >
-                      <div className="flex gap-0.5">
-                        {Object.values(p.colors).map((color, idx) => (
-                          <div
-                            key={idx}
-                            className="w-3 h-3 rounded-sm"
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle className="text-heading-xs">Detalhes da Mão</CardTitle>
