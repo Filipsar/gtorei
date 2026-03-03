@@ -217,7 +217,8 @@ function getScenarioConfig(
   position: Position,
   stack: number,
   finalTable: boolean,
-  bountyMultiplier: number
+  bountyMultiplier: number,
+  multiwayPlayers: number = 3
 ): { raisePercent: number; callPercent: number; allinPercent: number } {
   const posConfig = MODE_CONFIGS[gameMode]?.[position]?.[scenario];
   let raisePercent = posConfig?.raise || 0;
@@ -242,7 +243,7 @@ function getScenarioConfig(
         raisePercent -= shift;
       }
     }
-  } else if (scenario === 'vsOpenRaise' || scenario === 'simulation' || scenario === 'multiway') {
+  } else if (scenario === 'vsOpenRaise' || scenario === 'simulation') {
     raisePercent *= sm.raise3bet;
     callPercent *= sm.call;
     // 3-bet shove range: at ≤40bb, convert a portion of raises to all-ins
@@ -260,6 +261,15 @@ function getScenarioConfig(
         raisePercent -= extraShove;
       }
     }
+  } else if (scenario === 'multiway') {
+    raisePercent *= sm.raise3bet;
+    callPercent *= sm.call;
+    // Tighten ranges based on number of players in pot
+    // More players = tighter ranges (less raise, more fold)
+    const tightenFactor = Math.max(0.4, 1 - (multiwayPlayers - 2) * 0.15);
+    raisePercent *= tightenFactor;
+    callPercent *= tightenFactor;
+    allinPercent *= tightenFactor * 0.8; // all-in tightens even more
   } else if (scenario === 'vs3bet') {
     allinPercent *= sm.allin;
     callPercent *= sm.call;
@@ -374,9 +384,10 @@ export function generateModeRange(
   position: Position,
   stack: number,
   finalTable: boolean = false,
-  bountyMultiplier: number = 0
+  bountyMultiplier: number = 0,
+  multiwayPlayers: number = 3
 ): RangeData {
-  const config = getScenarioConfig(gameMode, scenario, position, stack, finalTable, bountyMultiplier);
+  const config = getScenarioConfig(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers);
   const sorted = getSortedHands(gameMode);
   const total = sorted.length;
 
@@ -434,10 +445,11 @@ export function interpolateRange(
   position: Position,
   stack: number,
   finalTable: boolean = false,
-  bountyMultiplier: number = 0
+  bountyMultiplier: number = 0,
+  multiwayPlayers: number = 3
 ): RangeData {
   if (STACK_SIZES.includes(stack)) {
-    return generateModeRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier);
+    return generateModeRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers);
   }
 
   let lower = STACK_SIZES[0];
@@ -450,12 +462,12 @@ export function interpolateRange(
     }
   }
 
-  if (stack <= lower) return generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier);
-  if (stack >= upper) return generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier);
+  if (stack <= lower) return generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier, multiwayPlayers);
+  if (stack >= upper) return generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier, multiwayPlayers);
 
   const weight = (stack - lower) / (upper - lower);
-  const rL = generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier);
-  const rU = generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier);
+  const rL = generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier, multiwayPlayers);
+  const rU = generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier, multiwayPlayers);
 
   const hands: HandData[] = rL.hands.map((hL, idx) => {
     const hU = rU.hands[idx];

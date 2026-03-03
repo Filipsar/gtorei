@@ -219,6 +219,7 @@ export default function TablesPage() {
                       selectedHand={selectedHand?.hand}
                       onHandClick={setSelectedHand}
                       colorPalette={colorPalette}
+                      multiwayPlayers={multiwayPlayers}
                     />
                    </div>
                    <ScrollBar orientation="horizontal" />

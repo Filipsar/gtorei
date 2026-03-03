@@ -98,6 +98,7 @@ interface RangeMatrixProps {
   finalTable?: boolean;
   gameMode?: GameMode;
   bountyMultiplier?: number;
+  multiwayPlayers?: number;
   onHandClick?: (hand: HandData) => void;
   selectedHand?: string;
   colorPalette?: ColorPalette;
@@ -111,12 +112,13 @@ export function RangeMatrix({
   finalTable = false,
   gameMode = '8max',
   bountyMultiplier = 0,
+  multiwayPlayers = 3,
   onHandClick,
   selectedHand,
   colorPalette = 'classic',
   blockedCards = [],
 }: RangeMatrixProps) {
-  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
+  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier, multiwayPlayers);
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
 
   const palette = COLOR_PALETTES.find(p => p.id === colorPalette) || COLOR_PALETTES[0];
