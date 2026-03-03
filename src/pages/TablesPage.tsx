@@ -266,45 +266,57 @@ export default function TablesPage() {
 
                     <div className="space-y-3">
                       <p className="font-medium text-sm">Frequências:</p>
-                      {selectedHand.actions
-                        .filter(a => a.frequency > 0)
-                        .sort((a, b) => b.frequency - a.frequency)
-                        .map((action) => {
-                          const getSizingLabel = (act: string) => {
-                            switch (act) {
-                              case 'raise': return 'Raise 2.5x';
-                              case 'call': return 'Call';
-                              case 'fold': return 'Fold';
-                              case 'allin': return 'All-in';
-                              default: return act;
-                            }
-                          };
-                          return (
-                            <div key={action.action} className="space-y-1">
-                              <div className="flex justify-between text-sm">
-                                <span className="capitalize">{getSizingLabel(action.action)}</span>
-                                <span className="font-medium">{action.frequency}%</span>
+                      {(() => {
+                        const allActions: Array<{action: string; frequency: number; ev?: number}> = ['fold', 'call', 'raise', 'allin'].map(act => {
+                          const found = selectedHand.actions.find(a => a.action === act);
+                          return found || { action: act, frequency: 0, ev: 0 };
+                        });
+                        const gtoEv = Math.max(...allActions.map(a => a.ev ?? 0));
+                        return allActions
+                          .sort((a, b) => b.frequency - a.frequency)
+                          .map((action) => {
+                            const getSizingLabel = (act: string) => {
+                              switch (act) {
+                                case 'raise': return 'Raise 2.5x';
+                                case 'call': return 'Call';
+                                case 'fold': return 'Fold';
+                                case 'allin': return 'All-in';
+                                default: return act;
+                              }
+                            };
+                            const evLoss = action.action === 'raise' && action.ev !== undefined ? Math.max(0, gtoEv - (action.ev ?? 0)) : null;
+                            return (
+                              <div key={action.action} className="space-y-1">
+                                <div className="flex justify-between text-sm">
+                                  <span className="capitalize">{getSizingLabel(action.action)}</span>
+                                  <span className="font-medium">{action.frequency}%</span>
+                                </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className={cn(
+                                      'h-full rounded-full',
+                                      action.action === 'fold' && 'bg-muted-foreground/50',
+                                      action.action === 'call' && 'bg-secondary',
+                                      action.action === 'raise' && 'bg-feedback-best',
+                                      action.action === 'allin' && 'bg-destructive'
+                                    )}
+                                    style={{ width: `${action.frequency}%` }}
+                                  />
+                                </div>
+                                {action.ev !== undefined && (
+                                  <p className="text-xs text-muted-foreground">
+                                    EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
+                                  </p>
+                                )}
+                                {action.action === 'raise' && evLoss !== null && evLoss > 0 && (
+                                  <p className="text-xs text-destructive">
+                                    EV Loss por Raise: -{evLoss.toFixed(2)} BB
+                                  </p>
+                                )}
                               </div>
-                              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className={cn(
-                                    'h-full rounded-full',
-                                    action.action === 'fold' && 'bg-muted-foreground/50',
-                                    action.action === 'call' && 'bg-secondary',
-                                    action.action === 'raise' && 'bg-feedback-best',
-                                    action.action === 'allin' && 'bg-destructive'
-                                  )}
-                                  style={{ width: `${action.frequency}%` }}
-                                />
-                              </div>
-                              {action.ev !== undefined && (
-                                <p className="text-xs text-muted-foreground">
-                                  EV: {action.ev > 0 ? '+' : ''}{action.ev.toFixed(2)} BB
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                      })()}
                     </div>
 
                     {selectedHand.actions.some(a => a.action === 'raise' && a.frequency > 0) && (
