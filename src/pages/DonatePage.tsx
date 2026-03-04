@@ -27,8 +27,8 @@ export default function DonatePage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/')}
-          >
+            onClick={() => navigate('/')}>
+            
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
@@ -61,10 +61,10 @@ export default function DonatePage() {
                 <span className="text-primary">✓</span>
                 Manter o projeto 100% gratuito
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary">✓</span>
-                Ajudar jogadores de baixa renda a evoluírem
-              </li>
+              
+
+
+              
               <li className="flex items-start gap-2">
                 <span className="text-primary">✓</span>
                 Melhorias contínuas estão sendo desenvolvidas
@@ -85,8 +85,8 @@ export default function DonatePage() {
               <img
                 src={qrCodeImage}
                 alt="QR Code para doação"
-                className="w-48 h-48 sm:w-56 sm:h-56"
-              />
+                className="w-48 h-48 sm:w-56 sm:h-56" />
+              
             </div>
             <p className="text-body-sm text-muted-foreground mb-4">
               Ou clique no botão abaixo para abrir o link de pagamento
@@ -94,8 +94,8 @@ export default function DonatePage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 asChild
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+                className="bg-primary text-primary-foreground hover:bg-primary/90">
+                
                 <a href={DONATION_LINK} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Ajudar
@@ -103,8 +103,8 @@ export default function DonatePage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={handleCopyLink}
-              >
+                onClick={handleCopyLink}>
+                
                 <Copy className="h-4 w-4 mr-2" />
                 Copiar Link
               </Button>
@@ -123,13 +123,13 @@ export default function DonatePage() {
         <div className="text-center mt-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
-          >
+            onClick={() => navigate('/')}>
+            
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar ao início
           </Button>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
