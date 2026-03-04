@@ -32,7 +32,7 @@ export default function DonatePage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
-            <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8" />
+            <img alt="GTORei" className="h-8 w-8" src="/lovable-uploads/9df871a1-b9b3-4970-afc6-c57e56d595d0.png" />
             <span className="text-heading-xs text-foreground">GTORei</span>
           </div>
         </div>
