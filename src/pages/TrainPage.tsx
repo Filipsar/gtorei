@@ -174,8 +174,43 @@ export default function TrainPage() {
     return bounties;
   };
 
-  // Generate random hand
+  // Generate random hand with difficulty scaling based on player level
+  // Higher ranks get more marginal/borderline hands (harder decisions)
   const generateRandomHand = useCallback((): string => {
+    const playerLevel = profile?.level || getUserProfile()?.level || 1;
+    
+    // Difficulty: chance of generating a "marginal" hand (medium strength)
+    // Level 1-2: 0% bias (pure random)
+    // Level 3 (Intermediário): 25% chance of marginal hand
+    // Level 4 (Avançado): 40% chance
+    // Level 5 (Expert): 55% chance
+    // Level 6 (Mestre): 65% chance
+    // Level 7 (Lenda): 75% chance
+    const marginalChance = [0, 0, 0.25, 0.40, 0.55, 0.65, 0.75][Math.min(playerLevel - 1, 6)];
+    
+    const useMarginal = Math.random() < marginalChance;
+    
+    if (useMarginal) {
+      // Generate hands in the "marginal zone" - medium strength hands
+      // These are the hardest to decide: borderline raise/call/fold
+      const marginalHands = [
+        // Suited connectors/gappers (common marginal spots)
+        'T9s', '98s', '87s', '76s', '65s', 'J9s', 'T8s', '97s', '86s',
+        // Suited aces (marginal in many positions)
+        'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s',
+        // Off-suit broadways (tough decisions)
+        'KTo', 'QTo', 'JTo', 'KJo', 'QJo', 'K9o', 'Q9o',
+        // Medium pairs (position-dependent)
+        '77', '66', '55', '44', '33', '22',
+        // Suited kings/queens (marginal 3bet/call spots)
+        'K9s', 'K8s', 'K7s', 'Q9s', 'Q8s', 'J8s', 'J9s',
+        // Off-suit aces (classic marginal hands)
+        'A9o', 'A8o', 'A7o', 'A6o', 'A5o', 'A4o', 'A3o', 'A2o',
+      ];
+      return marginalHands[Math.floor(Math.random() * marginalHands.length)];
+    }
+    
+    // Standard random generation
     const rank1 = RANKS[Math.floor(Math.random() * RANKS.length)];
     const rank2 = RANKS[Math.floor(Math.random() * RANKS.length)];
     const idx1 = RANKS.indexOf(rank1);
@@ -187,7 +222,7 @@ export default function TrainPage() {
     } else {
       return Math.random() > 0.5 ? `${rank2}${rank1}s` : `${rank2}${rank1}o`;
     }
-  }, []);
+  }, [profile?.level]);
 
   // Get cards string for hand ID
   const getCardsString = (cards: CardType[]): string => {
