@@ -54,7 +54,7 @@ export function AppSidebar() {
           <div className="flex items-center justify-between w-full">
             {!collapsed &&
             <div className="flex items-center gap-3">
-                <img alt="GTORei" className="h-8 w-8 object-contain" src="/lovable-uploads/4f4d91c1-6773-4614-bb60-092327fb0151.png" />
+                <img alt="GTORei" className="h-8 w-8 object-contain" src="/lovable-uploads/9c0d8326-a96e-47a8-9e95-40f28d54d109.png" />
                 <span className="text-heading-sm">
                   <span className="text-primary">GTO</span>
                   <span className="text-sidebar-foreground">Rei</span>
