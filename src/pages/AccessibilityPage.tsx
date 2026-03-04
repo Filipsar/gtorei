@@ -16,7 +16,7 @@ export default function AccessibilityPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <img src={gtoreiLogo} alt="GTORei" className="h-8 w-8" />
+            <img alt="GTORei" className="h-8 w-8" src="/lovable-uploads/e8c660c4-4c5b-4279-ae0a-088914599503.png" />
             <span className="text-heading-sm">
               <span className="text-primary">GTO</span>Rei
             </span>
@@ -84,8 +84,8 @@ export default function AccessibilityPage() {
                 href="https://www.instagram.com/acesinclusivos/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
-              >
+                className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium">
+                
                 <Instagram className="h-5 w-5" />
                 @acesinclusivos
                 <ExternalLink className="h-4 w-4" />
@@ -131,6 +131,6 @@ export default function AccessibilityPage() {
           </div>
         </div>
       </main>
-    </div>
-  );
+    </div>);
+
 }
