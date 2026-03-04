@@ -4,28 +4,39 @@
 
 ### 1. Corte progressivo de XP por nivel
 
-Atualmente o sistema ja tem multiplicadores de ganho por nivel em `useScoring.ts`. Vamos ajustar os valores para refletir os cortes solicitados:
+Atualmente o sistema ja tem multiplicadores de ganho por nivel em `useScoring.ts`. Valores ajustados:
 
-- Iniciante (nivel 1): 100% (sem corte)
-- Amador (nivel 2): 100% (sem corte)
-- Intermediario (nivel 3): 90% (corte de 10%)
-- Avancado (nivel 4): 70% (corte de +20%, total 30%)
-- Expert (nivel 5): 50% (corte de +20%, total 50%)
-- Mestre (nivel 6): 25% (corte de +25%, total 75%)
-- Lenda (nivel 7): 25% (mantido igual ao Mestre)
+- Iniciante (nivel 1): 130% (bonus)
+- Amador (nivel 2): 115% (bonus leve)
+- Intermediario (nivel 3): 100% (neutro)
+- Avancado (nivel 4): 80% (corte de 20%)
+- Expert (nivel 5): 60% (corte de 40%)
+- Mestre (nivel 6): 35% (corte de 65%)
+- Lenda (nivel 7): 20% (corte de 80%)
 
-**Arquivo:** `src/hooks/useScoring.ts`
-- Atualizar o array `LEVEL_MULTIPLIERS.gain` de `[1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]` para `[1.0, 1.0, 0.9, 0.7, 0.5, 0.25, 0.25]`
+### 2. Thresholds de XP por Rank
 
-### 2. Icone de nivel ao lado do nome no Ranking
+- Iniciante: 0 XP
+- Amador: 150 XP
+- Intermediário: 1.000 XP
+- Avançado: 2.000 XP
+- Expert: 3.000 XP
+- Mestre: 8.000 XP
+- Lenda: 12.000 XP
 
-**Arquivo:** `src/pages/RankingPage.tsx`
-- Criar um mapeamento de nivel para imagem (ja existem os imports de `levelIniciante`, `levelAmador`, etc.)
-- Adicionar a imagem do nivel ao lado do nome do jogador na lista de ranking, usando `entry.profile.level` para selecionar o icone correto
-- Exibir como uma imagem pequena (16x16 ou 20x20) entre o avatar e o nome
+### 3. Dificuldade por Rank
 
-### Detalhes Tecnicos
+A partir do Intermediário (nível 3), o sistema gera mãos marginais com maior frequência, aumentando a dificuldade das decisões:
 
-Alteracoes em 2 arquivos:
-- `src/hooks/useScoring.ts`: Ajuste dos multiplicadores de ganho
-- `src/pages/RankingPage.tsx`: Adicionar helper `getLevelImage(level)` e renderizar o icone ao lado do username
+- Iniciante/Amador: 0% de bias (mãos totalmente aleatórias)
+- Intermediário: 25% de chance de mão marginal
+- Avançado: 40%
+- Expert: 55%
+- Mestre: 65%
+- Lenda: 75%
+
+Mãos marginais incluem: suited connectors, suited aces baixos, broadways offsuit, pares médios/baixos, suited kings/queens médios, e aces offsuit — todas situações de decisão complexa no GTO.
+
+### 4. Icone de nivel ao lado do nome no Ranking
+
+Implementado com mapeamento `LEVEL_IMAGES` e renderização de ícone ao lado do username.
