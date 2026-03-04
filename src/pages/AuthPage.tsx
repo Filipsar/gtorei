@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Crown } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 // Password: min 8 chars, 1 uppercase, 1 symbol
@@ -131,7 +131,7 @@ export default function AuthPage() {
         <div className="flex flex-col items-center mb-8">
           <div className="relative">
             <img alt="GTORei" className="h-20 w-20 object-contain" src="/lovable-uploads/e0ddf7f0-72f1-42b0-85e3-a9280c2915c5.png" />
-            <Crown className="absolute -top-2 -right-2 h-6 w-6 text-primary" />
+            
           </div>
           <h1 className="text-display-md text-primary mt-4">GTORei</h1>
           <p className="text-body-md text-muted-foreground">Treine seu jogo GTO</p>
