@@ -54,7 +54,7 @@ export default function HomePage() {
         <div className="mb-8 animate-float">
           <img alt="GTORei Logo" className="w-40 h-40 sm:w-56 sm:h-56 object-contain drop-shadow-2xl" style={{
           filter: 'drop-shadow(0 0 30px rgba(255, 184, 0, 0.3))'
-        }} src="/lovable-uploads/bedf00eb-3f1f-4389-955b-e4b51a3122e9.png" />
+        }} src="/lovable-uploads/518567fe-7b99-45ff-92c1-2879711b6051.png" />
         </div>
 
         {/* Title */}
