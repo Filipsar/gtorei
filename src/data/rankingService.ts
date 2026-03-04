@@ -113,7 +113,7 @@ function getWeekStart(date: Date): Date {
 }
 
 function calculateLevel(xp: number): number {
-  const thresholds = [0, 150, 1000, 2000, 3000, 8000, 12000];
+  const thresholds = [0, 150, 1000, 3500, 8000, 17500, 25000];
   for (let i = thresholds.length - 1; i >= 0; i--) {
     if (xp >= thresholds[i]) {
       return i + 1;

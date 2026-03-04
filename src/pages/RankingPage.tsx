@@ -252,10 +252,10 @@ export default function RankingPage() {
                  { name: 'Iniciante', xp: '0', img: levelIniciante },
                  { name: 'Amador', xp: '150', img: levelAmador },
                  { name: 'Intermediário', xp: '1.000', img: levelIntermediario },
-                 { name: 'Avançado', xp: '2.000', img: levelAvancado },
-                 { name: 'Expert', xp: '3.000', img: levelExpert },
-                 { name: 'Mestre', xp: '8.000', img: levelMestre },
-                 { name: 'Lenda', xp: '12.000', img: levelLenda },
+                 { name: 'Avançado', xp: '3.500', img: levelAvancado },
+                 { name: 'Expert', xp: '8.000', img: levelExpert },
+                 { name: 'Mestre', xp: '17.500', img: levelMestre },
+                 { name: 'Lenda', xp: '25.000', img: levelLenda },
                ].map((level) => (
                  <div key={level.name} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
                    <img src={level.img} alt={level.name} className="w-8 h-8 object-contain" />
