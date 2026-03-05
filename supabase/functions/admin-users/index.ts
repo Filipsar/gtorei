@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Use service role to bypass RLS
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
     // Fetch all auth users to get emails
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     if (authError) throw authError;
