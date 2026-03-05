@@ -21,6 +21,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
 import CommunityPage from "./pages/CommunityPage";
 import BeginnerGuidePage from "./pages/BeginnerGuidePage";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/buscar" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/comunidade" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
             <Route path="/iniciante" element={<BeginnerGuidePage />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
             <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
             <Route path="/atualizacoes" element={<UpdatesPage />} />
             <Route path="*" element={<NotFound />} />
