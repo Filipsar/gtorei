@@ -56,8 +56,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role to bypass RLS
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    // Fetch all auth users to get emails
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    if (authError) throw authError;
+    const emailMap: Record<string, string> = {};
+    for (const u of authData?.users || []) {
+      emailMap[u.id] = u.email || '';
+    }
 
     // Fetch all profiles
     const { data: profiles, error: profilesError } = await supabaseAdmin
@@ -125,6 +130,7 @@ Deno.serve(async (req) => {
     // Merge profiles with stats
     const result = (profiles || []).map((p) => ({
       user_id: p.user_id,
+      email: emailMap[p.user_id] || '',
       username: p.username,
       avatar_url: p.avatar_url,
       level: p.level,
