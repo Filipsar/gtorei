@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -34,6 +34,8 @@ const navItems = [
 { title: 'Aulas', url: '#', icon: GraduationCap, locked: true },
 { title: 'Atualizações', url: '/atualizacoes', icon: Bell, locked: false },
 { title: 'Apoie', url: '/apoiar', icon: HandHeart, locked: false }];
+
+const ADMIN_EMAIL = 'farubini2@gmail.com';
 
 
 export function AppSidebar() {
@@ -146,6 +148,31 @@ export function AppSidebar() {
                     </SidebarMenuItem>);
 
                 })}
+
+                {/* Admin link - only for admin */}
+                {user?.email === ADMIN_EMAIL && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === '/admin'}
+                      tooltip={collapsed ? 'Admin' : undefined}>
+                      <NavLink
+                        to="/admin"
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                          'hover:bg-sidebar-accent',
+                          location.pathname === '/admin' && 'bg-sidebar-accent text-primary'
+                        )}
+                        activeClassName="bg-sidebar-accent text-primary font-medium">
+                        <ShieldCheck className={cn(
+                          'h-5 w-5 shrink-0',
+                          location.pathname === '/admin' ? 'text-primary' : 'text-sidebar-foreground'
+                        )} />
+                        {!collapsed && <span className="text-sm">Admin</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
 
                 {/* Give Feedback link */}
                 <SidebarMenuItem>
