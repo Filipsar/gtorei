@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange, Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { getLevelName } from '@/data/localStorage';
 
@@ -241,8 +242,39 @@ export default function RankingPage() {
           </CardContent>
         </Card>
  
-        {/* Level Info Card */}
+        {/* Scoring Info Card */}
         <Card className="mt-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-heading-xs flex items-center gap-2">
+              Como funciona a pontuação?
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="inline-flex items-center justify-center rounded-full w-6 h-6 bg-muted hover:bg-muted/80 transition-colors">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 text-sm space-y-3" side="top">
+                  <p className="font-semibold text-foreground">Sistema de Pontuação</p>
+                  <div className="space-y-2 text-muted-foreground">
+                    <p>Cada decisão no treino é avaliada pelo GTO e gera pontos:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li><span className="text-green-500 font-medium">Best:</span> +15 pts base</li>
+                      <li><span className="text-green-400 font-medium">Correct:</span> +10 pts base</li>
+                      <li><span className="text-yellow-500 font-medium">Inaccuracy:</span> -3 pts base</li>
+                      <li><span className="text-orange-500 font-medium">Mistake:</span> -8 pts base</li>
+                      <li><span className="text-destructive font-medium">Blunder:</span> -30 pts base</li>
+                    </ul>
+                    <p className="pt-1">Os pontos são ajustados pelo seu <strong>Rank atual</strong>: ranks mais altos ganham menos pontos e perdem mais. Erros consecutivos dobram a penalidade.</p>
+                    <p className="pt-1">⚡ <strong>Dificuldade progressiva:</strong> A partir do Intermediário, o sistema prioriza mãos marginais (decisões mais difíceis), aumentando a chance conforme o rank sobe.</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        {/* Level Info Card */}
+        <Card className="mt-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-heading-xs">Rank</CardTitle>
           </CardHeader>
