@@ -23,6 +23,7 @@ const levelNames = ['Amador', 'Iniciante', 'Intermediário', 'Avançado', 'Exper
 
 interface UserData {
   user_id: string;
+  email: string;
   username: string;
   avatar_url: string | null;
   level: number;
@@ -66,7 +67,8 @@ export default function AdminPage() {
   };
 
   const filtered = users.filter((u) =>
-    u.username.toLowerCase().includes(search.toLowerCase())
+    u.username.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
   );
 
   const totalUsers = users.length;
@@ -86,9 +88,10 @@ export default function AdminPage() {
   };
 
   const exportCSV = () => {
-    const headers = ['Username', 'Nível', 'XP', 'Mãos Jogadas', 'Sessões', 'Precisão Média', 'Tempo Total (min)', 'Último Acesso', 'Cadastro'];
+    const headers = ['Username', 'E-mail', 'Nível', 'XP', 'Mãos Jogadas', 'Sessões', 'Precisão Média', 'Tempo Total (min)', 'Último Acesso', 'Cadastro'];
     const rows = filtered.map((u) => [
       u.username,
+      u.email,
       levelNames[u.level - 1] || 'Amador',
       u.total_xp,
       u.total_hands,
@@ -183,6 +186,7 @@ export default function AdminPage() {
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead>Usuário</TableHead>
+                  <TableHead>E-mail</TableHead>
                   <TableHead>Nível</TableHead>
                   <TableHead className="text-right">XP</TableHead>
                   <TableHead className="text-right">Mãos</TableHead>
@@ -197,6 +201,7 @@ export default function AdminPage() {
                 {filtered.map((u) => (
                   <TableRow key={u.user_id}>
                     <TableCell className="font-medium">{u.username}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">
                         {levelNames[u.level - 1] || 'Amador'}
@@ -219,7 +224,7 @@ export default function AdminPage() {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
