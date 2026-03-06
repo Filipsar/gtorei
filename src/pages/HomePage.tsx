@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Instagram, Heart } from 'lucide-react';
+import { Instagram, Heart, Accessibility, ArrowRight } from 'lucide-react';
 import gtoreiLogo from '@/assets/gtorei-crown.png';
 export default function HomePage() {
   const navigate = useNavigate();
@@ -93,10 +93,23 @@ export default function HomePage() {
         </div>
 
         {/* Support button */}
-        <Button onClick={() => navigate('/apoiar')} variant="outline" className="flex items-center gap-2 border-primary/50 hover:bg-primary/10">
+        <Button onClick={() => navigate('/apoiar')} variant="outline" className="flex items-center gap-2 border-primary/50 hover:bg-primary/10 mb-8">
           <Heart className="h-4 w-4 text-destructive" />
           Ajude o projeto a se manter
         </Button>
+
+        {/* Accessibility section */}
+        <div className="w-full max-w-lg p-6 rounded-xl bg-muted/30 border border-border">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Accessibility className="h-5 w-5 text-primary" />
+            <h2 className="text-heading-md">Acessibilidade</h2>
+          </div>
+          <p className="text-body-sm text-muted-foreground mb-4">O GTORei apoia projetos para deficientes e promove a inclusão no poker.</p>
+          <Button variant="outline" size="sm" onClick={() => navigate('/gtoreiacessibilidade')} className="gap-2">
+            Saiba mais
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* CSS for floating animation */}
