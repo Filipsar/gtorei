@@ -1196,6 +1196,12 @@ export default function TrainPage() {
                     <p className="text-xs text-muted-foreground">Stack</p>
                     <p className="text-lg font-semibold">{handState.heroStack} BB</p>
                   </div>
+                  {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Efetivo</p>
+                      <p className="text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
+                    </div>
+                  )}
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground">Pot</p>
                     <p className="text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
