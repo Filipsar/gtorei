@@ -361,6 +361,15 @@ export default function TrainPage() {
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
 
+    // Cenários vs3Bet e vsOpenShove: -80% ganho, +20% perda
+    if (scenario === 'vs3bet' || scenario === 'vsOpenShove') {
+      if (feedback.points > 0) {
+        feedback.points = Math.round(feedback.points * 0.2); // 80% menos ganho
+      } else if (feedback.points < 0) {
+        feedback.points = Math.round(feedback.points * 1.2); // 20% mais perda
+      }
+    }
+
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 
