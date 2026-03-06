@@ -1278,6 +1278,7 @@ export default function TrainPage() {
               foldedPositions={handState.foldedPositions} 
               activeBets={handState.activeBets}
               bounties={trainingMode === 'bounty' ? currentBounties : undefined}
+              playerStacks={currentStackDistribution?.all}
               visiblePositions={(() => {
                 const modePositions = MODE_POSITIONS[trainingMode];
                 if (!modePositions) return undefined;
