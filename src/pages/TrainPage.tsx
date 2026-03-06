@@ -660,7 +660,14 @@ export default function TrainPage() {
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
+    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
+
+    // Generate realistic stack distribution
+    const gm = getGameMode();
+    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, tempState.villainPosition, MODE_POSITIONS[trainingMode]);
+    
+    // Re-initialize with villain's dynamic stack
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode], stackDist.villain);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
@@ -677,6 +684,7 @@ export default function TrainPage() {
       setCurrentBounties(bounties);
     }
     
+    setCurrentStackDistribution(stackDist);
     setHandState({
       ...newHandState,
       heroStack: stk
