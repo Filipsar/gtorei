@@ -355,7 +355,8 @@ export default function TrainPage() {
 
     const gm = getGameMode();
     const bm = getBountyMultiplier();
-    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, gm, bm);
+    const effectiveStack = currentStackDistribution?.effectiveStack || handState.heroStack;
+    const handData = getHandData(handName, scenario, handState.heroPosition, effectiveStack, finalTable, gm, bm);
     if (!handData) return;
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
