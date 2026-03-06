@@ -17,6 +17,7 @@ import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
+import { getStackDistribution, StackDistribution } from '@/data/stackDistribution';
 import { initializeHandState, getVillainPosition, getScenarioDescription, processHeroAction, processPostflopAction, HandState, Street } from '@/data/handState';
 import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
@@ -105,6 +106,7 @@ export default function TrainPage() {
   const [selectedBetSize, setSelectedBetSize] = useState(0.5);
   const [simulationStreetActions, setSimulationStreetActions] = useState<Array<StreetActionData>>([]);
   const [summaryRangeViewer, setSummaryRangeViewer] = useState<{ open: boolean; stack: number } | null>(null);
+  const [currentStackDistribution, setCurrentStackDistribution] = useState<StackDistribution | null>(null);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
@@ -278,6 +280,13 @@ export default function TrainPage() {
 
     const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
 
+    // Generate realistic stack distribution
+    const gm = getGameMode();
+    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, newHandState.villainPosition, MODE_POSITIONS[trainingMode]);
+    
+    // Re-initialize with villain's dynamic stack
+    const handStateWithStacks = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode], stackDist.villain);
+
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
@@ -295,8 +304,9 @@ export default function TrainPage() {
       setCurrentBounties(bounties);
     }
     
+    setCurrentStackDistribution(stackDist);
     setHandState({
-      ...newHandState,
+      ...handStateWithStacks,
       heroStack: stk
     });
     setCurrentHandId(handId);
@@ -345,7 +355,8 @@ export default function TrainPage() {
 
     const gm = getGameMode();
     const bm = getBountyMultiplier();
-    const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, gm, bm);
+    const effectiveStack = currentStackDistribution?.effectiveStack || handState.heroStack;
+    const handData = getHandData(handName, scenario, handState.heroPosition, effectiveStack, finalTable, gm, bm);
     if (!handData) return;
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
@@ -650,7 +661,14 @@ export default function TrainPage() {
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
+    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
+
+    // Generate realistic stack distribution
+    const gm = getGameMode();
+    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, tempState.villainPosition, MODE_POSITIONS[trainingMode]);
+    
+    // Re-initialize with villain's dynamic stack
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode], stackDist.villain);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
@@ -667,6 +685,7 @@ export default function TrainPage() {
       setCurrentBounties(bounties);
     }
     
+    setCurrentStackDistribution(stackDist);
     setHandState({
       ...newHandState,
       heroStack: stk
@@ -1177,6 +1196,12 @@ export default function TrainPage() {
                     <p className="text-xs text-muted-foreground">Stack</p>
                     <p className="text-lg font-semibold">{handState.heroStack} BB</p>
                   </div>
+                  {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Efetivo</p>
+                      <p className="text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
+                    </div>
+                  )}
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground">Pot</p>
                     <p className="text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
@@ -1259,6 +1284,7 @@ export default function TrainPage() {
               foldedPositions={handState.foldedPositions} 
               activeBets={handState.activeBets}
               bounties={trainingMode === 'bounty' ? currentBounties : undefined}
+              playerStacks={currentStackDistribution?.all}
               visiblePositions={(() => {
                 const modePositions = MODE_POSITIONS[trainingMode];
                 if (!modePositions) return undefined;
