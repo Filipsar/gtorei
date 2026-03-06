@@ -20,6 +20,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.7.0',
+    date: '06/03/2026',
+    type: 'feature',
+    title: 'Stacks Dinâmicos Realistas',
+    description: 'Oponentes agora recebem stacks variados e realistas baseados no modo de jogo e posição. O stack efetivo (menor entre herói e vilão) é usado para calcular os ranges GTO automaticamente, criando cenários mais desafiadores e próximos de mesas reais.',
+  },
+  {
     version: '1.6.1',
     date: '02/03/2026',
     type: 'feature',
