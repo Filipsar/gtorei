@@ -35,6 +35,7 @@ interface PokerTableProps {
     amount: number;
   }[];
   bounties?: Record<string, number>;
+  playerStacks?: Record<string, number>;
   visiblePositions?: Position[];
   className?: string;
 }
@@ -130,6 +131,7 @@ export function PokerTable({
   foldedPositions = [],
   activeBets = [],
   bounties,
+  playerStacks,
   visiblePositions,
   className
 }: PokerTableProps) {
@@ -208,6 +210,8 @@ export function PokerTable({
             stackToShow = heroStack;
           } else if (isVillain && villainStack) {
             stackToShow = villainStack;
+          } else if (playerStacks && playerStacks[pos]) {
+            stackToShow = playerStacks[pos];
           }
 
           return (

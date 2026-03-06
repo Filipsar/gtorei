@@ -138,7 +138,8 @@ export function initializeHandState(
   heroStack: number,
   heroHand: string,
   heroCards: CardType[],
-  availablePositions?: Position[]
+  availablePositions?: Position[],
+  villainStackOverride?: number
 ): HandState {
   const actions: ActionEntry[] = [];
   const activeBets: { position: Position; amount: number }[] = [];
@@ -151,7 +152,7 @@ export function initializeHandState(
   
   const villainPosition = getVillainPosition(scenario, heroPosition, availablePositions);
   let villainAction: { action: string; amount: number } | undefined;
-  let villainStack = heroStack; // Assumir mesmo stack
+  let villainStack = villainStackOverride ?? heroStack;
   
   // Marcar todos entre o opener e o herói como fold
   const positionOrder = availablePositions || POSITIONS;
