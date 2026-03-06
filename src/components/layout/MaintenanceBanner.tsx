@@ -1,44 +1,56 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Instagram } from 'lucide-react';
 
-const MAINTENANCE_MESSAGES = [
-  '🎓 Aulas gratuitas de poker GTO chegando em breve!',
-  '🔧 Novos cenários e melhorias chegando em breve!',
-  '🤖 Autoanálise com IA em desenvolvimento - em breve!',
-  '⚡ Novas funcionalidades chegando em breve',
+const BANNER_MESSAGES = [
+  { text: 'Siga o GTORei no Instagram — @gtorei', icon: true, link: 'https://www.instagram.com/gtorei/' },
+  { text: '🎓 Aulas gratuitas de poker GTO chegando em breve!' },
+  { text: '🔧 Novos cenários e melhorias chegando em breve!' },
+  { text: '🤖 Autoanálise com IA em desenvolvimento - em breve!' },
+  { text: '⚡ Novas funcionalidades chegando em breve' },
+  { text: 'Siga o GTORei no Instagram — @gtorei', icon: true, link: 'https://www.instagram.com/gtorei/' },
 ];
 
 export function MaintenanceBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+  const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % MAINTENANCE_MESSAGES.length);
-    }, 5000);
-
+      setCurrentIndex((prev) => (prev + 1) % BANNER_MESSAGES.length);
+      setAnimKey((k) => k + 1);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  if (!isVisible) return null;
+  const msg = BANNER_MESSAGES[currentIndex];
+
+  const content = (
+    <span className="animate-marquee-single whitespace-nowrap inline-flex items-center gap-2 text-sm font-medium" key={animKey}>
+      {msg.icon && <Instagram className="h-4 w-4" />}
+      {msg.text}
+    </span>
+  );
 
   return (
-    <div className="bg-primary/10 border-b border-primary/20 px-4 py-2">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <div className="flex items-center gap-2 flex-1">
-          <AlertTriangle className="h-4 w-4 text-primary flex-shrink-0" />
-          <p className="text-sm text-primary animate-fade-in" key={currentIndex}>
-            {MAINTENANCE_MESSAGES[currentIndex]}
-          </p>
+    <div className="bg-primary text-primary-foreground overflow-hidden h-8 flex items-center">
+      {msg.link ? (
+        <a href={msg.link} target="_blank" rel="noopener noreferrer" className="w-full flex justify-center hover:opacity-80 transition-opacity">
+          {content}
+        </a>
+      ) : (
+        <div className="w-full flex justify-center">
+          {content}
         </div>
-        <button
-          onClick={() => setIsVisible(false)}
-          className="p-1 hover:bg-primary/20 rounded transition-colors"
-        >
-          <X className="h-4 w-4 text-primary" />
-        </button>
-      </div>
+      )}
+      <style>{`
+        @keyframes marquee-single {
+          0% { transform: translateX(100%); }
+          15% { transform: translateX(0); }
+          85% { transform: translateX(0); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-marquee-single { animation: marquee-single 4s linear; }
+      `}</style>
     </div>
   );
 }
