@@ -362,7 +362,7 @@ export default function TrainPage() {
     const feedback = calculateFeedback(action, handData, userLevel);
 
     // Cenários vs3Bet e vsOpenShove: -80% ganho, +20% perda
-    if (scenario === 'vs3Bet' || scenario === 'vsOpenShove') {
+    if (scenario === 'vs3bet' || scenario === 'vsOpenShove') {
       if (feedback.points > 0) {
         feedback.points = Math.round(feedback.points * 0.2); // 80% menos ganho
       } else if (feedback.points < 0) {
