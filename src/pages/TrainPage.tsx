@@ -17,6 +17,7 @@ import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
+import { getStackDistribution, StackDistribution } from '@/data/stackDistribution';
 import { initializeHandState, getVillainPosition, getScenarioDescription, processHeroAction, processPostflopAction, HandState, Street } from '@/data/handState';
 import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
@@ -105,6 +106,7 @@ export default function TrainPage() {
   const [selectedBetSize, setSelectedBetSize] = useState(0.5);
   const [simulationStreetActions, setSimulationStreetActions] = useState<Array<StreetActionData>>([]);
   const [summaryRangeViewer, setSummaryRangeViewer] = useState<{ open: boolean; stack: number } | null>(null);
+  const [currentStackDistribution, setCurrentStackDistribution] = useState<StackDistribution | null>(null);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
