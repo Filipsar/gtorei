@@ -1,10 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Instagram, Heart, Accessibility, ArrowRight } from 'lucide-react';
+import { Instagram, Heart } from 'lucide-react';
 import gtoreiLogo from '@/assets/gtorei-crown.png';
 export default function HomePage() {
   const navigate = useNavigate();
   return <div className="relative min-h-screen overflow-hidden bg-background">
+      {/* Rolling Instagram banner */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground overflow-hidden h-9 flex items-center">
+        <a href="https://www.instagram.com/gtorei/" target="_blank" rel="noopener noreferrer" className="animate-marquee whitespace-nowrap flex items-center gap-6 hover:opacity-80 transition-opacity">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span key={i} className="inline-flex items-center gap-2 text-sm font-medium">
+              <Instagram className="h-4 w-4" />
+              Siga o GTORei no Instagram — @gtorei
+            </span>
+          ))}
+        </a>
+      </div>
       {/* Animated tech background */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Grid pattern */}
@@ -73,25 +84,11 @@ export default function HomePage() {
           Jogar
         </Button>
 
-        {/* Accessibility section */}
-        <div className="w-full max-w-lg mb-8 p-6 rounded-xl bg-muted/30 border border-border">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Accessibility className="h-5 w-5 text-primary" />
-            <h2 className="text-heading-md">Acessibilidade</h2>
-          </div>
-          <p className="text-body-sm text-muted-foreground mb-4">O GTORei apoia projetos para deficientes e promove a inclusão no poker.</p>
-          <Button variant="outline" size="sm" onClick={() => navigate('/gtoreiacessibilidade')} className="gap-2">
-            Saiba mais
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Creator info */}
+        {/* Follow us */}
         <div className="flex flex-col items-center gap-4 mb-8">
-          <p className="text-body-sm text-muted-foreground">Criado por</p>
-          <a href="https://www.instagram.com/filiperubini/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors group">
+          <a href="https://www.instagram.com/gtorei/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors group">
             <Instagram className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-            <span className="font-medium">Filipe Rubini</span>
+            <span className="font-medium">Siga-nos</span>
           </a>
         </div>
 
@@ -105,16 +102,15 @@ export default function HomePage() {
       {/* CSS for floating animation */}
       <style>{`
         @keyframes float {
-          0%, 100% {
-            transform: translateY(0px) scale(1);
-          }
-          50% {
-            transform: translateY(-20px) scale(1.05);
-          }
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-20px) scale(1.05); }
         }
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
+        .animate-marquee { animation: marquee 20s linear infinite; }
       `}</style>
     </div>;
 }
