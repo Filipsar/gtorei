@@ -192,6 +192,7 @@ export default function RankingPage() {
                 <p className="text-body-sm mt-2">Seja o primeiro a treinar!</p>
               </div>
             ) : (
+              <>
               <div className="space-y-2">
                 {rankings.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, idx) => {
                   const globalIndex = currentPage * ITEMS_PER_PAGE + idx;
@@ -205,20 +206,15 @@ export default function RankingPage() {
                       user?.id === entry.user_id && 'ring-2 ring-primary/50'
                     )}
                   >
-                    {/* Position */}
                     <div className="w-8 flex justify-center">
                       {getRankIcon(globalIndex + 1)}
                     </div>
- 
-                    {/* Avatar */}
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={entry.profile.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/20 text-primary">
                         {entry.profile.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
- 
-                    {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <img src={getLevelImage(entry.profile.level)} alt="" className="w-5 h-5 object-contain" />
@@ -231,8 +227,6 @@ export default function RankingPage() {
                         {getLevelName(entry.profile.level)} • {entry.hands_played} mãos • {entry.accuracy}% precisão
                       </p>
                     </div>
- 
-                    {/* XP */}
                     <div className="text-right">
                       <p className="font-bold text-primary flex items-center gap-1">
                         <TrendingUp className="h-4 w-4" />
@@ -244,8 +238,6 @@ export default function RankingPage() {
                   );
                 })}
               </div>
-
-              {/* Pagination */}
               {rankings.length > ITEMS_PER_PAGE && (
                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
                   <Button
@@ -273,6 +265,7 @@ export default function RankingPage() {
                   </Button>
                 </div>
               )}
+              </>
             )}
           </CardContent>
         </Card>
