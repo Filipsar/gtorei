@@ -498,13 +498,35 @@ export default function TrainPage() {
     setPhase('feedback');
   }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore]);
 
+  // Calculate postflop bonus/penalty from street verdicts
+  const calculatePostflopBonus = useCallback((): number => {
+    const VERDICT_POINTS: Record<string, number> = {
+      optimal: 5,
+      good: 3,
+      acceptable: 0,
+      questionable: -4,
+      bad: -8,
+    };
+    let bonus = 0;
+    for (const sa of simulationStreetActions) {
+      if (sa.street.toLowerCase() === 'preflop') continue;
+      const analysis = analyzeStreetAction(sa);
+      bonus += VERDICT_POINTS[analysis.verdict] ?? 0;
+    }
+    return bonus;
+  }, [simulationStreetActions]);
+
   // Apply deferred simulation score when hand completes
   const applyPendingScore = useCallback(() => {
     if (!pendingSimulationScore || !handState || !currentHandId) return;
     
-    const { points, isCorrect, action, handName, feedback } = pendingSimulationScore;
+    const { points: preflopPoints, isCorrect, action, handName, feedback } = pendingSimulationScore;
     
-    markHandAsPlayed(currentHandId, action, points, feedback.type);
+    // Add postflop bonus/penalty
+    const postflopBonus = calculatePostflopBonus();
+    const totalPoints = preflopPoints + postflopBonus;
+    
+    markHandAsPlayed(currentHandId, action, totalPoints, feedback.type);
     addHandToSession({
       hand: handName,
       scenario,
@@ -513,7 +535,7 @@ export default function TrainPage() {
       userAction: action,
       correctAction: pendingSimulationScore.handData?.primaryAction || 'fold',
       feedback: feedback.type,
-      points,
+      points: totalPoints,
       evLoss: feedback.evLoss
     });
 
@@ -530,7 +552,7 @@ export default function TrainPage() {
           user_action: action,
           correct_action: pendingSimulationScore.handData?.primaryAction || 'fold',
           feedback: feedback.type,
-          points: Math.round(points),
+          points: Math.round(totalPoints),
           ev_loss: feedback.evLoss,
         })
         .then(({ error }) => {
@@ -538,7 +560,7 @@ export default function TrainPage() {
         });
     }
 
-    setSessionScore(prev => prev + points);
+    setSessionScore(prev => prev + totalPoints);
     setHandsPlayed(prev => prev + 1);
     if (isCorrect) {
       setCorrectHandsCount(prev => prev + 1);
@@ -553,18 +575,18 @@ export default function TrainPage() {
     if (feedback.type === 'best') {
       setSessionBestCount(prev => prev + 1);
     }
-    if (user && points !== 0) {
+    if (user && totalPoints !== 0) {
       updateUserRanking({
         userId: user.id,
-        xpEarned: points,
+        xpEarned: totalPoints,
         handsPlayed: 1,
         correctHands: isCorrect ? 1 : 0,
       });
-      updateSupabaseProfile(user.id, points, 1);
+      updateSupabaseProfile(user.id, totalPoints, 1);
     }
     
     setPendingSimulationScore(null);
-  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements]);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements, calculatePostflopBonus]);
 
   // Auto-apply pending simulation score when hand completes and enters review
   useEffect(() => {
@@ -1609,22 +1631,49 @@ export default function TrainPage() {
                           });
                         })()}
                       </div>
-                      {/* Preflop GTO result */}
-                      {pendingSimulationScore === null && lastFeedback && (
-                        <div className={cn(
-                          'p-2 rounded-lg text-center text-sm font-medium',
-                          (lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct')
-                            ? 'bg-feedback-best/20 text-feedback-best'
-                            : 'bg-feedback-blunder/20 text-feedback-blunder'
-                        )}>
-                          Preflop GTO: {lastFeedback.feedback.type === 'best' ? '✅ Melhor jogada' : 
-                            lastFeedback.feedback.type === 'correct' ? '✅ Jogada correta' : 
-                            `❌ ${lastFeedback.feedback.message}`}
-                          {lastFeedback.feedback.points !== 0 && (
-                            <span className="ml-2">({lastFeedback.feedback.points > 0 ? '+' : ''}{lastFeedback.feedback.points} pts)</span>
-                          )}
-                        </div>
-                      )}
+                      {/* Score summary */}
+                      {pendingSimulationScore === null && lastFeedback && (() => {
+                        // Calculate postflop bonus for display
+                        const VERDICT_DISPLAY_POINTS: Record<string, number> = { optimal: 5, good: 3, acceptable: 0, questionable: -4, bad: -8 };
+                        const postflopActions = simulationStreetActions.filter(sa => sa.street.toLowerCase() !== 'preflop');
+                        const postflopBonus = postflopActions.reduce((sum, sa) => {
+                          const analysis = analyzeStreetAction(sa);
+                          return sum + (VERDICT_DISPLAY_POINTS[analysis.verdict] ?? 0);
+                        }, 0);
+                        const preflopPts = lastFeedback.feedback.points;
+                        const totalPts = preflopPts + postflopBonus;
+                        const isPreflopCorrect = lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct';
+                        return (
+                          <div className="space-y-2">
+                            {/* Preflop result */}
+                            <div className={cn(
+                              'p-2 rounded-lg text-center text-sm font-medium',
+                              isPreflopCorrect ? 'bg-feedback-best/20 text-feedback-best' : 'bg-feedback-blunder/20 text-feedback-blunder'
+                            )}>
+                              Preflop: {lastFeedback.feedback.type === 'best' ? '✅ Melhor jogada' : 
+                                lastFeedback.feedback.type === 'correct' ? '✅ Jogada correta' : 
+                                `❌ ${lastFeedback.feedback.message}`}
+                              <span className="ml-2">({preflopPts > 0 ? '+' : ''}{preflopPts} pts)</span>
+                            </div>
+                            {/* Postflop bonus */}
+                            {postflopActions.length > 0 && (
+                              <div className={cn(
+                                'p-2 rounded-lg text-center text-sm font-medium',
+                                postflopBonus > 0 ? 'bg-feedback-best/20 text-feedback-best' : postflopBonus < 0 ? 'bg-feedback-blunder/20 text-feedback-blunder' : 'bg-muted text-muted-foreground'
+                              )}>
+                                Pós-flop: {postflopBonus > 0 ? '✅' : postflopBonus < 0 ? '❌' : '➖'} {postflopBonus > 0 ? '+' : ''}{postflopBonus} pts
+                              </div>
+                            )}
+                            {/* Total */}
+                            <div className={cn(
+                              'p-3 rounded-lg text-center font-bold',
+                              totalPts > 0 ? 'bg-feedback-best/30 text-feedback-best' : totalPts < 0 ? 'bg-feedback-blunder/30 text-feedback-blunder' : 'bg-muted text-muted-foreground'
+                            )}>
+                              Total: {totalPts > 0 ? '+' : ''}{totalPts} pts
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 )}
