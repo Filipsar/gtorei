@@ -193,19 +193,21 @@ export default function RankingPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {rankings.map((entry, index) => (
+                {rankings.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, idx) => {
+                  const globalIndex = currentPage * ITEMS_PER_PAGE + idx;
+                  return (
                   <div
                     key={entry.id}
                     onClick={() => navigate(`/perfil/${entry.user_id}`)}
                     className={cn(
                       'flex items-center gap-4 p-3 rounded-lg transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30',
-                      index < 3 ? 'bg-primary/5' : 'bg-muted/50',
+                      globalIndex < 3 ? 'bg-primary/5' : 'bg-muted/50',
                       user?.id === entry.user_id && 'ring-2 ring-primary/50'
                     )}
                   >
                     {/* Position */}
                     <div className="w-8 flex justify-center">
-                      {getRankIcon(index + 1)}
+                      {getRankIcon(globalIndex + 1)}
                     </div>
  
                     {/* Avatar */}
@@ -239,8 +241,38 @@ export default function RankingPage() {
                       <p className="text-body-xs text-muted-foreground">XP</p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Pagination */}
+              {rankings.length > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    disabled={currentPage === 0}
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <span className="text-body-sm text-muted-foreground">
+                    Página {currentPage + 1} de {Math.ceil(rankings.length / ITEMS_PER_PAGE)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={(currentPage + 1) * ITEMS_PER_PAGE >= rankings.length}
+                    className="flex items-center gap-1"
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             )}
           </CardContent>
         </Card>
