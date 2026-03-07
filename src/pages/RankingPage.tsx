@@ -54,6 +54,8 @@ export default function RankingPage() {
   const [period, setPeriod] = useState<PeriodType>('daily');
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const ITEMS_PER_PAGE = 10;
  
   useEffect(() => {
     fetchRankings();
