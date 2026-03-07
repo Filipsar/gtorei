@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange, Info } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { getLevelName } from '@/data/localStorage';
