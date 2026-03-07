@@ -123,14 +123,16 @@ export function calculateFeedback(
     return { type: 'correct', points: finalPoints, evLoss, message: evPenalty > 0 ? 'Jogada dentro do range GTO, mas com perda de EV.' : 'Jogada dentro do range GTO.' };
   }
   if (userFrequency >= 5) {
-    const finalPoints = 6 - evPenalty;
-    return { type: 'inaccuracy', points: Math.min(6, finalPoints), evLoss, message: 'Jogada aceitável, mas não ótima.' };
+    // Inaccuracy: small negative penalty
+    const basePoints = -3;
+    const finalPoints = basePoints - evPenalty;
+    return { type: 'inaccuracy', points: finalPoints, evLoss, message: 'Jogada aceitável, mas não ótima.' };
   }
   if (evLoss < 0.5) {
-    const penalty = Math.floor(evLoss * 6);
-    const basePoints = Math.max(2, 5 - penalty);
+    // Mistake: moderate negative penalty
+    const basePoints = -8;
     const finalPoints = basePoints - evPenalty;
-    return { type: 'mistake', points: Math.min(basePoints, finalPoints), evLoss, message: 'Erro. Frequência baixa no GTO.' };
+    return { type: 'mistake', points: finalPoints, evLoss, message: 'Erro. Frequência baixa no GTO.' };
   }
 
   const severePenalty = Math.min(50, Math.floor(evLoss * 20));
