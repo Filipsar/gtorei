@@ -1631,22 +1631,49 @@ export default function TrainPage() {
                           });
                         })()}
                       </div>
-                      {/* Preflop GTO result */}
-                      {pendingSimulationScore === null && lastFeedback && (
-                        <div className={cn(
-                          'p-2 rounded-lg text-center text-sm font-medium',
-                          (lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct')
-                            ? 'bg-feedback-best/20 text-feedback-best'
-                            : 'bg-feedback-blunder/20 text-feedback-blunder'
-                        )}>
-                          Preflop GTO: {lastFeedback.feedback.type === 'best' ? '✅ Melhor jogada' : 
-                            lastFeedback.feedback.type === 'correct' ? '✅ Jogada correta' : 
-                            `❌ ${lastFeedback.feedback.message}`}
-                          {lastFeedback.feedback.points !== 0 && (
-                            <span className="ml-2">({lastFeedback.feedback.points > 0 ? '+' : ''}{lastFeedback.feedback.points} pts)</span>
-                          )}
-                        </div>
-                      )}
+                      {/* Score summary */}
+                      {pendingSimulationScore === null && lastFeedback && (() => {
+                        // Calculate postflop bonus for display
+                        const VERDICT_DISPLAY_POINTS: Record<string, number> = { optimal: 5, good: 3, acceptable: 0, questionable: -4, bad: -8 };
+                        const postflopActions = simulationStreetActions.filter(sa => sa.street.toLowerCase() !== 'preflop');
+                        const postflopBonus = postflopActions.reduce((sum, sa) => {
+                          const analysis = analyzeStreetAction(sa);
+                          return sum + (VERDICT_DISPLAY_POINTS[analysis.verdict] ?? 0);
+                        }, 0);
+                        const preflopPts = lastFeedback.feedback.points;
+                        const totalPts = preflopPts + postflopBonus;
+                        const isPreflopCorrect = lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct';
+                        return (
+                          <div className="space-y-2">
+                            {/* Preflop result */}
+                            <div className={cn(
+                              'p-2 rounded-lg text-center text-sm font-medium',
+                              isPreflopCorrect ? 'bg-feedback-best/20 text-feedback-best' : 'bg-feedback-blunder/20 text-feedback-blunder'
+                            )}>
+                              Preflop: {lastFeedback.feedback.type === 'best' ? '✅ Melhor jogada' : 
+                                lastFeedback.feedback.type === 'correct' ? '✅ Jogada correta' : 
+                                `❌ ${lastFeedback.feedback.message}`}
+                              <span className="ml-2">({preflopPts > 0 ? '+' : ''}{preflopPts} pts)</span>
+                            </div>
+                            {/* Postflop bonus */}
+                            {postflopActions.length > 0 && (
+                              <div className={cn(
+                                'p-2 rounded-lg text-center text-sm font-medium',
+                                postflopBonus > 0 ? 'bg-feedback-best/20 text-feedback-best' : postflopBonus < 0 ? 'bg-feedback-blunder/20 text-feedback-blunder' : 'bg-muted text-muted-foreground'
+                              )}>
+                                Pós-flop: {postflopBonus > 0 ? '✅' : postflopBonus < 0 ? '❌' : '➖'} {postflopBonus > 0 ? '+' : ''}{postflopBonus} pts
+                              </div>
+                            )}
+                            {/* Total */}
+                            <div className={cn(
+                              'p-3 rounded-lg text-center font-bold',
+                              totalPts > 0 ? 'bg-feedback-best/30 text-feedback-best' : totalPts < 0 ? 'bg-feedback-blunder/30 text-feedback-blunder' : 'bg-muted text-muted-foreground'
+                            )}>
+                              Total: {totalPts > 0 ? '+' : ''}{totalPts} pts
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 )}
