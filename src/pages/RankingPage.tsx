@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange, Info } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { getLevelName } from '@/data/localStorage';
@@ -54,8 +55,11 @@ export default function RankingPage() {
   const [period, setPeriod] = useState<PeriodType>('daily');
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const ITEMS_PER_PAGE = 10;
  
   useEffect(() => {
+    setCurrentPage(0);
     fetchRankings();
   }, [period]);
  
@@ -189,31 +193,29 @@ export default function RankingPage() {
                 <p className="text-body-sm mt-2">Seja o primeiro a treinar!</p>
               </div>
             ) : (
+              <>
               <div className="space-y-2">
-                {rankings.map((entry, index) => (
+                {rankings.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, idx) => {
+                  const globalIndex = currentPage * ITEMS_PER_PAGE + idx;
+                  return (
                   <div
                     key={entry.id}
                     onClick={() => navigate(`/perfil/${entry.user_id}`)}
                     className={cn(
                       'flex items-center gap-4 p-3 rounded-lg transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30',
-                      index < 3 ? 'bg-primary/5' : 'bg-muted/50',
+                      globalIndex < 3 ? 'bg-primary/5' : 'bg-muted/50',
                       user?.id === entry.user_id && 'ring-2 ring-primary/50'
                     )}
                   >
-                    {/* Position */}
                     <div className="w-8 flex justify-center">
-                      {getRankIcon(index + 1)}
+                      {getRankIcon(globalIndex + 1)}
                     </div>
- 
-                    {/* Avatar */}
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={entry.profile.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/20 text-primary">
                         {entry.profile.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
- 
-                    {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <img src={getLevelImage(entry.profile.level)} alt="" className="w-5 h-5 object-contain" />
@@ -226,8 +228,6 @@ export default function RankingPage() {
                         {getLevelName(entry.profile.level)} • {entry.hands_played} mãos • {entry.accuracy}% precisão
                       </p>
                     </div>
- 
-                    {/* XP */}
                     <div className="text-right">
                       <p className="font-bold text-primary flex items-center gap-1">
                         <TrendingUp className="h-4 w-4" />
@@ -236,8 +236,37 @@ export default function RankingPage() {
                       <p className="text-body-xs text-muted-foreground">XP</p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
+              {rankings.length > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    disabled={currentPage === 0}
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <span className="text-body-sm text-muted-foreground">
+                    Página {currentPage + 1} de {Math.ceil(rankings.length / ITEMS_PER_PAGE)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={(currentPage + 1) * ITEMS_PER_PAGE >= rankings.length}
+                    className="flex items-center gap-1"
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              </>
             )}
           </CardContent>
         </Card>
