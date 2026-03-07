@@ -498,13 +498,35 @@ export default function TrainPage() {
     setPhase('feedback');
   }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore]);
 
+  // Calculate postflop bonus/penalty from street verdicts
+  const calculatePostflopBonus = useCallback((): number => {
+    const VERDICT_POINTS: Record<string, number> = {
+      optimal: 5,
+      good: 3,
+      acceptable: 0,
+      questionable: -4,
+      bad: -8,
+    };
+    let bonus = 0;
+    for (const sa of simulationStreetActions) {
+      if (sa.street.toLowerCase() === 'preflop') continue;
+      const analysis = analyzeStreetAction(sa);
+      bonus += VERDICT_POINTS[analysis.verdict] ?? 0;
+    }
+    return bonus;
+  }, [simulationStreetActions]);
+
   // Apply deferred simulation score when hand completes
   const applyPendingScore = useCallback(() => {
     if (!pendingSimulationScore || !handState || !currentHandId) return;
     
-    const { points, isCorrect, action, handName, feedback } = pendingSimulationScore;
+    const { points: preflopPoints, isCorrect, action, handName, feedback } = pendingSimulationScore;
     
-    markHandAsPlayed(currentHandId, action, points, feedback.type);
+    // Add postflop bonus/penalty
+    const postflopBonus = calculatePostflopBonus();
+    const totalPoints = preflopPoints + postflopBonus;
+    
+    markHandAsPlayed(currentHandId, action, totalPoints, feedback.type);
     addHandToSession({
       hand: handName,
       scenario,
@@ -513,7 +535,7 @@ export default function TrainPage() {
       userAction: action,
       correctAction: pendingSimulationScore.handData?.primaryAction || 'fold',
       feedback: feedback.type,
-      points,
+      points: totalPoints,
       evLoss: feedback.evLoss
     });
 
@@ -530,7 +552,7 @@ export default function TrainPage() {
           user_action: action,
           correct_action: pendingSimulationScore.handData?.primaryAction || 'fold',
           feedback: feedback.type,
-          points: Math.round(points),
+          points: Math.round(totalPoints),
           ev_loss: feedback.evLoss,
         })
         .then(({ error }) => {
@@ -538,7 +560,7 @@ export default function TrainPage() {
         });
     }
 
-    setSessionScore(prev => prev + points);
+    setSessionScore(prev => prev + totalPoints);
     setHandsPlayed(prev => prev + 1);
     if (isCorrect) {
       setCorrectHandsCount(prev => prev + 1);
@@ -553,18 +575,18 @@ export default function TrainPage() {
     if (feedback.type === 'best') {
       setSessionBestCount(prev => prev + 1);
     }
-    if (user && points !== 0) {
+    if (user && totalPoints !== 0) {
       updateUserRanking({
         userId: user.id,
-        xpEarned: points,
+        xpEarned: totalPoints,
         handsPlayed: 1,
         correctHands: isCorrect ? 1 : 0,
       });
-      updateSupabaseProfile(user.id, points, 1);
+      updateSupabaseProfile(user.id, totalPoints, 1);
     }
     
     setPendingSimulationScore(null);
-  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements]);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements, calculatePostflopBonus]);
 
   // Auto-apply pending simulation score when hand completes and enters review
   useEffect(() => {
