@@ -58,6 +58,7 @@ export default function RankingPage() {
   const ITEMS_PER_PAGE = 10;
  
   useEffect(() => {
+    setCurrentPage(0);
     fetchRankings();
   }, [period]);
  
