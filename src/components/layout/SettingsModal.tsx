@@ -6,15 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { Sun, Moon, Monitor, User, Palette, Save, Upload, Check, Lock, BookOpen } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { getUserProfile, updateUserProfile, UserProfile } from '@/data/localStorage';
+import { Sun, Moon, Monitor, User, Palette, Save, Upload, Lock, BookOpen, Globe } from 'lucide-react';
+import { getUserProfile, updateUserProfile } from '@/data/localStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-// Predefined avatar icons (emoji-based avatars)
 const PREDEFINED_AVATARS = [
   '🃏', '♠️', '♥️', '♦️', '♣️', '👑', '🎰', '🎲', 
   '🦁', '🐺', '🦅', '🐉', '🔥', '⚡', '💎', '🌟'
@@ -29,11 +28,11 @@ type Theme = 'light' | 'dark' | 'system';
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { user, refreshProfile } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const [nickname, setNickname] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>('dark');
-  const [screenReaderEnabled, setScreenReaderEnabled] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +41,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     if (profile) {
       setNickname(profile.username);
       if (profile.avatar) {
-        // Check if it's an emoji or URL
         if (PREDEFINED_AVATARS.includes(profile.avatar)) {
           setSelectedEmoji(profile.avatar);
           setAvatarUrl(null);
@@ -52,21 +50,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         }
       }
     }
+    if (user) fetchProfile();
 
-    // Also fetch from Supabase if logged in
-    if (user) {
-      fetchProfile();
-    }
-
-    // Load theme from localStorage
     const savedTheme = localStorage.getItem('gtorei_theme') as Theme | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-
-    // Load screen reader preference
-    const screenReader = localStorage.getItem('gtorei_screen_reader') === 'true';
-    setScreenReaderEnabled(screenReader);
+    if (savedTheme) setTheme(savedTheme);
   }, [open, user]);
 
   const fetchProfile = async () => {
@@ -76,7 +63,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       .select('username, avatar_url')
       .eq('user_id', user.id)
       .maybeSingle();
-    
     if (data) {
       setNickname(data.username || '');
       if (data.avatar_url) {
@@ -94,162 +80,72 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Arquivo inválido',
-        description: 'Por favor, selecione uma imagem.',
-        variant: 'destructive',
-      });
+      toast({ title: t.settings.invalidFile, description: t.settings.selectImage, variant: 'destructive' });
       return;
     }
-
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: 'Arquivo muito grande',
-        description: 'A imagem deve ter no máximo 2MB.',
-        variant: 'destructive',
-      });
+      toast({ title: t.settings.fileTooLarge, description: t.settings.maxFileSize, variant: 'destructive' });
       return;
     }
-
-    // Validate image dimensions (max 512x512)
     const img = new Image();
     img.src = URL.createObjectURL(file);
     const dimensionsValid = await new Promise<boolean>((resolve) => {
       img.onload = () => {
         URL.revokeObjectURL(img.src);
         if (img.width > 512 || img.height > 512) {
-          toast({
-            title: 'Imagem muito grande',
-            description: 'A largura e altura máximas são 512x512 pixels.',
-            variant: 'destructive',
-          });
+          toast({ title: t.settings.imageTooLarge, description: t.settings.maxDimensions, variant: 'destructive' });
           resolve(false);
-        } else {
-          resolve(true);
-        }
+        } else resolve(true);
       };
-      img.onerror = () => {
-        URL.revokeObjectURL(img.src);
-        resolve(false);
-      };
+      img.onerror = () => { URL.revokeObjectURL(img.src); resolve(false); };
     });
     if (!dimensionsValid) return;
 
-    // Convert to base64 for local storage (simpler approach without storage bucket)
     setUploading(true);
     try {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        setAvatarUrl(base64);
-        setSelectedEmoji(null);
-        setUploading(false);
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Erro ao carregar imagem',
-          description: 'Tente novamente.',
-          variant: 'destructive',
-        });
-        setUploading(false);
-      };
+      reader.onload = (e) => { setAvatarUrl(e.target?.result as string); setSelectedEmoji(null); setUploading(false); };
+      reader.onerror = () => { toast({ title: t.settings.uploadError, description: t.settings.tryAgain, variant: 'destructive' }); setUploading(false); };
       reader.readAsDataURL(file);
-    } catch (error) {
+    } catch {
       setUploading(false);
-      toast({
-        title: 'Erro ao carregar imagem',
-        description: 'Tente novamente.',
-        variant: 'destructive',
-      });
+      toast({ title: t.settings.uploadError, description: t.settings.tryAgain, variant: 'destructive' });
     }
   };
 
-  const handleSelectEmoji = (emoji: string) => {
-    setSelectedEmoji(emoji);
-    setAvatarUrl(null);
-  };
+  const handleSelectEmoji = (emoji: string) => { setSelectedEmoji(emoji); setAvatarUrl(null); };
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
     localStorage.setItem('gtorei_theme', newTheme);
-
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
-
     if (newTheme === 'system') {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.add(systemPrefersDark ? 'dark' : 'light');
-    } else {
-      root.classList.add(newTheme);
-    }
-  };
-
-  const handleScreenReaderToggle = (enabled: boolean) => {
-    setScreenReaderEnabled(enabled);
-    localStorage.setItem('gtorei_screen_reader', enabled.toString());
-    
-    if (enabled) {
-      toast({
-        title: 'Leitor de tela ativado',
-        description: 'Recursos de acessibilidade foram habilitados.',
-      });
-    }
+      root.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    } else root.classList.add(newTheme);
   };
 
   const handleSaveProfile = async () => {
     if (nickname.trim().length < 2) {
-      toast({
-        title: 'Nome muito curto',
-        description: 'O nickname deve ter pelo menos 2 caracteres.',
-        variant: 'destructive',
-      });
+      toast({ title: t.settings.nameTooShort, description: t.settings.minChars, variant: 'destructive' });
       return;
     }
-
     setSaving(true);
     const newAvatar = selectedEmoji || avatarUrl || null;
-
     try {
-      // Update local storage
       updateUserProfile({ username: nickname.trim(), avatar: newAvatar || undefined });
-
-      // Update Supabase if logged in
       if (user) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ 
-            username: nickname.trim(),
-            avatar_url: newAvatar
-          })
-          .eq('user_id', user.id);
-
+        const { error } = await supabase.from('profiles').update({ username: nickname.trim(), avatar_url: newAvatar }).eq('user_id', user.id);
         if (error) throw error;
-
-        // Refresh the profile in AuthContext
         await refreshProfile();
       }
-
-      toast({
-        title: 'Perfil atualizado!',
-        description: 'Suas alterações foram salvas.',
-      });
-      
-      // Close modal after successful save
+      toast({ title: t.settings.profileUpdated, description: t.settings.changesSaved });
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast({
-        title: 'Erro ao salvar',
-        description: 'Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
+      toast({ title: t.settings.saveError, description: t.settings.tryAgain, variant: 'destructive' });
+    } finally { setSaving(false); }
   };
 
   const profile = getUserProfile();
@@ -260,23 +156,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configurações</DialogTitle>
+          <DialogTitle>{t.settings.title}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="mt-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
-              Perfil
+              {t.settings.profileTab}
             </TabsTrigger>
             <TabsTrigger value="appearance" className="gap-2">
               <Palette className="h-4 w-4" />
-              Aparência
+              {t.settings.appearanceTab}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4 mt-4">
-            {/* Avatar */}
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-20 w-20">
                 {isEmojiAvatar ? (
@@ -292,120 +187,89 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </>
                 )}
               </Avatar>
-              
-              {/* Upload button */}
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" asChild disabled={uploading}>
                   <label className="cursor-pointer">
                     <Upload className="h-4 w-4 mr-2" />
-                    {uploading ? 'Carregando...' : 'Enviar foto'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                      disabled={uploading}
-                    />
+                    {uploading ? t.settings.uploading : t.settings.uploadPhoto}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                   </label>
                 </Button>
               </div>
             </div>
 
-            {/* Predefined avatars */}
             <div className="space-y-2">
-              <Label>Ou escolha um ícone</Label>
+              <Label>{t.settings.orChooseIcon}</Label>
               <div className="grid grid-cols-8 gap-2">
                 {PREDEFINED_AVATARS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => handleSelectEmoji(emoji)}
-                    className={cn(
-                      'h-10 w-10 rounded-lg flex items-center justify-center text-xl transition-all',
-                      'hover:bg-primary/20 hover:scale-110',
-                      selectedEmoji === emoji && 'bg-primary/30 ring-2 ring-primary'
-                    )}
-                  >
+                  <button key={emoji} type="button" onClick={() => handleSelectEmoji(emoji)}
+                    className={cn('h-10 w-10 rounded-lg flex items-center justify-center text-xl transition-all hover:bg-primary/20 hover:scale-110', selectedEmoji === emoji && 'bg-primary/30 ring-2 ring-primary')}>
                     {emoji}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Nickname */}
             <div className="space-y-2">
-              <Label htmlFor="nickname">Nickname</Label>
-              <Input
-                id="nickname"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="Seu nome de jogador"
-                maxLength={20}
-              />
+              <Label htmlFor="nickname">{t.settings.nickname}</Label>
+              <Input id="nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder={t.settings.nicknamePlaceholder} maxLength={20} />
             </div>
 
             <Button onClick={handleSaveProfile} className="w-full gap-2" disabled={saving}>
-              {saving ? (
-                <>Salvando...</>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Salvar Alterações
-                </>
-              )}
+              {saving ? t.settings.saving : <><Save className="h-4 w-4" />{t.settings.saveChanges}</>}
             </Button>
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-4 mt-4">
             {/* Theme */}
             <div className="space-y-3">
-              <Label>Tema</Label>
+              <Label>{t.settings.theme}</Label>
               <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant={theme === 'light' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleThemeChange('light')}
-                  className={cn('flex-col h-auto py-3 gap-1', theme === 'light' && 'bg-primary text-primary-foreground')}
-                >
-                  <Sun className="h-5 w-5" />
-                  <span className="text-xs">Claro</span>
+                {([
+                  { key: 'light' as Theme, icon: Sun, label: t.settings.light },
+                  { key: 'dark' as Theme, icon: Moon, label: t.settings.dark },
+                  { key: 'system' as Theme, icon: Monitor, label: t.settings.system },
+                ]).map(({ key, icon: Icon, label }) => (
+                  <Button key={key} variant={theme === key ? 'default' : 'outline'} size="sm" onClick={() => handleThemeChange(key)}
+                    className={cn('flex-col h-auto py-3 gap-1', theme === key && 'bg-primary text-primary-foreground')}>
+                    <Icon className="h-5 w-5" />
+                    <span className="text-xs">{label}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Language selector */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-primary" />
+                {t.settings.language}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant={language === 'pt' ? 'default' : 'outline'} size="sm" onClick={() => setLanguage('pt')}
+                  className={cn('flex items-center gap-2 h-auto py-3', language === 'pt' && 'bg-primary text-primary-foreground')}>
+                  <span className="text-lg">🇧🇷</span>
+                  <span className="text-xs">{t.settings.portuguese}</span>
                 </Button>
-                <Button
-                  variant={theme === 'dark' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleThemeChange('dark')}
-                  className={cn('flex-col h-auto py-3 gap-1', theme === 'dark' && 'bg-primary text-primary-foreground')}
-                >
-                  <Moon className="h-5 w-5" />
-                  <span className="text-xs">Escuro</span>
-                </Button>
-                <Button
-                  variant={theme === 'system' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleThemeChange('system')}
-                  className={cn('flex-col h-auto py-3 gap-1', theme === 'system' && 'bg-primary text-primary-foreground')}
-                >
-                  <Monitor className="h-5 w-5" />
-                  <span className="text-xs">Sistema</span>
+                <Button variant={language === 'en' ? 'default' : 'outline'} size="sm" onClick={() => setLanguage('en')}
+                  className={cn('flex items-center gap-2 h-auto py-3', language === 'en' && 'bg-primary text-primary-foreground')}>
+                  <span className="text-lg">🇺🇸</span>
+                  <span className="text-xs">{t.settings.english}</span>
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">{t.settings.languageNote}</p>
             </div>
 
             {/* Screen Reader - locked */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 opacity-60">
               <div>
                 <p className="font-medium text-sm flex items-center gap-2">
-                  Leitor de Tela
+                  {t.settings.screenReader}
                   <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Em manutenção
-                </p>
+                <p className="text-xs text-muted-foreground">{t.settings.underMaintenance}</p>
               </div>
-              <Switch
-                checked={false}
-                disabled
-              />
+              <Switch checked={false} disabled />
             </div>
 
             {/* Replay onboarding */}
@@ -413,28 +277,20 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               <div>
                 <p className="font-medium text-sm flex items-center gap-2">
                   <BookOpen className="h-3.5 w-3.5 text-primary" />
-                  Tutorial de Onboarding
+                  {t.settings.onboardingTutorial}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Reveja o passo a passo das funcionalidades
-                </p>
+                <p className="text-xs text-muted-foreground">{t.settings.onboardingDesc}</p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  localStorage.removeItem('gtorei_onboarding_completed_v2');
-                  onOpenChange(false);
-                  window.location.href = '/treinar';
-                }}
-              >
-                Rever
+              <Button variant="outline" size="sm" onClick={() => {
+                localStorage.removeItem('gtorei_onboarding_completed_v2');
+                onOpenChange(false);
+                window.location.href = '/treinar';
+              }}>
+                {t.settings.review}
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center pt-2">
-              O GTORei usa por padrão o tema escuro otimizado para longas sessões de estudo.
-            </p>
+            <p className="text-xs text-muted-foreground text-center pt-2">{t.settings.themeNote}</p>
           </TabsContent>
         </Tabs>
       </DialogContent>
