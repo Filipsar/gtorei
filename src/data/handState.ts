@@ -200,10 +200,11 @@ export function initializeHandState(
     pot += threeBetSize;
   } else if (scenario === 'vsOpenShove' && villainPosition) {
     // Villain shova
-    actions.push({ position: villainPosition, action: 'allin', amount: heroStack });
-    activeBets.push({ position: villainPosition, amount: heroStack });
-    villainAction = { action: 'All-in', amount: heroStack };
-    pot += heroStack;
+    const villainShoveAmount = villainStack || heroStack;
+    actions.push({ position: villainPosition, action: 'allin', amount: villainShoveAmount });
+    activeBets.push({ position: villainPosition, amount: villainShoveAmount });
+    villainAction = { action: 'All-in', amount: villainShoveAmount };
+    pot += villainShoveAmount;
     
     // Todos entre villain e hero foldam
     const villainIndex = positionOrder.indexOf(villainPosition);
