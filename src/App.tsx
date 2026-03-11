@@ -34,7 +34,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <LanguageProvider>
+           <LanguageProvider>
+          <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/apoiar" element={<DonatePage />} />
