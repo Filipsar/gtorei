@@ -78,6 +78,11 @@ export const pt = {
     screenReaderEnabled: 'Leitor de tela ativado',
     screenReaderEnabledDesc: 'Recursos de acessibilidade foram habilitados.',
   },
-} as const;
+};
 
-export type Translations = typeof pt;
+// Use string type for all values to allow different translations
+type DeepStringify<T> = {
+  [K in keyof T]: T[K] extends string ? string : DeepStringify<T[K]>;
+};
+
+export type Translations = DeepStringify<typeof pt>;
