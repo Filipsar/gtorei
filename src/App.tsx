@@ -55,9 +55,9 @@ const App = () => (
             <Route path="/atualizacoes" element={<UpdatesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
-    </TooltipProvider>
   </QueryClientProvider>
 );
 
