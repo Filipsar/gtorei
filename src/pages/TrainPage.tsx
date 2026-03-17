@@ -1245,7 +1245,6 @@ export default function TrainPage() {
                     </p>
                   </div>
                 </div>
-                </div>
 
                 {/* Info icon with popover */}
                 <Popover>
