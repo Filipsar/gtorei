@@ -138,10 +138,9 @@ export function PokerTable({
   const navigate = useNavigate();
 
   return (
-    <div className={cn('flex flex-col items-center gap-4', className)}>
-      {/* Container da mesa - wrapper para escalar no mobile */}
-      <div className="w-full max-w-2xl mx-auto sm:h-auto" style={{ height: 'calc(50vw)' }}>
-        <div className="relative w-full max-w-2xl mx-auto aspect-[2/1] scale-50 origin-top sm:scale-100">
+    <div className={cn('flex flex-col items-center gap-2 sm:gap-4', className)}>
+      {/* Container da mesa */}
+      <div className="relative w-full max-w-2xl mx-auto aspect-[2/1] scale-[0.78] -my-[11%] sm:scale-100 sm:my-0 origin-center">
         {/* Mesa oval com feltro verde */}
         <div className="absolute inset-4 rounded-[50%] table-felt border-8 border-[hsl(var(--table-border))] shadow-2xl overflow-hidden">
           {/* Borda interna decorativa */}
@@ -264,7 +263,6 @@ export function PokerTable({
             </div>
           );
         })}
-      </div>
       </div>
     </div>
   );
