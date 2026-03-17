@@ -1216,33 +1216,35 @@ export default function TrainPage() {
         {/* Hand info compact with info popover */}
         {handState && (
           <Card>
-            <CardContent className="p-3">
+             <CardContent className="p-2 sm:p-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+                <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-4 flex-1">
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Posição</p>
-                    <p className="text-lg font-semibold">{handState.heroPosition}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Posição</p>
+                    <p className="text-sm sm:text-lg font-semibold">{handState.heroPosition}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Stack</p>
-                    <p className="text-lg font-semibold">{handState.heroStack} BB</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Stack</p>
+                    <p className="text-sm sm:text-lg font-semibold">{handState.heroStack} BB</p>
                   </div>
-                  {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack && (
+                  {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack ? (
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Efetivo</p>
-                      <p className="text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Efetivo</p>
+                      <p className="text-sm sm:text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Pot</p>
+                      <p className="text-sm sm:text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
                     </div>
                   )}
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Pot</p>
-                    <p className="text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Cenário</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Cenário</p>
+                    <p className="text-[11px] sm:text-sm font-medium leading-tight">
                       {SCENARIOS.find(s => s.id === scenario)?.label}
                     </p>
                   </div>
+                </div>
                 </div>
 
                 {/* Info icon with popover */}
