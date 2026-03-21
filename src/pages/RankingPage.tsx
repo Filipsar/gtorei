@@ -137,8 +137,8 @@ export default function RankingPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-heading-xs flex items-center gap-2">
-              {getPeriodIcon(period)}
-              Top Jogadores - {period === 'daily' ? 'Hoje' : period === 'weekly' ? 'Esta Semana' : 'Este Mês'}
+              <CalendarRange className="h-4 w-4" />
+              Top Jogadores - Este Mês
             </CardTitle>
           </CardHeader>
           <CardContent>
