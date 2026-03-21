@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Medal, Award, TrendingUp, Calendar, CalendarDays, CalendarRange, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, CalendarRange, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { getLevelName } from '@/data/localStorage';
@@ -47,12 +47,12 @@ interface RankingEntry {
   };
 }
  
-type PeriodType = 'daily' | 'weekly' | 'monthly';
+type PeriodType = 'monthly';
  
 export default function RankingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<PeriodType>('daily');
+  const [period] = useState<PeriodType>('monthly');
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -67,20 +67,7 @@ export default function RankingPage() {
     setLoading(true);
     try {
       const now = new Date();
-      let periodStart: Date;
-      
-      switch (period) {
-        case 'daily':
-          periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'weekly':
-          const dayOfWeek = now.getDay();
-          periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
-          break;
-        case 'monthly':
-          periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-      }
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
       const { data, error } = await supabase
         .from('rankings')
@@ -130,16 +117,6 @@ export default function RankingPage() {
     }
   };
  
-  const getPeriodIcon = (p: PeriodType) => {
-    switch (p) {
-      case 'daily':
-        return <Calendar className="h-4 w-4" />;
-      case 'weekly':
-        return <CalendarDays className="h-4 w-4" />;
-      case 'monthly':
-        return <CalendarRange className="h-4 w-4" />;
-    }
-  };
  
   return (
     <MainLayout>
@@ -155,30 +132,13 @@ export default function RankingPage() {
           </p>
         </div>
  
-        {/* Period Tabs */}
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodType)} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="daily" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Diário</span>
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              <span className="hidden sm:inline">Semanal</span>
-            </TabsTrigger>
-            <TabsTrigger value="monthly" className="flex items-center gap-2">
-              <CalendarRange className="h-4 w-4" />
-              <span className="hidden sm:inline">Mensal</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
  
         {/* Rankings List */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-heading-xs flex items-center gap-2">
-              {getPeriodIcon(period)}
-              Top Jogadores - {period === 'daily' ? 'Hoje' : period === 'weekly' ? 'Esta Semana' : 'Este Mês'}
+              <CalendarRange className="h-4 w-4" />
+              Top Jogadores - Este Mês
             </CardTitle>
           </CardHeader>
           <CardContent>
