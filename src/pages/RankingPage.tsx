@@ -47,7 +47,7 @@ interface RankingEntry {
   };
 }
  
-type PeriodType = 'daily' | 'weekly' | 'monthly';
+type PeriodType = 'monthly';
  
 export default function RankingPage() {
   const { user } = useAuth();
