@@ -132,23 +132,6 @@ export default function RankingPage() {
           </p>
         </div>
  
-        {/* Period Tabs */}
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodType)} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="daily" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Diário</span>
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              <span className="hidden sm:inline">Semanal</span>
-            </TabsTrigger>
-            <TabsTrigger value="monthly" className="flex items-center gap-2">
-              <CalendarRange className="h-4 w-4" />
-              <span className="hidden sm:inline">Mensal</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
  
         {/* Rankings List */}
         <Card>
