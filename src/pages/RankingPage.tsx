@@ -52,7 +52,7 @@ type PeriodType = 'monthly';
 export default function RankingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<PeriodType>('daily');
+  const [period] = useState<PeriodType>('monthly');
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
