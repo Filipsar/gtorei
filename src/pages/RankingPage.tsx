@@ -117,16 +117,6 @@ export default function RankingPage() {
     }
   };
  
-  const getPeriodIcon = (p: PeriodType) => {
-    switch (p) {
-      case 'daily':
-        return <Calendar className="h-4 w-4" />;
-      case 'weekly':
-        return <CalendarDays className="h-4 w-4" />;
-      case 'monthly':
-        return <CalendarRange className="h-4 w-4" />;
-    }
-  };
  
   return (
     <MainLayout>
