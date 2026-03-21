@@ -67,20 +67,7 @@ export default function RankingPage() {
     setLoading(true);
     try {
       const now = new Date();
-      let periodStart: Date;
-      
-      switch (period) {
-        case 'daily':
-          periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'weekly':
-          const dayOfWeek = now.getDay();
-          periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
-          break;
-        case 'monthly':
-          periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-      }
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
       const { data, error } = await supabase
         .from('rankings')
