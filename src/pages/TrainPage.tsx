@@ -1324,8 +1324,9 @@ export default function TrainPage() {
               <>
                 {/* Hero cards display above actions */}
                 {handState.heroCards && handState.heroCards.length > 0 && (
-                  <div className="flex justify-center -mb-4">
-                    <HandDisplay cards={handState.heroCards} size="md" />
+                  <div className="flex justify-center">
+                    <HandDisplay cards={handState.heroCards} size="sm" className="sm:hidden" />
+                    <HandDisplay cards={handState.heroCards} size="md" className="hidden sm:flex" />
                   </div>
                 )}
                 <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} scenario={scenario} />
