@@ -1146,7 +1146,7 @@ export default function TrainPage() {
 
   // Playing/feedback phase
   return <MainLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col sm:block">
         {/* Header with session info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
@@ -1215,8 +1215,9 @@ export default function TrainPage() {
         {/* Bounty info banner */}
         {/* Hand info compact with info popover */}
         {/* Game content */}
-        {handState && <div className="space-y-4">
-            {/* Hand info compact - moved below table on mobile */}
+        {handState && <div className="flex flex-col flex-1 sm:flex-none sm:space-y-4">
+            {/* Table + info centered */}
+            <div className="flex-1 flex flex-col justify-center sm:flex-none sm:block space-y-4">
             {/* Poker table */}
             <PokerTable 
               heroPosition={handState.heroPosition} 
@@ -1316,7 +1317,10 @@ export default function TrainPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>{/* end centering wrapper */}
 
+            {/* Action buttons - pinned to bottom on mobile */}
+            <div className="sm:hidden" />{/* spacer */}
             {/* Action buttons - hidden in review/postflop mode */}
             {phase === 'playing' && (
               <>
