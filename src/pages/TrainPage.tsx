@@ -1146,7 +1146,7 @@ export default function TrainPage() {
 
   // Playing/feedback phase
   return <MainLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col sm:block">
         {/* Header with session info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
