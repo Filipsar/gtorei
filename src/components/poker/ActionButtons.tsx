@@ -63,7 +63,7 @@ export function ActionButtons({
         </div>}
 
       {/* Main action buttons */}
-      <div className="grid grid-cols-4 gap-2 sm:gap-3 my-[40px]">
+      <div className="grid grid-cols-4 gap-2 sm:gap-3 pb-4 sm:my-[40px]">
         <Button variant="outline" onClick={() => onAction('fold')} disabled={disabled} className={cn('h-14 sm:h-16 flex flex-col items-center justify-center gap-1', 'bg-slate-700 hover:bg-slate-600 border-slate-600', 'text-white font-semibold')}>
           <span className="text-lg">✕</span>
           <span className="text-xs sm:text-sm">Fold</span>
