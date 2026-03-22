@@ -1216,8 +1216,8 @@ export default function TrainPage() {
         {/* Hand info compact with info popover */}
         {/* Game content */}
         {handState && <div className="flex flex-col flex-1 sm:flex-none sm:space-y-4">
-            {/* Table + info centered */}
-            <div className="flex-1 flex flex-col justify-center sm:flex-none sm:block space-y-4">
+            {/* Table centered */}
+            <div className="flex-1 flex flex-col justify-center sm:flex-none sm:block">
             {/* Poker table */}
             <PokerTable 
               heroPosition={handState.heroPosition} 
@@ -1244,7 +1244,6 @@ export default function TrainPage() {
                 return positions;
               })()}
             />
-
             </div>{/* end centering wrapper */}
 
             {/* Hand info compact - between table and actions */}
