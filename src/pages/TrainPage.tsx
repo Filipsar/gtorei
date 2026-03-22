@@ -1214,93 +1214,9 @@ export default function TrainPage() {
 
         {/* Bounty info banner */}
         {/* Hand info compact with info popover */}
-        {handState && (
-          <Card>
-             <CardContent className="p-2 sm:p-3">
-              <div className="flex items-center justify-between">
-                <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-4 flex-1">
-                  <div className="text-center">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Posição</p>
-                    <p className="text-sm sm:text-lg font-semibold">{handState.heroPosition}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Stack</p>
-                    <p className="text-sm sm:text-lg font-semibold">{handState.heroStack} BB</p>
-                  </div>
-                  {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack ? (
-                    <div className="text-center">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Efetivo</p>
-                      <p className="text-sm sm:text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Pot</p>
-                      <p className="text-sm sm:text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Cenário</p>
-                    <p className="text-[11px] sm:text-sm font-medium leading-tight">
-                      {SCENARIOS.find(s => s.id === scenario)?.label}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Info icon with popover */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className="p-1.5 rounded-full hover:bg-muted transition-colors" aria-label="Informações da mão">
-                      <Info className="h-5 w-5 text-primary" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 space-y-3" side="bottom" align="end">
-                    {/* Hand ID */}
-                    {currentUniqueHandId && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase text-muted-foreground">ID</span>
-                        <span className="text-xs font-mono text-foreground select-all">{currentUniqueHandId}</span>
-                      </div>
-                    )}
-
-                    {/* Street */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold uppercase text-muted-foreground">Street</span>
-                      <span className="text-sm font-medium capitalize">{handState.street}</span>
-                    </div>
-
-                    {/* Scenario description */}
-                    <div className="text-sm text-muted-foreground">
-                      {getScenarioDescription(scenario, handState.heroPosition, handState.villainPosition, handState.villainAction)}
-                    </div>
-
-                    {/* Bounty info */}
-                    {trainingMode === 'bounty' && (
-                      <div className="p-2 rounded bg-rank-first/10 border border-rank-first/30 space-y-1">
-                        <p className="text-sm font-medium">
-                          💰 Seu bounty: <span className="text-rank-first">${heroBounty}</span>
-                          {handState.villainPosition && currentBounties[handState.villainPosition] && (
-                            <> · Vilão: <span className="text-rank-first">${currentBounties[handState.villainPosition]}</span></>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {getBountyAdjustment() > 0 ? 'Ranges mais amplos (bounty do oponente vale a pena)' : getBountyAdjustment() < 0 ? 'Ranges mais conservadores' : 'Ajuste neutro'}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Action history */}
-                    {scenario !== 'openRaise' && handState.actions.length > 0 && (
-                      <ActionHistory actions={handState.actions} street={handState.street} heroPosition={handState.heroPosition} />
-                    )}
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Game content */}
         {handState && <div className="space-y-4">
+            {/* Hand info compact - moved below table on mobile */}
             {/* Poker table */}
             <PokerTable 
               heroPosition={handState.heroPosition} 
@@ -1327,6 +1243,79 @@ export default function TrainPage() {
                 return positions;
               })()}
             />
+
+            {/* Hand info compact - below table */}
+            <Card>
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-4 flex-1">
+                    <div className="text-center">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Posição</p>
+                      <p className="text-sm sm:text-lg font-semibold">{handState.heroPosition}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Stack</p>
+                      <p className="text-sm sm:text-lg font-semibold">{handState.heroStack} BB</p>
+                    </div>
+                    {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack ? (
+                      <div className="text-center">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Efetivo</p>
+                        <p className="text-sm sm:text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Pot</p>
+                        <p className="text-sm sm:text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Cenário</p>
+                      <p className="text-[11px] sm:text-sm font-medium leading-tight">
+                        {SCENARIOS.find(s => s.id === scenario)?.label}
+                      </p>
+                    </div>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="p-1.5 rounded-full hover:bg-muted transition-colors" aria-label="Informações da mão">
+                        <Info className="h-5 w-5 text-primary" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 space-y-3" side="bottom" align="end">
+                      {currentUniqueHandId && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">ID</span>
+                          <span className="text-xs font-mono text-foreground select-all">{currentUniqueHandId}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground">Street</span>
+                        <span className="text-sm font-medium capitalize">{handState.street}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {getScenarioDescription(scenario, handState.heroPosition, handState.villainPosition, handState.villainAction)}
+                      </div>
+                      {trainingMode === 'bounty' && (
+                        <div className="p-2 rounded bg-rank-first/10 border border-rank-first/30 space-y-1">
+                          <p className="text-sm font-medium">
+                            💰 Seu bounty: <span className="text-rank-first">${heroBounty}</span>
+                            {handState.villainPosition && currentBounties[handState.villainPosition] && (
+                              <> · Vilão: <span className="text-rank-first">${currentBounties[handState.villainPosition]}</span></>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {getBountyAdjustment() > 0 ? 'Ranges mais amplos (bounty do oponente vale a pena)' : getBountyAdjustment() < 0 ? 'Ranges mais conservadores' : 'Ajuste neutro'}
+                          </p>
+                        </div>
+                      )}
+                      {scenario !== 'openRaise' && handState.actions.length > 0 && (
+                        <ActionHistory actions={handState.actions} street={handState.street} heroPosition={handState.heroPosition} />
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Action buttons - hidden in review/postflop mode */}
             {phase === 'playing' && (
