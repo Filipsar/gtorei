@@ -1317,7 +1317,10 @@ export default function TrainPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>{/* end centering wrapper */}
 
+            {/* Action buttons - pinned to bottom on mobile */}
+            <div className="sm:hidden" />{/* spacer */}
             {/* Action buttons - hidden in review/postflop mode */}
             {phase === 'playing' && (
               <>
