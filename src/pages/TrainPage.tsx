@@ -1247,7 +1247,7 @@ export default function TrainPage() {
             </div>{/* end centering wrapper */}
 
             {/* Hand info compact - between table and actions */}
-            <Card>
+            <Card className="mt-1 sm:mt-4">
               <CardContent className="p-2 sm:p-3">
                 <div className="flex items-center justify-between">
                   <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-4 flex-1">
