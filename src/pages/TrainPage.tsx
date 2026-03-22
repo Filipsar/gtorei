@@ -1216,8 +1216,8 @@ export default function TrainPage() {
         {/* Hand info compact with info popover */}
         {/* Game content */}
         {handState && <div className="flex flex-col flex-1 sm:flex-none sm:space-y-4">
-            {/* Table + info centered */}
-            <div className="flex-1 flex flex-col justify-center sm:flex-none sm:block space-y-4">
+            {/* Table centered */}
+            <div className="flex-1 flex flex-col justify-center sm:flex-none sm:block">
             {/* Poker table */}
             <PokerTable 
               heroPosition={handState.heroPosition} 
@@ -1244,11 +1244,10 @@ export default function TrainPage() {
                 return positions;
               })()}
             />
-
             </div>{/* end centering wrapper */}
 
             {/* Hand info compact - between table and actions */}
-            <Card>
+            <Card className="mt-1 sm:mt-4">
               <CardContent className="p-2 sm:p-3">
                 <div className="flex items-center justify-between">
                   <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-4 flex-1">
@@ -1325,8 +1324,9 @@ export default function TrainPage() {
               <>
                 {/* Hero cards display above actions */}
                 {handState.heroCards && handState.heroCards.length > 0 && (
-                  <div className="flex justify-center -mb-4">
-                    <HandDisplay cards={handState.heroCards} size="md" />
+                  <div className="flex justify-center">
+                    <HandDisplay cards={handState.heroCards} size="sm" className="sm:hidden" />
+                    <HandDisplay cards={handState.heroCards} size="md" className="hidden sm:flex" />
                   </div>
                 )}
                 <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} scenario={scenario} />
