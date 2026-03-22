@@ -1245,7 +1245,9 @@ export default function TrainPage() {
               })()}
             />
 
-            {/* Hand info compact - below table */}
+            </div>{/* end centering wrapper */}
+
+            {/* Hand info compact - between table and actions */}
             <Card>
               <CardContent className="p-2 sm:p-3">
                 <div className="flex items-center justify-between">
@@ -1317,16 +1319,13 @@ export default function TrainPage() {
                 </div>
               </CardContent>
             </Card>
-            </div>{/* end centering wrapper */}
 
-            {/* Action buttons - pinned to bottom on mobile */}
-            <div className="sm:hidden" />{/* spacer */}
-            {/* Action buttons - hidden in review/postflop mode */}
+            {/* Action buttons */}
             {phase === 'playing' && (
               <>
                 {/* Hero cards display above actions */}
                 {handState.heroCards && handState.heroCards.length > 0 && (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center -mb-4">
                     <HandDisplay cards={handState.heroCards} size="md" />
                   </div>
                 )}
