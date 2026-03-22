@@ -1215,8 +1215,9 @@ export default function TrainPage() {
         {/* Bounty info banner */}
         {/* Hand info compact with info popover */}
         {/* Game content */}
-        {handState && <div className="space-y-4">
-            {/* Hand info compact - moved below table on mobile */}
+        {handState && <div className="flex flex-col flex-1 sm:flex-none sm:space-y-4">
+            {/* Table + info centered */}
+            <div className="flex-1 flex flex-col justify-center sm:flex-none sm:block space-y-4">
             {/* Poker table */}
             <PokerTable 
               heroPosition={handState.heroPosition} 
