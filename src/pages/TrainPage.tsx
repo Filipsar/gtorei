@@ -1687,16 +1687,102 @@ export default function TrainPage() {
               </>
             )}
             
-            {/* Review mode - only show next hand button */}
+            {/* Review mode - show hero cards, feedback summary, and next hand button */}
             {phase === 'review' && (
-              <div className="flex justify-center gap-4 mt-4">
-                <Button
-                  onClick={nextHand}
-                  size="lg"
-                  className="px-8 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Próxima Mão
-                </Button>
+              <div className="space-y-3 mt-2">
+                {/* Hero cards in review */}
+                {handState.heroCards && handState.heroCards.length > 0 && !handState.isSimulation && (
+                  <div className="flex justify-center">
+                    <HandDisplay cards={handState.heroCards} size="sm" className="sm:hidden" />
+                    <HandDisplay cards={handState.heroCards} size="md" className="hidden sm:flex" />
+                  </div>
+                )}
+
+                {/* Feedback summary for non-simulation review */}
+                {!handState.isSimulation && lastFeedback && lastFeedback.handData && (
+                  <Card className={cn(
+                    'border-2',
+                    (lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct')
+                      ? 'border-feedback-best bg-feedback-best/10'
+                      : lastFeedback.feedback.type === 'inaccuracy'
+                      ? 'border-feedback-inaccuracy bg-feedback-inaccuracy/10'
+                      : 'border-feedback-blunder bg-feedback-blunder/10'
+                  )}>
+                    <CardContent className="p-4 space-y-3">
+                      {/* Action comparison */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className={cn(
+                          'p-2 rounded-lg text-center border',
+                          (lastFeedback.feedback.type === 'best' || lastFeedback.feedback.type === 'correct')
+                            ? 'border-feedback-best/50 bg-feedback-best/10'
+                            : 'border-feedback-blunder/50 bg-feedback-blunder/10'
+                        )}>
+                          <p className="text-xs text-muted-foreground">Sua Jogada</p>
+                          <p className="font-bold capitalize">
+                            {lastFeedback.userAction === 'allin' ? 'All-in' : lastFeedback.userAction === 'call' && scenario === 'openRaise' ? 'Limp' : lastFeedback.userAction.charAt(0).toUpperCase() + lastFeedback.userAction.slice(1)}
+                          </p>
+                        </div>
+                        <div className="p-2 rounded-lg text-center border border-primary/50 bg-primary/10">
+                          <p className="text-xs text-muted-foreground">Jogada GTO</p>
+                          <p className="font-bold capitalize">
+                            {lastFeedback.handData.primaryAction === 'allin' ? 'All-in' : lastFeedback.handData.primaryAction === 'call' && scenario === 'openRaise' ? 'Limp' : lastFeedback.handData.primaryAction.charAt(0).toUpperCase() + lastFeedback.handData.primaryAction.slice(1)}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Points */}
+                      <div className="text-center">
+                        <span className={cn(
+                          'text-lg font-bold',
+                          lastFeedback.feedback.points >= 0 ? 'text-feedback-best' : 'text-feedback-blunder'
+                        )}>
+                          {lastFeedback.feedback.points > 0 ? '+' : ''}{lastFeedback.feedback.points} pts
+                        </span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {lastFeedback.feedback.message}
+                        </span>
+                      </div>
+                      {/* GTO Frequencies */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">Frequências GTO:</p>
+                        {(['allin', 'raise', 'call', 'fold'] as ActionType[]).map(actionType => {
+                          const found = lastFeedback.handData!.actions.find(a => a.action === actionType);
+                          const freq = found?.frequency || 0;
+                          if (freq === 0) return null;
+                          return (
+                            <div key={actionType} className="flex items-center gap-2">
+                              <span className="text-xs w-12 capitalize">
+                                {actionType === 'allin' ? 'All-in' : actionType === 'call' && scenario === 'openRaise' ? 'Limp' : actionType.charAt(0).toUpperCase() + actionType.slice(1)}
+                              </span>
+                              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    'h-full rounded-full',
+                                    actionType === 'fold' && 'bg-muted-foreground',
+                                    actionType === 'call' && 'bg-secondary',
+                                    actionType === 'raise' && 'bg-poker-raise',
+                                    actionType === 'allin' && 'bg-poker-allin'
+                                  )}
+                                  style={{ width: `${freq}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground w-8 text-right">{freq}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={nextHand}
+                    size="lg"
+                    className="px-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Próxima Mão
+                  </Button>
+                </div>
               </div>
             )}
           </div>}
