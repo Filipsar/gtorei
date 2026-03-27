@@ -29,6 +29,7 @@ export const en: Translations = {
     classes: 'Classes',
     updates: 'Updates',
     support: 'Support',
+    ggpoker: 'GGPoker',
     feedback: 'Feedback',
     settings: 'Settings',
     logout: 'Logout',

@@ -107,8 +107,19 @@ const EIGHT_MAX_BASE: ModeConfigMap = {
   BB:   { openRaise: { raise: 0 },  vsOpenRaise: { raise: 10, call: 25 },vs3bet: { allin: 5, call: 10 }, vsOpenShove: { call: 25 }, simulation: { raise: 10, call: 25 }, multiway: { raise: 6, call: 18 } },
 };
 
+// 6-max maps positions: UTG(6max)->LJ(8max), HJ->HJ, CO->CO, BTN->BTN, SB->SB, BB->BB
+const SIX_MAX_BASE: ModeConfigMap = {
+  UTG:  EIGHT_MAX_BASE.LJ!,   // 6max UTG ≈ 8max LJ (wider opening)
+  HJ:   EIGHT_MAX_BASE.HJ!,
+  CO:   EIGHT_MAX_BASE.CO!,
+  BTN:  EIGHT_MAX_BASE.BTN!,
+  SB:   EIGHT_MAX_BASE.SB!,
+  BB:   EIGHT_MAX_BASE.BB!,
+};
+
 const MODE_CONFIGS: Record<GameMode, ModeConfigMap> = {
   '8max': EIGHT_MAX_BASE,
+  '6max': SIX_MAX_BASE,
   hu: {
     SB: { openRaise: { raise: 70 }, vsOpenRaise: { raise: 0, call: 0 },  vs3bet: { allin: 10, call: 15 }, vsOpenShove: { call: 30 } },
     BB: { openRaise: { raise: 0 },  vsOpenRaise: { raise: 20, call: 45 },vs3bet: { allin: 8, call: 12 },  vsOpenShove: { call: 40 } },
@@ -118,7 +129,7 @@ const MODE_CONFIGS: Record<GameMode, ModeConfigMap> = {
     SB:  { openRaise: { raise: 35 }, vsOpenRaise: { raise: 15, call: 18 },vs3bet: { allin: 6, call: 10 }, vsOpenShove: { call: 25 } },
     BB:  { openRaise: { raise: 0 },  vsOpenRaise: { raise: 12, call: 28 },vs3bet: { allin: 6, call: 12 }, vsOpenShove: { call: 30 } },
   },
-  bounty: { ...EIGHT_MAX_BASE }, // Bounty starts as 8max, adjustments applied dynamically
+  bounty: { ...EIGHT_MAX_BASE },
 };
 
 // ============================================================

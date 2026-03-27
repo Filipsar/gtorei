@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -44,6 +44,7 @@ export function AppSidebar() {
     { title: t.sidebar.classes, url: '#', icon: GraduationCap, locked: true },
     { title: t.sidebar.updates, url: '/atualizacoes', icon: Bell, locked: false },
     { title: t.sidebar.support, url: '/apoiar', icon: HandHeart, locked: false },
+    { title: t.sidebar.ggpoker, url: 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM', icon: ExternalLink, locked: false, external: true },
   ];
 
   return (
@@ -110,34 +111,49 @@ export function AppSidebar() {
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.url ||
                   item.url === '/treinar' && location.pathname === '/';
+                  const isExternal = 'external' in item && item.external;
 
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton
                         asChild
-                        isActive={isActive && !item.locked}
+                        isActive={isActive && !item.locked && !isExternal}
                         tooltip={collapsed ? item.title : undefined}>
-                        <NavLink
-                          to={item.locked ? '#' : item.url}
-                          className={cn(
-                            'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
-                            'hover:bg-sidebar-accent',
-                            isActive && !item.locked && 'bg-sidebar-accent text-primary',
-                            item.locked && 'opacity-50 cursor-not-allowed'
-                          )}
-                          activeClassName={item.locked ? '' : 'bg-sidebar-accent text-primary font-medium'}
-                          onClick={(e) => item.locked && e.preventDefault()}>
-                          <div className="relative">
-                            <item.icon className={cn(
-                              'h-5 w-5 shrink-0',
-                              isActive && !item.locked ? 'text-primary' : 'text-sidebar-foreground'
-                            )} />
-                            {item.locked &&
-                            <Lock className="h-3 w-3 absolute -top-1 -right-1 text-muted-foreground" />
-                            }
-                          </div>
-                          {!collapsed && <span className="text-sm">{item.title}</span>}
-                        </NavLink>
+                        {isExternal ? (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                              'hover:bg-sidebar-accent'
+                            )}>
+                            <item.icon className="h-5 w-5 shrink-0 text-sidebar-foreground" />
+                            {!collapsed && <span className="text-sm">{item.title}</span>}
+                          </a>
+                        ) : (
+                          <NavLink
+                            to={item.locked ? '#' : item.url}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                              'hover:bg-sidebar-accent',
+                              isActive && !item.locked && 'bg-sidebar-accent text-primary',
+                              item.locked && 'opacity-50 cursor-not-allowed'
+                            )}
+                            activeClassName={item.locked ? '' : 'bg-sidebar-accent text-primary font-medium'}
+                            onClick={(e) => item.locked && e.preventDefault()}>
+                            <div className="relative">
+                              <item.icon className={cn(
+                                'h-5 w-5 shrink-0',
+                                isActive && !item.locked ? 'text-primary' : 'text-sidebar-foreground'
+                              )} />
+                              {item.locked &&
+                              <Lock className="h-3 w-3 absolute -top-1 -right-1 text-muted-foreground" />
+                              }
+                            </div>
+                            {!collapsed && <span className="text-sm">{item.title}</span>}
+                          </NavLink>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>);
                 })}
