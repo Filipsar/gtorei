@@ -5,7 +5,7 @@ export type Rank = 'A' | 'K' | 'Q' | 'J' | 'T' | '9' | '8' | '7' | '6' | '5' | '
 export type ActionType = 'fold' | 'call' | 'raise' | 'allin';
 export type Position = 'UTG' | 'UTG1' | 'LJ' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB';
 export type Scenario = 'openRaise' | 'vsOpenRaise' | 'vs3bet' | 'vsOpenShove' | 'simulation' | 'multiway';
-export type GameMode = '8max' | 'hu' | 'threehand' | 'bounty';
+export type GameMode = '8max' | '6max' | 'hu' | 'threehand' | 'bounty';
 export type FeedbackType = 'best' | 'correct' | 'inaccuracy' | 'mistake' | 'blunder';
 
 export interface ActionFrequency {

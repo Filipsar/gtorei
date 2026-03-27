@@ -27,6 +27,7 @@ export const pt = {
     classes: 'Aulas',
     updates: 'Atualizações',
     support: 'Apoie',
+    ggpoker: 'GGPoker',
     feedback: 'Feedback',
     settings: 'Configurações',
     logout: 'Sair',
