@@ -44,6 +44,7 @@ export function AppSidebar() {
     { title: t.sidebar.classes, url: '#', icon: GraduationCap, locked: true },
     { title: t.sidebar.updates, url: '/atualizacoes', icon: Bell, locked: false },
     { title: t.sidebar.support, url: '/apoiar', icon: HandHeart, locked: false },
+    { title: t.sidebar.ggpoker, url: 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM', icon: ExternalLink, locked: false, external: true },
   ];
 
   return (
