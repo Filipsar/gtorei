@@ -3,7 +3,7 @@ import { Instagram } from 'lucide-react';
 
 const BANNER_MESSAGES = [
   { text: 'Siga o GTORei no Instagram — @gtorei', icon: true, link: 'https://www.instagram.com/gtorei/' },
-  { text: '🎓 Aulas gratuitas de poker GTO chegando em breve!' },
+  { text: '📊 Estamos atualizando o sistema de Tabelas' },
   { text: '🔧 Novos cenários e melhorias chegando em breve!' },
   { text: '🤖 Autoanálise com IA em desenvolvimento - em breve!' },
   { text: '⚡ Novas funcionalidades chegando em breve' },
