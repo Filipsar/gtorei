@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
