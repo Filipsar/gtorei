@@ -186,7 +186,10 @@ export function PokerTable({
         </div>
 
         {/* Posições dos jogadores */}
-        {(visiblePositions || POSITIONS).map(pos => {
+        {(() => {
+          const visible = visiblePositions || POSITIONS;
+          const isCrowded = visible.length >= 7;
+          return visible.map(pos => {
           const isHero = pos === heroPosition;
           const isVillain = pos === villainPosition;
           const hasFolded = foldedPositions.includes(pos);
@@ -217,7 +220,10 @@ export function PokerTable({
           return (
             <div 
               key={pos} 
-              className="absolute transform -translate-x-1/2 -translate-y-1/2" 
+              className={cn(
+                'absolute transform -translate-x-1/2 -translate-y-1/2',
+                isCrowded && 'scale-[0.78] sm:scale-100'
+              )}
               style={{
                 left: layout.left,
                 top: layout.top
@@ -244,7 +250,9 @@ export function PokerTable({
               />
             </div>
           );
-        })}
+        });
+        })()}
+
 
         {/* Fichas de apostas ativas */}
         {activeBets.filter(bet => !visiblePositions || visiblePositions.includes(bet.position)).map(bet => {
