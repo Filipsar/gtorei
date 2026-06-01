@@ -31,6 +31,8 @@ import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
+import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
+
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
@@ -58,6 +60,8 @@ type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | '
 export default function TrainPage() {
   // Onboarding
   const { needsOnboarding, completeOnboarding } = useOnboardingStatus();
+  const { needsLevelTest, completeLevelTest } = useLevelTestStatus();
+
 
   // Mode state
   const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
@@ -934,6 +938,8 @@ export default function TrainPage() {
           <TrainingModeSelector onSelect={handleModeSelect} />
         </div>
         {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
+        {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} />}
+
       </MainLayout>
     );
   }
@@ -1794,6 +1800,8 @@ export default function TrainPage() {
         points: previousHandResult.points
       } : undefined} />}
       {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
+      {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} />}
+
       </div>
     </MainLayout>;
 }
