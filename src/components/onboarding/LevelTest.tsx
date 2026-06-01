@@ -109,20 +109,40 @@ export function LevelTest({ onComplete }: LevelTestProps) {
     (async () => {
       try {
         if (user) {
-          // Persist played hands
-          const records = hands.map((h, idx) => ({
-            user_id: user.id,
-            hand: h.hand.hand,
-            scenario: h.scenario,
-            position: h.position,
-            stack: h.stack,
-            user_action: results[idx]?.action ?? 'fold',
-            correct_action: h.hand.primaryAction,
-            feedback: results[idx]?.correct ? 'correct' : 'mistake',
-            points: results[idx]?.correct ? 10 : 0,
-            ev_loss: 0,
-          }));
-          await supabase.from('played_hands').insert(records);
+          // Create a session for the level test
+          const { data: session } = await supabase
+            .from('training_sessions')
+            .insert({
+              user_id: user.id,
+              scenario: 'openRaise',
+              position: 'BTN',
+              stack: 50,
+              hands_played: hands.length,
+              accuracy,
+              score: levelInfo.xp,
+              ended_at: new Date().toISOString(),
+            })
+            .select('id')
+            .maybeSingle();
+
+          const sessionId = session?.id;
+          if (sessionId) {
+            const records = hands.map((h, idx) => ({
+              user_id: user.id,
+              session_id: sessionId,
+              hand: h.hand.hand,
+              scenario: h.scenario as string,
+              position: h.position as string,
+              stack: h.stack,
+              user_action: (results[idx]?.action ?? 'fold') as string,
+              correct_action: h.hand.primaryAction as string,
+              feedback: results[idx]?.correct ? 'correct' : 'mistake',
+              points: results[idx]?.correct ? 10 : 0,
+              ev_loss: 0,
+            }));
+            await supabase.from('played_hands').insert(records);
+          }
+
           await updateUserRanking({ userId: user.id, xpEarned: levelInfo.xp, handsPlayed: hands.length, correctHands: correct });
           await updateUserProfile(user.id, levelInfo.xp, hands.length);
         }
@@ -130,7 +150,8 @@ export function LevelTest({ onComplete }: LevelTestProps) {
         console.error('Error saving level test:', e);
       }
     })();
-  }, [phase, submitted, user, hands, results, correct, levelInfo.xp]);
+  }, [phase, submitted, user, hands, results, correct, levelInfo.xp, accuracy]);
+
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 p-4">
