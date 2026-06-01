@@ -48,11 +48,11 @@ export function PlayingCard({
 }: PlayingCardProps) {
   const suitInfo = suitSymbols[suit];
   if (faceDown) {
-    return <div className={cn('rounded-lg border-2 border-slate-600', 'bg-gradient-to-br from-secondary to-secondary/80', 'flex items-center justify-center', 'shadow-lg', sizeClasses[size], className)}>
+    return <div className={cn('rounded-sm', 'bg-gradient-to-br from-secondary to-secondary/80', 'flex items-center justify-center', 'shadow-md', sizeClasses[size], className)}>
         <div className="text-white/20 font-bold">?</div>
       </div>;
   }
-  return <div className={cn('rounded-lg border-2 border-slate-300', 'bg-white', 'flex flex-col items-center justify-center gap-0.5', 'shadow-lg', 'relative overflow-hidden', sizeClasses[size], className)}>
+  return <div className={cn('rounded-sm', 'bg-white', 'flex flex-col items-center justify-center gap-0.5', 'shadow-md', 'relative overflow-hidden', sizeClasses[size], className)}>
       {/* Top-left corner */}
       <div className={cn('absolute top-1 left-1 flex flex-col items-center leading-none', suitInfo.color)}>
         <span className="font-bold">{rank}</span>
@@ -72,6 +72,7 @@ export function PlayingCard({
     </div>;
 }
 
+
 // Component for displaying a hand (2 cards)
 interface HandDisplayProps {
   cards: CardType[];
@@ -89,12 +90,13 @@ export function HandDisplay({
     return <div className={cn('flex gap-1', className)}>
       {cards.map((_, idx) => (
         <div key={idx} className={cn(
-          'rounded-lg border-2 border-slate-400 bg-gradient-to-br from-blue-800 to-blue-950 shadow-md',
+          'rounded-sm bg-gradient-to-br from-blue-800 to-blue-950 shadow-sm',
           size === 'xs' ? 'w-6 h-8' : size === 'sm' ? 'w-8 h-11' : size === 'md' ? 'w-12 h-16' : 'w-16 h-22'
         )} />
       ))}
     </div>;
   }
+
   return <div className={cn('flex gap-2', className)}>
       {cards.map((card, idx) => <PlayingCard key={idx} rank={card.rank} suit={card.suit} size={size} />)}
     </div>;

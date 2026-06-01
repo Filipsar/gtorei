@@ -31,6 +31,8 @@ import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
+import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
+
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
@@ -58,6 +60,8 @@ type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | '
 export default function TrainPage() {
   // Onboarding
   const { needsOnboarding, completeOnboarding } = useOnboardingStatus();
+  const { needsLevelTest, completeLevelTest } = useLevelTestStatus();
+
 
   // Mode state
   const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
@@ -934,6 +938,8 @@ export default function TrainPage() {
           <TrainingModeSelector onSelect={handleModeSelect} />
         </div>
         {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
+        {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} />}
+
       </MainLayout>
     );
   }
@@ -1248,35 +1254,36 @@ export default function TrainPage() {
 
             {/* Hand info compact - between table and actions */}
             <Card className="mt-1 sm:mt-4">
-              <CardContent className="p-2 sm:p-3">
-                <div className="flex items-center justify-between">
-                  <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-4 flex-1">
+              <CardContent className="p-1.5 sm:p-3">
+                <div className="flex items-center justify-between gap-1">
+                  <div className="grid grid-cols-4 gap-0.5 sm:flex sm:items-center sm:gap-4 flex-1">
                     <div className="text-center">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Posição</p>
-                      <p className="text-sm sm:text-lg font-semibold">{handState.heroPosition}</p>
+                      <p className="text-[9px] sm:text-xs text-muted-foreground leading-none">Pos</p>
+                      <p className="text-xs sm:text-lg font-semibold leading-tight">{handState.heroPosition}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Stack</p>
-                      <p className="text-sm sm:text-lg font-semibold">{handState.heroStack} BB</p>
+                      <p className="text-[9px] sm:text-xs text-muted-foreground leading-none">Stack</p>
+                      <p className="text-xs sm:text-lg font-semibold leading-tight">{handState.heroStack}<span className="text-[9px] sm:text-xs text-muted-foreground">BB</span></p>
                     </div>
                     {currentStackDistribution && currentStackDistribution.effectiveStack !== handState.heroStack ? (
                       <div className="text-center">
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">Efetivo</p>
-                        <p className="text-sm sm:text-lg font-semibold text-secondary">{currentStackDistribution.effectiveStack} BB</p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground leading-none">Efetivo</p>
+                        <p className="text-xs sm:text-lg font-semibold text-secondary leading-tight">{currentStackDistribution.effectiveStack}<span className="text-[9px] sm:text-xs text-muted-foreground">BB</span></p>
                       </div>
                     ) : (
                       <div className="text-center">
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">Pot</p>
-                        <p className="text-sm sm:text-lg font-semibold text-primary">{handState.pot.toFixed(1)} BB</p>
+                        <p className="text-[9px] sm:text-xs text-muted-foreground leading-none">Pot</p>
+                        <p className="text-xs sm:text-lg font-semibold text-primary leading-tight">{handState.pot.toFixed(1)}<span className="text-[9px] sm:text-xs text-muted-foreground">BB</span></p>
                       </div>
                     )}
-                    <div className="text-center">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Cenário</p>
-                      <p className="text-[11px] sm:text-sm font-medium leading-tight">
+                    <div className="text-center min-w-0">
+                      <p className="text-[9px] sm:text-xs text-muted-foreground leading-none">Cenário</p>
+                      <p className="text-[10px] sm:text-sm font-medium leading-tight truncate">
                         {SCENARIOS.find(s => s.id === scenario)?.label}
                       </p>
                     </div>
                   </div>
+
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className="p-1.5 rounded-full hover:bg-muted transition-colors" aria-label="Informações da mão">
@@ -1794,6 +1801,8 @@ export default function TrainPage() {
         points: previousHandResult.points
       } : undefined} />}
       {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
+      {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} />}
+
       </div>
     </MainLayout>;
 }

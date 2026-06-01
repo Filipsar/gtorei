@@ -85,15 +85,28 @@ function FilterChip({
 // ACTION PANEL (RIGHT SIDE)
 // ============================================================
 
-function ActionPanel({ range }: { range: ReturnType<typeof getRange> }) {
+function ActionPanel({ range, selectedHand }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null }) {
   const totals = useMemo(() => {
+    // If a hand is selected, show its per-action breakdown instead of the aggregate
+    if (selectedHand) {
+      return (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((action) => {
+        const found = selectedHand.actions.find((a) => a.action === action);
+        const freq = found?.frequency ?? 0;
+        return {
+          action,
+          label: action === 'allin' ? 'All-in' : action === 'raise' ? 'Raise 2.5x' : action === 'call' ? 'Call' : 'Fold',
+          percentage: freq,
+          combos: freq / 100,
+        };
+      });
+    }
+
     const sums: Record<ActionType, { freq: number; combos: number }> = {
       fold: { freq: 0, combos: 0 },
       call: { freq: 0, combos: 0 },
       raise: { freq: 0, combos: 0 },
       allin: { freq: 0, combos: 0 },
     };
-    const totalHands = range.hands.length;
     for (const hand of range.hands) {
       for (const action of hand.actions) {
         if (action.frequency > 0) {
@@ -102,21 +115,21 @@ function ActionPanel({ range }: { range: ReturnType<typeof getRange> }) {
         }
       }
     }
-    // Normalize freq to percentage of total
     const totalFreq = Object.values(sums).reduce((s, v) => s + v.freq, 0);
-    const actions = (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((action) => ({
+    return (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((action) => ({
       action,
       label: action === 'allin' ? 'All-in' : action === 'raise' ? 'Raise 2.5x' : action === 'call' ? 'Call' : 'Fold',
       percentage: totalFreq > 0 ? (sums[action].freq / totalFreq) * 100 : 0,
       combos: sums[action].combos,
     }));
-    return actions;
-  }, [range]);
+  }, [range, selectedHand]);
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</span>
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          {selectedHand ? `Ações — ${selectedHand.hand}` : 'Ações (Range)'}
+        </span>
       </div>
       {totals.map(({ action, label, percentage, combos }) => (
         <div
@@ -124,7 +137,6 @@ function ActionPanel({ range }: { range: ReturnType<typeof getRange> }) {
           className="relative overflow-hidden rounded border border-border"
           style={{ minHeight: Math.max(36, percentage * 0.8 + 24) }}
         >
-          {/* Background bar */}
           <div
             className="absolute inset-0 opacity-25"
             style={{
@@ -135,7 +147,7 @@ function ActionPanel({ range }: { range: ReturnType<typeof getRange> }) {
           <div className="relative flex items-center justify-between px-3 py-2">
             <span className="text-sm font-medium text-foreground">{label}</span>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground">{combos.toFixed(1)} combos</span>
+              {!selectedHand && <span className="text-xs text-muted-foreground">{combos.toFixed(1)} combos</span>}
               <span className="text-sm font-bold text-foreground">{percentage.toFixed(1)}%</span>
             </div>
           </div>
@@ -144,6 +156,7 @@ function ActionPanel({ range }: { range: ReturnType<typeof getRange> }) {
     </div>
   );
 }
+
 
 // ============================================================
 // HAND DETAIL PANEL
@@ -586,7 +599,7 @@ export default function TablesPage() {
               <div className="space-y-4">
                 {/* Action summary */}
                 <div className="bg-card rounded-lg border border-border p-3">
-                  <ActionPanel range={range} />
+                  <ActionPanel range={range} selectedHand={selectedHand} />
                 </div>
 
                 {/* Hand detail */}

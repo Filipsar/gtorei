@@ -38,29 +38,33 @@ export function ActionButtons({
     onAction('allin', stack);
     setShowSlider(false);
   };
-  return <div className="space-y-4">
+  return <div className="space-y-3 sm:space-y-4">
       {/* Raise slider */}
-      {showSlider && showRaiseSlider && <div className="p-4 bg-card rounded-lg border border-border animate-slide-up">
+      {showSlider && showRaiseSlider && <div className="p-3 sm:p-4 bg-card rounded-lg border border-border animate-slide-up">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-muted-foreground">Tamanho do Raise</span>
             <span className="text-lg font-bold text-primary">{raiseSize} BB</span>
           </div>
-          <Slider value={[raiseSize]} onValueChange={([value]) => setRaiseSize(value)} min={minRaise} max={stack} step={0.5} className="mb-4" />
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setRaiseSize(Math.round(pot * 0.5))} className="flex-1">
+          {/* Touch-friendly slider on mobile: taller track + larger thumb */}
+          <div className="mb-4 [&_[role=slider]]:h-7 [&_[role=slider]]:w-7 sm:[&_[role=slider]]:h-5 sm:[&_[role=slider]]:w-5 [&_.relative.h-2]:h-3 sm:[&_.relative.h-2]:h-2 py-2">
+            <Slider value={[raiseSize]} onValueChange={([value]) => setRaiseSize(value)} min={minRaise} max={stack} step={0.5} />
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <Button variant="outline" size="sm" onClick={() => setRaiseSize(Math.round(pot * 0.5))} className="h-10 sm:h-9">
               50%
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setRaiseSize(Math.round(pot * 0.75))} className="flex-1">
+            <Button variant="outline" size="sm" onClick={() => setRaiseSize(Math.round(pot * 0.75))} className="h-10 sm:h-9">
               75%
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setRaiseSize(pot)} className="flex-1">
+            <Button variant="outline" size="sm" onClick={() => setRaiseSize(pot)} className="h-10 sm:h-9">
               Pot
             </Button>
-            <Button variant="default" size="sm" onClick={confirmRaise} className="flex-1 bg-poker-raise hover:bg-poker-raise/90">
-              Confirmar
+            <Button variant="default" size="sm" onClick={confirmRaise} className="h-10 sm:h-9 bg-poker-raise hover:bg-poker-raise/90">
+              OK
             </Button>
           </div>
         </div>}
+
 
       {/* Main action buttons */}
       <div className="grid grid-cols-4 gap-2 sm:gap-3 pb-4 sm:my-[40px]">
