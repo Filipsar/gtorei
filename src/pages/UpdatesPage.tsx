@@ -20,12 +20,48 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.8.0',
+    date: '01/06/2026',
+    type: 'feature',
+    title: 'Teste de Nível Inicial',
+    description: 'Após o onboarding, novos jogadores fazem um teste rápido de 10 mãos para definir seu nível inicial (Iniciante, Amador ou Intermediário). As mãos já são contabilizadas no Ranking.',
+  },
+  {
+    version: '1.7.4',
+    date: '01/06/2026',
+    type: 'fix',
+    title: 'Painel de Ações Reativo (Tabelas)',
+    description: 'Corrigido bug em que o painel de "Ações" não atualizava ao clicar em mãos diferentes na matriz. Agora exibe o breakdown da mão selecionada (ou do range completo quando nenhuma mão está selecionada).',
+  },
+  {
+    version: '1.7.3',
+    date: '01/06/2026',
+    type: 'improvement',
+    title: 'Experiência Mobile Aprimorada',
+    description: 'Cartas retangulares sem borda para visual mais limpo, jogadores reduzidos automaticamente no modo 8-max em telas pequenas, slider de raise com alvo maior para toque, e painel de informações da mão mais compacto.',
+  },
+  {
+    version: '1.7.2',
+    date: '01/06/2026',
+    type: 'improvement',
+    title: 'Banner de Avisos Fechável',
+    description: 'O banner rotativo do topo agora pode ser fechado pelo botão "X". A preferência é mantida durante a sessão atual.',
+  },
+  {
+    version: '1.7.1',
+    date: '15/03/2026',
+    type: 'feature',
+    title: 'Tabelas Estilo GTO Wizard',
+    description: 'Nova visualização de ranges com matriz 13x13 estilo GTO Wizard, suporte a estratégias mistas (gradientes), modo Cash 6-max como padrão, e link de afiliado GGPoker no menu lateral.',
+  },
+  {
     version: '1.7.0',
     date: '06/03/2026',
     type: 'feature',
     title: 'Stacks Dinâmicos Realistas',
     description: 'Oponentes agora recebem stacks variados e realistas baseados no modo de jogo e posição. O stack efetivo (menor entre herói e vilão) é usado para calcular os ranges GTO automaticamente, criando cenários mais desafiadores e próximos de mesas reais.',
   },
+
   {
     version: '1.6.1',
     date: '02/03/2026',
