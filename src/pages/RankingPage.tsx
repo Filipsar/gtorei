@@ -156,13 +156,97 @@ export default function RankingPage() {
           </p>
         </div>
  
- 
+        {/* Month Selector */}
+        <Card className="mb-4">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <label className="text-body-sm font-medium text-foreground flex items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-primary" />
+              Selecione o mês:
+            </label>
+            <Select
+              value={`${selectedYear}-${selectedMonth}`}
+              onValueChange={(v) => {
+                const [y, m] = v.split('-').map(Number);
+                setSelectedYear(y);
+                setSelectedMonth(m);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {monthOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Top 3 Podium */}
+        {!loading && rankings.length > 0 && (
+          <Card className="mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-heading-xs flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-rank-first" />
+                Top 3 - {MONTH_NAMES[selectedMonth]} {selectedYear}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                {[1, 0, 2].map((idx) => {
+                  const entry = rankings[idx];
+                  if (!entry) return <div key={idx} />;
+                  const position = idx + 1;
+                  const heights = ['h-28', 'h-36', 'h-24'];
+                  const order = idx === 0 ? 'order-2' : idx === 1 ? 'order-1' : 'order-3';
+                  return (
+                    <div key={entry.id} className={cn('flex flex-col items-center', order)}>
+                      <Avatar
+                        className={cn(
+                          'mb-2 cursor-pointer',
+                          position === 1 ? 'h-16 w-16 ring-2 ring-rank-first' : 'h-12 w-12',
+                          position === 2 && 'ring-2 ring-rank-second',
+                          position === 3 && 'ring-2 ring-rank-third',
+                        )}
+                        onClick={() => navigate(`/perfil/${entry.user_id}`)}
+                      >
+                        <AvatarImage src={entry.profile.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/20 text-primary">
+                          {entry.profile.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-body-xs sm:text-body-sm font-medium truncate max-w-full text-center">
+                        {entry.profile.username}
+                      </p>
+                      <p className="text-body-xs text-primary font-bold">{entry.xp_earned} XP</p>
+                      <div
+                        className={cn(
+                          'mt-2 w-full rounded-t-lg flex items-start justify-center pt-2 font-bold text-lg',
+                          heights[idx],
+                          position === 1 && 'bg-rank-first/20 text-rank-first',
+                          position === 2 && 'bg-rank-second/20 text-rank-second',
+                          position === 3 && 'bg-rank-third/20 text-rank-third',
+                        )}
+                      >
+                        {position}º
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Rankings List */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-heading-xs flex items-center gap-2">
               <CalendarRange className="h-4 w-4" />
-              Top Jogadores - Este Mês
+              Top Jogadores - {isCurrentMonth ? 'Este Mês' : `${MONTH_NAMES[selectedMonth]} ${selectedYear}`}
             </CardTitle>
           </CardHeader>
           <CardContent>
