@@ -48,7 +48,12 @@ interface RankingEntry {
 }
  
 type PeriodType = 'monthly';
- 
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
 export default function RankingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -56,18 +61,37 @@ export default function RankingPage() {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const ITEMS_PER_PAGE = 10;
- 
+
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string; year: number; month: number }[] = [];
+    const today = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      opts.push({
+        value: `${d.getFullYear()}-${d.getMonth()}`,
+        label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
+        year: d.getFullYear(),
+        month: d.getMonth(),
+      });
+    }
+    return opts;
+  }, []);
+
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
   useEffect(() => {
     setCurrentPage(0);
     fetchRankings();
-  }, [period]);
- 
+  }, [period, selectedYear, selectedMonth]);
+
   const fetchRankings = async () => {
     setLoading(true);
     try {
-      const now = new Date();
-      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const periodStart = new Date(selectedYear, selectedMonth, 1);
 
       const { data, error } = await supabase
         .from('rankings')
