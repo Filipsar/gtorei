@@ -68,6 +68,7 @@ function getLevelFromAccuracy(accuracy: number): { level: number; label: string;
 
 interface LevelTestProps {
   onComplete: () => void;
+  onClose?: () => void;
 }
 
 export function LevelTest({ onComplete }: LevelTestProps) {
