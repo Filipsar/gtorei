@@ -71,7 +71,7 @@ interface LevelTestProps {
   onClose?: () => void;
 }
 
-export function LevelTest({ onComplete }: LevelTestProps) {
+export function LevelTest({ onComplete, onClose }: LevelTestProps) {
   const { user } = useAuth();
   const [phase, setPhase] = useState<'intro' | 'playing' | 'result'>('intro');
   const [hands] = useState<TestHand[]>(() => generateTestHands(10));
@@ -79,6 +79,11 @@ export function LevelTest({ onComplete }: LevelTestProps) {
   const [correct, setCorrect] = useState(0);
   const [results, setResults] = useState<Array<{ correct: boolean; action: ActionType; gtoAction: ActionType }>>([]);
   const [submitted, setSubmitted] = useState(false);
+
+  const handleClose = () => {
+    localStorage.setItem(LEVEL_TEST_KEY, 'skipped');
+    onClose?.();
+  };
 
   const current = hands[currentIndex];
   const cards = useMemo(() => current ? generateCardsFromHand(current.hand.hand) : [], [current]);
