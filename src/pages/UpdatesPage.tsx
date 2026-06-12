@@ -20,6 +20,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.8.1',
+    date: '12/06/2026',
+    type: 'improvement',
+    title: 'Filtro de Ranking por Mês',
+    description: 'O seletor de mês no Ranking agora inicia a partir de Fevereiro de 2026, alinhado ao início do período de competição da plataforma.',
+  },
+  {
     version: '1.8.0',
     date: '01/06/2026',
     type: 'feature',

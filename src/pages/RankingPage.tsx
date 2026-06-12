@@ -70,14 +70,16 @@ export default function RankingPage() {
   const monthOptions = useMemo(() => {
     const opts: { value: string; label: string; year: number; month: number }[] = [];
     const today = new Date();
-    for (let i = 0; i < 24; i++) {
-      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const start = new Date(2026, 1, 1); // February 2026
+    let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+    while (cursor >= start) {
       opts.push({
-        value: `${d.getFullYear()}-${d.getMonth()}`,
-        label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
-        year: d.getFullYear(),
-        month: d.getMonth(),
+        value: `${cursor.getFullYear()}-${cursor.getMonth()}`,
+        label: `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`,
+        year: cursor.getFullYear(),
+        month: cursor.getMonth(),
       });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1);
     }
     return opts;
   }, []);
