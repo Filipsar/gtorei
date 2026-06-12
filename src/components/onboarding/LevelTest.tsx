@@ -68,9 +68,10 @@ function getLevelFromAccuracy(accuracy: number): { level: number; label: string;
 
 interface LevelTestProps {
   onComplete: () => void;
+  onClose?: () => void;
 }
 
-export function LevelTest({ onComplete }: LevelTestProps) {
+export function LevelTest({ onComplete, onClose }: LevelTestProps) {
   const { user } = useAuth();
   const [phase, setPhase] = useState<'intro' | 'playing' | 'result'>('intro');
   const [hands] = useState<TestHand[]>(() => generateTestHands(10));
@@ -78,6 +79,11 @@ export function LevelTest({ onComplete }: LevelTestProps) {
   const [correct, setCorrect] = useState(0);
   const [results, setResults] = useState<Array<{ correct: boolean; action: ActionType; gtoAction: ActionType }>>([]);
   const [submitted, setSubmitted] = useState(false);
+
+  const handleClose = () => {
+    localStorage.setItem(LEVEL_TEST_KEY, 'skipped');
+    onClose?.();
+  };
 
   const current = hands[currentIndex];
   const cards = useMemo(() => current ? generateCardsFromHand(current.hand.hand) : [], [current]);
@@ -158,9 +164,21 @@ export function LevelTest({ onComplete }: LevelTestProps) {
       <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            <h2 className="text-base font-bold text-foreground">Teste de Nível Inicial</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              <h2 className="text-base font-bold text-foreground">Teste de Nível Inicial</h2>
+            </div>
+            {phase !== 'result' && (
+              <button
+                onClick={handleClose}
+                className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                aria-label="Fechar"
+                title="Fechar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">10 mãos rápidas para definir seu ponto de partida</p>
         </div>

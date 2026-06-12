@@ -938,7 +938,7 @@ export default function TrainPage() {
           <TrainingModeSelector onSelect={handleModeSelect} />
         </div>
         {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
-        {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} />}
+        {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
 
       </MainLayout>
     );
@@ -1801,7 +1801,7 @@ export default function TrainPage() {
         points: previousHandResult.points
       } : undefined} />}
       {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
-      {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} />}
+      {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
 
       </div>
     </MainLayout>;
