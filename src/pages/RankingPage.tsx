@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,12 @@ interface RankingEntry {
 }
  
 type PeriodType = 'monthly';
- 
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
 export default function RankingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -56,18 +62,37 @@ export default function RankingPage() {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const ITEMS_PER_PAGE = 10;
- 
+
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string; year: number; month: number }[] = [];
+    const today = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      opts.push({
+        value: `${d.getFullYear()}-${d.getMonth()}`,
+        label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
+        year: d.getFullYear(),
+        month: d.getMonth(),
+      });
+    }
+    return opts;
+  }, []);
+
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
   useEffect(() => {
     setCurrentPage(0);
     fetchRankings();
-  }, [period]);
- 
+  }, [period, selectedYear, selectedMonth]);
+
   const fetchRankings = async () => {
     setLoading(true);
     try {
-      const now = new Date();
-      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const periodStart = new Date(selectedYear, selectedMonth, 1);
 
       const { data, error } = await supabase
         .from('rankings')
@@ -132,13 +157,97 @@ export default function RankingPage() {
           </p>
         </div>
  
- 
+        {/* Month Selector */}
+        <Card className="mb-4">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <label className="text-body-sm font-medium text-foreground flex items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-primary" />
+              Selecione o mês:
+            </label>
+            <Select
+              value={`${selectedYear}-${selectedMonth}`}
+              onValueChange={(v) => {
+                const [y, m] = v.split('-').map(Number);
+                setSelectedYear(y);
+                setSelectedMonth(m);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {monthOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Top 3 Podium */}
+        {!loading && rankings.length > 0 && (
+          <Card className="mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-heading-xs flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-rank-first" />
+                Top 3 - {MONTH_NAMES[selectedMonth]} {selectedYear}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                {[1, 0, 2].map((idx) => {
+                  const entry = rankings[idx];
+                  if (!entry) return <div key={idx} />;
+                  const position = idx + 1;
+                  const heights = ['h-28', 'h-36', 'h-24'];
+                  const order = idx === 0 ? 'order-2' : idx === 1 ? 'order-1' : 'order-3';
+                  return (
+                    <div key={entry.id} className={cn('flex flex-col items-center', order)}>
+                      <Avatar
+                        className={cn(
+                          'mb-2 cursor-pointer',
+                          position === 1 ? 'h-16 w-16 ring-2 ring-rank-first' : 'h-12 w-12',
+                          position === 2 && 'ring-2 ring-rank-second',
+                          position === 3 && 'ring-2 ring-rank-third',
+                        )}
+                        onClick={() => navigate(`/perfil/${entry.user_id}`)}
+                      >
+                        <AvatarImage src={entry.profile.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/20 text-primary">
+                          {entry.profile.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-body-xs sm:text-body-sm font-medium truncate max-w-full text-center">
+                        {entry.profile.username}
+                      </p>
+                      <p className="text-body-xs text-primary font-bold">{entry.xp_earned} XP</p>
+                      <div
+                        className={cn(
+                          'mt-2 w-full rounded-t-lg flex items-start justify-center pt-2 font-bold text-lg',
+                          heights[idx],
+                          position === 1 && 'bg-rank-first/20 text-rank-first',
+                          position === 2 && 'bg-rank-second/20 text-rank-second',
+                          position === 3 && 'bg-rank-third/20 text-rank-third',
+                        )}
+                      >
+                        {position}º
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Rankings List */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-heading-xs flex items-center gap-2">
               <CalendarRange className="h-4 w-4" />
-              Top Jogadores - Este Mês
+              Top Jogadores - {isCurrentMonth ? 'Este Mês' : `${MONTH_NAMES[selectedMonth]} ${selectedYear}`}
             </CardTitle>
           </CardHeader>
           <CardContent>
