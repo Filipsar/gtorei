@@ -21,6 +21,7 @@ import levelAvancado from '@/assets/levels/Avancado.png';
 import levelExpert from '@/assets/levels/Expert.png';
 import levelMestre from '@/assets/levels/Mestre.png';
 import levelLenda from '@/assets/levels/Lenda.png';
+import levelGTORei from '@/assets/levels/GTORei.png';
 
 const LEVEL_IMAGES: Record<number, string> = {
   1: levelIniciante,
@@ -30,9 +31,12 @@ const LEVEL_IMAGES: Record<number, string> = {
   5: levelExpert,
   6: levelMestre,
   7: levelLenda,
+  8: levelGTORei,
 };
 
 const getLevelImage = (level: number) => LEVEL_IMAGES[level] || levelIniciante;
+const getLevelFxClass = (level: number) =>
+  level === 8 ? 'led-pulse' : level === 7 ? 'fire-pulse' : '';
 
 interface RankingEntry {
   id: string;
@@ -381,16 +385,17 @@ export default function RankingPage() {
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
              {[
-                 { name: 'Iniciante', xp: '0', img: levelIniciante },
-                 { name: 'Amador', xp: '150', img: levelAmador },
-                 { name: 'Intermediário', xp: '1.000', img: levelIntermediario },
-                 { name: 'Avançado', xp: '3.500', img: levelAvancado },
-                 { name: 'Expert', xp: '8.000', img: levelExpert },
-                 { name: 'Mestre', xp: '17.500', img: levelMestre },
-                 { name: 'Lenda', xp: '25.000', img: levelLenda },
+                 { name: 'Iniciante', xp: '0', img: levelIniciante, fx: '' },
+                 { name: 'Amador', xp: '150', img: levelAmador, fx: '' },
+                 { name: 'Intermediário', xp: '1.000', img: levelIntermediario, fx: '' },
+                 { name: 'Avançado', xp: '3.500', img: levelAvancado, fx: '' },
+                 { name: 'Expert', xp: '8.000', img: levelExpert, fx: '' },
+                 { name: 'Mestre', xp: '17.500', img: levelMestre, fx: '' },
+                 { name: 'Lenda', xp: '100.000', img: levelLenda, fx: 'fire-pulse' },
+                 { name: 'GTO Rei', xp: '250.000', img: levelGTORei, fx: 'led-pulse' },
                ].map((level) => (
                  <div key={level.name} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                   <img src={level.img} alt={level.name} className="w-8 h-8 object-contain" />
+                   <img src={level.img} alt={level.name} className={cn('w-8 h-8 object-contain', level.fx)} />
                    <div>
                      <p className="text-body-sm font-medium">{level.name}</p>
                      <p className="text-body-xs text-muted-foreground">{level.xp}+ XP</p>
