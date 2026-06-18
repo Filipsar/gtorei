@@ -70,21 +70,21 @@ export function useAchievements() {
 
     // Level achievements
     if (stats.level) {
-      for (let l = 2; l <= 7; l++) {
+      for (let l = 2; l <= 8; l++) {
         if (stats.level >= l) toCheck.push(`level_${l}`);
       }
     }
 
     // Streak achievements
     if (stats.streak) {
-      for (const threshold of [5, 10, 25, 50]) {
+      for (const threshold of [5, 10, 25, 50, 100, 200]) {
         if (stats.streak >= threshold) toCheck.push(`streak_${threshold}`);
       }
     }
 
     // Volume achievements
     if (stats.totalHands) {
-      for (const threshold of [10, 50, 100, 500, 1000]) {
+      for (const threshold of [10, 50, 100, 500, 1000, 2500, 5000, 10000]) {
         if (stats.totalHands >= threshold) toCheck.push(`hands_${threshold}`);
       }
     }
@@ -94,13 +94,24 @@ export function useAchievements() {
       if (stats.sessionAccuracy === 100 && stats.sessionHands >= 10) {
         toCheck.push('session_perfect');
       }
+      if (stats.sessionAccuracy === 100 && stats.sessionHands >= 50) {
+        toCheck.push('session_perfect_50');
+      }
       if (stats.sessionAccuracy >= 90 && stats.sessionHands >= 20) {
         toCheck.push('accuracy_90');
       }
+      if (stats.sessionAccuracy >= 95 && stats.sessionHands >= 100) {
+        toCheck.push('accuracy_95');
+      }
+      if (stats.sessionAccuracy >= 98 && stats.sessionHands >= 50) {
+        toCheck.push('accuracy_98');
+      }
     }
 
-    if (stats.sessionBestCount && stats.sessionBestCount >= 10) {
-      toCheck.push('best_10');
+    if (stats.sessionBestCount) {
+      if (stats.sessionBestCount >= 10) toCheck.push('best_10');
+      if (stats.sessionBestCount >= 25) toCheck.push('best_25');
+      if (stats.sessionBestCount >= 50) toCheck.push('best_50');
     }
 
     // Unlock any new ones

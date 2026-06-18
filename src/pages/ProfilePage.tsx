@@ -19,11 +19,14 @@ import levelAvancado from '@/assets/levels/Avancado.png';
 import levelExpert from '@/assets/levels/Expert.png';
 import levelMestre from '@/assets/levels/Mestre.png';
 import levelLenda from '@/assets/levels/Lenda.png';
+import levelGTORei from '@/assets/levels/GTORei.png';
 
 const LEVEL_IMAGES: Record<number, string> = {
   1: levelIniciante, 2: levelAmador, 3: levelIntermediario,
-  4: levelAvancado, 5: levelExpert, 6: levelMestre, 7: levelLenda,
+  4: levelAvancado, 5: levelExpert, 6: levelMestre, 7: levelLenda, 8: levelGTORei,
 };
+const getLevelFxClass = (level: number) =>
+  level === 8 ? 'led-pulse' : level === 7 ? 'fire-pulse' : '';
 
 interface ProfileData {
   user_id: string;
@@ -245,7 +248,7 @@ export default function ProfilePage() {
                 {isOwnProfile && <Badge variant="outline">Você</Badge>}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <img src={levelImg} alt="" className="w-6 h-6 object-contain" />
+                <img src={levelImg} alt="" className={cn('w-6 h-6 object-contain', getLevelFxClass(profileData.level))} />
                 <span className="text-muted-foreground">{getLevelName(profileData.level)}</span>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-primary font-semibold">{profileData.total_xp} XP</span>

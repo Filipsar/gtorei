@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ADMIN_EMAIL = 'farubini2@gmail.com';
 
-const levelNames = ['Amador', 'Iniciante', 'Intermediário', 'Avançado', 'Expert', 'Mestre', 'Lenda'];
+const levelNames = ['Iniciante', 'Amador', 'Intermediário', 'Avançado', 'Expert', 'Mestre', 'Lenda', 'GTO Rei'];
 
 interface UserData {
   user_id: string;

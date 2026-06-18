@@ -15,11 +15,14 @@ import levelAvancado from '@/assets/levels/Avancado.png';
 import levelExpert from '@/assets/levels/Expert.png';
 import levelMestre from '@/assets/levels/Mestre.png';
 import levelLenda from '@/assets/levels/Lenda.png';
+import levelGTORei from '@/assets/levels/GTORei.png';
 
 const LEVEL_IMAGES: Record<number, string> = {
   1: levelIniciante, 2: levelAmador, 3: levelIntermediario,
-  4: levelAvancado, 5: levelExpert, 6: levelMestre, 7: levelLenda,
+  4: levelAvancado, 5: levelExpert, 6: levelMestre, 7: levelLenda, 8: levelGTORei,
 };
+const getLevelFxClass = (level: number) =>
+  level === 8 ? 'led-pulse' : level === 7 ? 'fire-pulse' : '';
 
 interface PlayerResult {
   user_id: string;
@@ -110,7 +113,7 @@ export default function SearchPage() {
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <img src={LEVEL_IMAGES[player.level] || levelIniciante} alt="" className="w-5 h-5 object-contain" />
+          <img src={LEVEL_IMAGES[player.level] || levelIniciante} alt="" className={`w-5 h-5 object-contain ${getLevelFxClass(player.level)}`} />
           <p className="font-medium truncate">{player.username}</p>
         </div>
         <p className="text-body-xs text-muted-foreground">

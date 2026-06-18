@@ -321,11 +321,12 @@ export function isHandFavorited(hand: string, scenario: Scenario, position: Posi
 
 // Level calculation
 // Iniciante: 0, Amador: 150, Intermediário: 1000, Avançado: 3500,
-// Expert: 8000, Mestre: 17500, Lenda: 25000
+// Expert: 8000, Mestre: 17500, Lenda: 100000, GTO Rei: 250000
+export const LEVEL_THRESHOLDS = [0, 150, 1000, 3500, 8000, 17500, 100000, 250000];
+
 export function calculateLevel(score: number): number {
-  const thresholds = [0, 150, 1000, 3500, 8000, 17500, 25000];
-  for (let i = thresholds.length - 1; i >= 0; i--) {
-    if (score >= thresholds[i]) {
+  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (score >= LEVEL_THRESHOLDS[i]) {
       return i + 1;
     }
   }
@@ -341,12 +342,13 @@ export function getLevelName(level: number): string {
     'Expert',
     'Mestre',
     'Lenda',
+    'GTO Rei',
   ];
   return names[Math.min(level - 1, names.length - 1)];
 }
 
 export function getLevelProgress(score: number): { current: number; next: number; progress: number } {
-  const thresholds = [0, 150, 1000, 3500, 8000, 17500, 25000, Infinity];
+  const thresholds = [...LEVEL_THRESHOLDS, Infinity];
   for (let i = 0; i < thresholds.length - 1; i++) {
     if (score < thresholds[i + 1]) {
       const current = thresholds[i];
@@ -355,7 +357,7 @@ export function getLevelProgress(score: number): { current: number; next: number
       return { current, next, progress };
     }
   }
-  return { current: 25000, next: Infinity, progress: 100 };
+  return { current: 250000, next: Infinity, progress: 100 };
 }
 
 // Statistics
