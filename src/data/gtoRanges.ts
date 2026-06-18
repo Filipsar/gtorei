@@ -92,7 +92,7 @@ export function getHandData(
 // FEEDBACK SYSTEM
 // ============================================================
 
-const LEVEL_EV_PENALTY = [0, 0, 0.5, 1.0, 1.5, 2.0, 2.5];
+const LEVEL_EV_PENALTY = [0, 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
 
 export function calculateFeedback(
   userAction: ActionType,
@@ -106,7 +106,7 @@ export function calculateFeedback(
   const userEv = handData.actions.find(a => a.action === userAction)?.ev || 0;
   const evLoss = Math.max(0, gtoEv - userEv);
 
-  const levelIndex = Math.min(level - 1, 6);
+  const levelIndex = Math.min(level - 1, 7);
   const evPenaltyMultiplier = LEVEL_EV_PENALTY[levelIndex];
   const evPenalty = evLoss > 0 ? Math.round(evLoss * evPenaltyMultiplier) : 0;
 
