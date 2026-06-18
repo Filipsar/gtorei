@@ -248,7 +248,7 @@ export default function ProfilePage() {
                 {isOwnProfile && <Badge variant="outline">Você</Badge>}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <img src={levelImg} alt="" className="w-6 h-6 object-contain" />
+                <img src={levelImg} alt="" className={cn('w-6 h-6 object-contain', getLevelFxClass(profileData.level))} />
                 <span className="text-muted-foreground">{getLevelName(profileData.level)}</span>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-primary font-semibold">{profileData.total_xp} XP</span>

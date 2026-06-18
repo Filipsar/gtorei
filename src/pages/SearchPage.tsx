@@ -113,7 +113,7 @@ export default function SearchPage() {
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <img src={LEVEL_IMAGES[player.level] || levelIniciante} alt="" className="w-5 h-5 object-contain" />
+          <img src={LEVEL_IMAGES[player.level] || levelIniciante} alt="" className={`w-5 h-5 object-contain ${getLevelFxClass(player.level)}`} />
           <p className="font-medium truncate">{player.username}</p>
         </div>
         <p className="text-body-xs text-muted-foreground">
