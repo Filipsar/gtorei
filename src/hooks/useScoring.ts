@@ -14,10 +14,10 @@
    newConsecutiveErrors: number;
  }
  
-// Multiplicadores por nível (1 = Iniciante, 7 = Lenda)
+// Multiplicadores por nível (1 = Iniciante, 8 = GTO Rei)
 const LEVEL_MULTIPLIERS = {
-  gain: [1.3, 1.15, 1.0, 0.8, 0.6, 0.35, 0.2], // Iniciante ganha muito, Lenda ganha pouco
-  loss: [0.3, 0.5, 0.8, 1.0, 1.4, 1.8, 2.5],    // Iniciante perde pouco, Lenda perde muito
+  gain: [1.3, 1.15, 1.0, 0.8, 0.6, 0.35, 0.2, 0.12],
+  loss: [0.3, 0.5, 0.8, 1.0, 1.4, 1.8, 2.5, 3.0],
 };
 
 // Base points for each feedback type
@@ -34,7 +34,7 @@ const BASE_POINTS: Record<FeedbackType, number> = {
    evLoss: number,
    config: ScoringConfig
  ): ScoringResult {
-   const levelIndex = Math.min(config.level - 1, 6);
+   const levelIndex = Math.min(config.level - 1, 7);
    const gainMultiplier = LEVEL_MULTIPLIERS.gain[levelIndex];
    const lossMultiplier = LEVEL_MULTIPLIERS.loss[levelIndex];
  
