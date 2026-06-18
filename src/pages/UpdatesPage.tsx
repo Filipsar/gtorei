@@ -20,6 +20,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.9.0',
+    date: '18/06/2026',
+    type: 'feature',
+    title: 'Novo Rank "GTO Rei" e Novas Conquistas',
+    description: 'Adicionado o rank supremo "GTO Rei" (250.000 XP) com efeito de LED dourado/azul pulsante. O rank "Lenda" foi atualizado para 100.000 XP com efeito leve de fogo pulsante. Adicionadas 10 novas conquistas mais desafiadoras: GTO Rei, Inabalável (streak 100), Sobrenatural (streak 200), Profissional/Veterano/Ironman (2.5k/5k/10k mãos), Perfeição Estendida, Sniper GTO, Solver Humano, 25 Best e 50 Best.',
+  },
+  {
     version: '1.8.1',
     date: '12/06/2026',
     type: 'improvement',
