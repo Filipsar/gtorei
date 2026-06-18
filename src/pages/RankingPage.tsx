@@ -293,7 +293,7 @@ export default function RankingPage() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <img src={getLevelImage(entry.profile.level)} alt="" className="w-5 h-5 object-contain" />
+                        <img src={getLevelImage(entry.profile.level)} alt="" className={cn('w-5 h-5 object-contain', getLevelFxClass(entry.profile.level))} />
                         <p className="font-medium truncate">{entry.profile.username}</p>
                         {user?.id === entry.user_id && (
                           <Badge variant="outline" className="text-body-xs">Você</Badge>
