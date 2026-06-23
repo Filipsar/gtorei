@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEO } from '@/components/seo/SEO';
 import { ArrowLeft, Heart, ExternalLink, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import qrCodeImage from '@/assets/qr-code-donate.png';
