@@ -64,6 +64,22 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <SEO
+        title="GTORei — Treinador de Poker GTO em Português"
+        description="Treine decisões pré-flop e pós-flop, estude ranges GTO, analise mãos com IA e suba no ranking. Plataforma de poker GTO gratuita em português."
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "GTORei",
+          applicationCategory: "EducationApplication",
+          operatingSystem: "Web",
+          inLanguage: "pt-BR",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" },
+          description:
+            "Treinador de poker GTO com simulações, ranges pré-flop, análise de mãos por IA e ranking competitivo.",
+        }}
+      />
       {/* Top Instagram banner */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground overflow-hidden h-9 flex items-center">
         <a
