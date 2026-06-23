@@ -2,10 +2,48 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BookOpen, Target, Brain, Trophy, Zap, Shield } from 'lucide-react';
+import { SEO } from '@/components/seo/SEO';
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "O que é poker GTO?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "GTO (Game Theory Optimal) é uma estratégia matematicamente equilibrada que não pode ser explorada pelos adversários. Define ranges e frequências ótimas para cada decisão.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Como funciona uma mão de Texas Hold'em?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Cada jogador recebe 2 cartas privadas. Há quatro rodadas de apostas: pré-flop, flop, turn e river. As 5 cartas comunitárias formam a melhor mão de 5 cartas junto às privadas.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Qual a importância da posição no poker?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Posição define a ordem de ação. Posições tardias (BTN, CO) jogam mais mãos pois agem por último, enquanto blinds e UTG jogam ranges mais apertados.",
+      },
+    },
+  ],
+};
 
 export default function BeginnerGuidePage() {
   return (
     <MainLayout>
+      <SEO
+        title="Guia de Poker GTO para Iniciantes — GTORei"
+        description="Aprenda fundamentos do poker e GTO: posições, ranges, fases da mão e tomada de decisão. Guia completo em português para iniciantes."
+        path="/iniciante"
+        jsonLd={faqJsonLd}
+      />
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
