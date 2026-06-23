@@ -1,13 +1,37 @@
 import { useState, useEffect } from 'react';
-import { Instagram, X } from 'lucide-react';
+import { Instagram, X, Heart, Brain, Sparkles, Trophy } from 'lucide-react';
 
 const BANNER_MESSAGES = [
-  { text: 'Siga o GTORei no Instagram — @gtorei', icon: true, link: 'https://www.instagram.com/gtorei/' },
-  { text: '📊 Estamos atualizando o sistema de Tabelas' },
-  { text: '🔧 Novos cenários e melhorias chegando em breve!' },
-  { text: '🤖 Autoanálise com IA em desenvolvimento - em breve!' },
-  { text: '⚡ Novas funcionalidades chegando em breve' },
-  { text: 'Siga o GTORei no Instagram — @gtorei', icon: true, link: 'https://www.instagram.com/gtorei/' },
+  {
+    text: 'Análise de Torneio com IA disponível agora!',
+    icon: <Brain className="h-4 w-4" />,
+    link: '/analise-ia',
+    internal: true,
+  },
+  {
+    text: 'Novo Ranking GTO Rei — 250k XP! Com efeito LED!',
+    icon: <Trophy className="h-4 w-4" />,
+    link: '/ranking',
+    internal: true,
+  },
+  {
+    text: 'Ranges GTO atualizadas para todos os modos',
+    icon: <Sparkles className="h-4 w-4" />,
+    link: '/treinar',
+    internal: true,
+  },
+  {
+    text: 'Apoie o GTORei e mantenha o projeto gratuito',
+    icon: <Heart className="h-4 w-4" />,
+    link: '/apoiar',
+    internal: true,
+  },
+  {
+    text: 'Siga o GTORei no Instagram — @gtorei',
+    icon: <Instagram className="h-4 w-4" />,
+    link: 'https://www.instagram.com/gtorei/',
+    internal: false,
+  },
 ];
 
 const DISMISS_KEY = 'gtorei_banner_dismissed';
@@ -43,9 +67,18 @@ export function MaintenanceBanner() {
     setDismissed(true);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (!msg.link) return;
+    if (msg.internal) {
+      e.preventDefault();
+      window.location.href = msg.link;
+    }
+    // external links use normal <a> behavior
+  };
+
   const content = (
     <span className="animate-marquee-single whitespace-nowrap inline-flex items-center gap-2 text-sm font-medium" key={animKey}>
-      {msg.icon && <Instagram className="h-4 w-4" />}
+      {msg.icon}
       {msg.text}
     </span>
   );
@@ -53,7 +86,13 @@ export function MaintenanceBanner() {
   return (
     <div className="relative bg-primary text-primary-foreground overflow-hidden h-8 flex items-center">
       {msg.link ? (
-        <a href={msg.link} target="_blank" rel="noopener noreferrer" className="w-full flex justify-center hover:opacity-80 transition-opacity px-10">
+        <a
+          href={msg.link}
+          target={msg.internal ? undefined : '_blank'}
+          rel={msg.internal ? undefined : 'noopener noreferrer'}
+          onClick={handleClick}
+          className="w-full flex justify-center hover:opacity-80 transition-opacity px-10 cursor-pointer"
+        >
           {content}
         </a>
       ) : (
