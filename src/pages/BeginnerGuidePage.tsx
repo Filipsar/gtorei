@@ -19,10 +19,10 @@ export default function BeginnerGuidePage() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-heading-xs flex items-center gap-2">
+            <h2 className="text-heading-xs flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
               O que é Poker?
-            </CardTitle>
+            </h2>
           </CardHeader>
           <CardContent className="space-y-3 text-body-sm text-muted-foreground">
             <p>O poker é um jogo de cartas onde os jogadores fazem apostas com base na força da sua mão. No <strong className="text-foreground">Texas Hold'em</strong>, cada jogador recebe 2 cartas privadas e compartilha 5 cartas comunitárias na mesa.</p>
@@ -32,10 +32,10 @@ export default function BeginnerGuidePage() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-heading-xs flex items-center gap-2">
+            <h2 className="text-heading-xs flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
               Passo a passo de uma mão
-            </CardTitle>
+            </h2>
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
@@ -80,10 +80,10 @@ export default function BeginnerGuidePage() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-heading-xs flex items-center gap-2">
+            <h2 className="text-heading-xs flex items-center gap-2">
               <Brain className="h-5 w-5 text-primary" />
               O que é GTO (Game Theory Optimal)?
-            </CardTitle>
+            </h2>
           </CardHeader>
           <CardContent className="space-y-3 text-body-sm text-muted-foreground">
             <p><strong className="text-foreground">GTO</strong> é a estratégia matematicamente perfeita no poker. É baseada na Teoria dos Jogos e define a jogada ideal em cada situação, tornando você <strong className="text-foreground">inexploitável</strong> — nenhum oponente consegue lucrar contra você a longo prazo.</p>
@@ -94,10 +94,10 @@ export default function BeginnerGuidePage() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-heading-xs flex items-center gap-2">
+            <h2 className="text-heading-xs flex items-center gap-2">
               <Trophy className="h-5 w-5 text-primary" />
               Por que o GTORei?
-            </CardTitle>
+            </h2>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
