@@ -1,6 +1,7 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SEO } from '@/components/seo/SEO';
 import { Bell, Sparkles, Bug, Wrench, Rocket } from 'lucide-react';
 
 interface UpdateNote {
