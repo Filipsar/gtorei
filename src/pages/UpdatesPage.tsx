@@ -18,6 +18,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.10.1',
+    date: '23/06/2026',
+    type: 'improvement',
+    title: 'Banner Rotativo Atualizado',
+    description: 'O banner rotativo do topo agora exibe as últimas novidades da plataforma (Análise com IA, novo Ranking GTO Rei, ranges atualizadas) e links diretos para apoiar o projeto e seguir no Instagram.',
+  },
+  {
     version: '1.10.0',
     date: '23/06/2026',
     type: 'feature',
