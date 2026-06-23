@@ -22,6 +22,9 @@ import {
   Target,
   TrendingUp,
   CheckCircle2,
+  Shield,
+  FileText,
+  Cookie,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
