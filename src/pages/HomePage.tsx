@@ -338,42 +338,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SHORTCUTS — all features list */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14 max-w-2xl mx-auto">
-            <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Tudo num só lugar</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Acesso rápido a todas as áreas</h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { icon: Zap, label: 'Treinar', to: '/treinar' },
-              { icon: TableProperties, label: 'Tabelas', to: '/tabelas' },
-              { icon: BarChart3, label: 'Análise', to: '/analise' },
-              { icon: Brain, label: 'Analisar com IA', to: '/analise-ia' },
-              { icon: Trophy, label: 'Ranking', to: '/ranking' },
-              { icon: Award, label: 'Conquistas', to: '/conquistas' },
-              { icon: Users, label: 'Comunidade', to: '/comunidade' },
-              { icon: Heart, label: 'Favoritos', to: '/favoritos' },
-              { icon: User, label: 'Perfil', to: '/perfil' },
-              { icon: Search, label: 'Buscar', to: '/buscar' },
-              { icon: BookOpen, label: 'Iniciante', to: '/iniciante' },
-              { icon: Bell, label: 'Atualizações', to: '/atualizacoes' },
-            ].map((s) => (
-              <button
-                key={s.label}
-                onClick={() => user ? navigate(s.to) : navigate('/auth')}
-                className="group flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-card/80 transition-all text-left"
-              >
-                <s.icon className="h-5 w-5 text-primary shrink-0" />
-                <span className="text-sm font-medium">{s.label}</span>
-                <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FINAL CTA */}
       <section className="py-28 px-6 relative overflow-hidden">
