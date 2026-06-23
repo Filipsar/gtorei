@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { SEO } from '@/components/seo/SEO';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
