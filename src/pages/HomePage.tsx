@@ -22,6 +22,9 @@ import {
   Target,
   TrendingUp,
   CheckCircle2,
+  Shield,
+  FileText,
+  Cookie,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -338,42 +341,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SHORTCUTS — all features list */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14 max-w-2xl mx-auto">
-            <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Tudo num só lugar</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Acesso rápido a todas as áreas</h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { icon: Zap, label: 'Treinar', to: '/treinar' },
-              { icon: TableProperties, label: 'Tabelas', to: '/tabelas' },
-              { icon: BarChart3, label: 'Análise', to: '/analise' },
-              { icon: Brain, label: 'Analisar com IA', to: '/analise-ia' },
-              { icon: Trophy, label: 'Ranking', to: '/ranking' },
-              { icon: Award, label: 'Conquistas', to: '/conquistas' },
-              { icon: Users, label: 'Comunidade', to: '/comunidade' },
-              { icon: Heart, label: 'Favoritos', to: '/favoritos' },
-              { icon: User, label: 'Perfil', to: '/perfil' },
-              { icon: Search, label: 'Buscar', to: '/buscar' },
-              { icon: BookOpen, label: 'Iniciante', to: '/iniciante' },
-              { icon: Bell, label: 'Atualizações', to: '/atualizacoes' },
-            ].map((s) => (
-              <button
-                key={s.label}
-                onClick={() => user ? navigate(s.to) : navigate('/auth')}
-                className="group flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-card/80 transition-all text-left"
-              >
-                <s.icon className="h-5 w-5 text-primary shrink-0" />
-                <span className="text-sm font-medium">{s.label}</span>
-                <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FINAL CTA */}
       <section className="py-28 px-6 relative overflow-hidden">
@@ -412,6 +379,54 @@ export default function HomePage() {
               <Instagram className="h-5 w-5 text-primary" />
               <span className="font-medium">{t.home.followUs} — @gtorei</span>
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* PRIVACY / TERMS / LGPD */}
+      <section className="py-16 px-6 bg-card/30 border-y border-border">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 max-w-2xl mx-auto">
+            <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Transparência</p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Privacidade, Dados e Termos</h2>
+            <p className="text-muted-foreground">
+              Ao criar sua conta no GTORei, você concorda com nossas diretrizes de uso e tratamento de dados.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Card className="p-7 bg-card border-border">
+              <Shield className="h-8 w-8 text-primary mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Política de Privacidade</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Seus dados pessoais são tratados com segurança e utilizados apenas para operação da plataforma,
+                análise de desempenho e comunicação direta. Não vendemos dados a terceiros.
+              </p>
+            </Card>
+
+            <Card className="p-7 bg-card border-border">
+              <FileText className="h-8 w-8 text-primary mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Termos de Uso</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                O uso do GTORei é destinado a fins de estudo e entretenimento. O usuário é responsável
+                por suas decisões em mesas reais. Conteúdo e ranges são para referência educacional.
+              </p>
+            </Card>
+
+            <Card className="p-7 bg-card border-border">
+              <Cookie className="h-8 w-8 text-primary mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Cookies e Marketing</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Utilizamos cookies para funcionalidade, análise de uso e remarketing. Ao se registrar,
+                você concorda com o uso de dados para personalização de conteúdo, campanhas de marketing
+                e comunicações por e-mail e notificações.
+              </p>
+            </Card>
+          </div>
+
+          <div className="mt-10 text-center text-xs text-muted-foreground max-w-3xl mx-auto">
+            Conforme a LGPD, você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento
+            através da página de perfil ou entrando em contato diretamente com nossa equipe.
           </div>
         </div>
       </section>
