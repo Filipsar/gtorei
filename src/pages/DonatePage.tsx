@@ -27,7 +27,8 @@ export default function DonatePage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/')}>
+            onClick={() => navigate('/')}
+            aria-label="Voltar">
             
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -123,7 +124,8 @@ export default function DonatePage() {
         <div className="text-center mt-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}>
+            onClick={() => navigate('/')}
+            aria-label="Voltar">
             
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar ao início
