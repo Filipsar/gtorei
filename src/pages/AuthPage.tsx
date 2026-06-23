@@ -126,6 +126,12 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <SEO
+        title="Entrar ou Criar Conta — GTORei"
+        description="Acesse sua conta no GTORei ou crie uma nova gratuitamente para treinar poker GTO, salvar progresso e participar do ranking."
+        path="/auth"
+        noindex
+      />
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
