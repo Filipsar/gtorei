@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEO } from '@/components/seo/SEO';
 import { ArrowLeft, Heart, ExternalLink, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import qrCodeImage from '@/assets/qr-code-donate.png';
@@ -21,6 +22,11 @@ export default function DonatePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Apoie o Projeto GTORei — Doações"
+        description="Apoie o desenvolvimento do GTORei. Sua contribuição mantém a plataforma gratuita, com novas funcionalidades e melhorias contínuas."
+        path="/apoiar"
+      />
       {/* Header */}
       <div className="border-b border-border/50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">

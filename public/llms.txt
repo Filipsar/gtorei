@@ -1,0 +1,17 @@
+# GTORei
+
+> Plataforma gratuita em português para treinar poker GTO (Game Theory Optimal): simulações pré-flop e pós-flop, ranges, análise de mãos com IA e ranking competitivo.
+
+GTORei ajuda jogadores de poker a estudar e treinar decisões matematicamente ótimas, com foco em torneios e cash games. O conteúdo é em português (Brasil).
+
+## Pages
+
+- [Home](/): Visão geral da plataforma e funcionalidades.
+- [Guia do Iniciante](/iniciante): Fundamentos do poker e do GTO para novos jogadores.
+- [Atualizações](/atualizacoes): Changelog com novidades e melhorias por versão.
+- [Apoiar o Projeto](/apoiar): Como apoiar financeiramente o desenvolvimento do GTORei.
+- [Acessibilidade](/gtoreiacessibilidade): Recursos de acessibilidade da plataforma.
+
+## Optional
+
+- [Login / Cadastro](/auth): Acesso à conta para usar as ferramentas de treino.

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEO } from '@/components/seo/SEO';
 import { ArrowLeft, Heart, Instagram, ExternalLink, Accessibility } from 'lucide-react';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 
@@ -9,6 +10,11 @@ export default function AccessibilityPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Acessibilidade — GTORei"
+        description="Recursos e práticas de acessibilidade adotados no GTORei para garantir uma experiência inclusiva."
+        path="/gtoreiacessibilidade"
+      />
       {/* Header */}
       <header className="border-b border-border p-4">
         <div className="max-w-4xl mx-auto flex items-center gap-4">

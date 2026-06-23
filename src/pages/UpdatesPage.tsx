@@ -1,6 +1,7 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SEO } from '@/components/seo/SEO';
 import { Bell, Sparkles, Bug, Wrench, Rocket } from 'lucide-react';
 
 interface UpdateNote {
@@ -239,6 +240,11 @@ const typeConfig = {
 export default function UpdatesPage() {
   return (
     <MainLayout>
+      <SEO
+        title="Atualizações e Changelog — GTORei"
+        description="Acompanhe as últimas novidades, melhorias e correções da plataforma GTORei, organizadas por versão."
+        path="/atualizacoes"
+      />
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
