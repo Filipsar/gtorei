@@ -10,6 +10,11 @@ export default function AccessibilityPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Acessibilidade — GTORei"
+        description="Recursos e práticas de acessibilidade adotados no GTORei para garantir uma experiência inclusiva."
+        path="/gtoreiacessibilidade"
+      />
       {/* Header */}
       <header className="border-b border-border p-4">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
