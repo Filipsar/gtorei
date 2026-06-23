@@ -18,6 +18,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.10.2',
+    date: '23/06/2026',
+    type: 'improvement',
+    title: 'Landing Page Reestruturada — Privacidade e Termos',
+    description: 'Removida a seção "Acesso rápido" da landing page. Adicionada nova seção final de "Privacidade, Dados e Termos" com informações sobre LGPD, cookies, marketing, remarketing e consentimento ao se registrar.',
+  },
+  {
     version: '1.10.1',
     date: '23/06/2026',
     type: 'improvement',
