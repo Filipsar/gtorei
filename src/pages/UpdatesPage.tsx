@@ -14,11 +14,16 @@ interface UpdateNote {
 const UPCOMING: string[] = [
   'Análise de straight draw (OESD, gutshot) no board',
   'Aulas gratuitas de poker GTO',
-  'Autoanálise com IA',
-  
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.10.0',
+    date: '23/06/2026',
+    type: 'feature',
+    title: 'Análise com IA, Base GTO Aprimorada e Pop-up de Novidades',
+    description: 'Nova seção "Analisar com IA" no menu lateral: importe seu hand history (PokerStars, GGPoker, ACR, PartyPoker, 888Poker, Winamax) e receba análise completa mão por mão considerando ICM, bubble factor, EV e recomendações GTO. Base de ranges GTO V2 adicionada (8-Max, HU, Three-Hand, Bounty) com interpolação por stack. Novo pop-up de novidades é exibido uma vez quando há atualizações.',
+  },
   {
     version: '1.9.0',
     date: '18/06/2026',

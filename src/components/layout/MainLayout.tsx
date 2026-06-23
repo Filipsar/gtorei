@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { MaintenanceBanner } from './MaintenanceBanner';
+import { UpdatesPopup } from '@/components/ui/UpdatesPopup';
 import { Menu } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -32,6 +33,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="flex-1 overflow-auto">
             {children}
           </div>
+          <UpdatesPopup />
         </main>
       </div>
     </SidebarProvider>

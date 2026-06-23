@@ -12,6 +12,7 @@ import TrainPage from "./pages/TrainPage";
 import TablesPage from "./pages/TablesPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import AutoAnalysisPage from "./pages/AutoAnalysisPage";
+import AIAnalysisPage from "./pages/AIAnalysisPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import AccessibilityPage from "./pages/AccessibilityPage";
 import UpdatesPage from "./pages/UpdatesPage";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/tabelas" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
             <Route path="/analise" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
             <Route path="/autoanalise" element={<ProtectedRoute><AutoAnalysisPage /></ProtectedRoute>} />
+            <Route path="/analise-ia" element={<ProtectedRoute><AIAnalysisPage /></ProtectedRoute>} />
             <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><RankingPage /></ProtectedRoute>} />
             <Route path="/conquistas" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
