@@ -133,7 +133,7 @@ export default function AuthPage() {
             <img alt="GTORei" className="h-20 w-20 object-contain" src="/lovable-uploads/e0ddf7f0-72f1-42b0-85e3-a9280c2915c5.png" />
             
           </div>
-          <h1 className="text-display-md text-primary mt-4">GTORei</h1>
+          <h1 className="text-display-md text-primary mt-4">Acesse sua conta no GTORei</h1>
           <p className="text-body-md text-muted-foreground">Treine seu jogo GTO</p>
         </div>
 
@@ -217,8 +217,8 @@ export default function AuthPage() {
                               <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground">
-                              
+                              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
                             </div>
@@ -287,8 +287,8 @@ export default function AuthPage() {
                               <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground">
-                              
+                              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
                             </div>
