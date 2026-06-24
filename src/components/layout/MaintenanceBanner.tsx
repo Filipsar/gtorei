@@ -103,7 +103,7 @@ export function MaintenanceBanner() {
       <button
         onClick={handleDismiss}
         aria-label="Fechar banner"
-        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-primary-foreground/15 transition-colors z-10"
+        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-black/15 transition-colors z-10"
       >
         <X className="h-3.5 w-3.5" />
       </button>
