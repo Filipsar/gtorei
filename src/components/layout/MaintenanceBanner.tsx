@@ -84,7 +84,7 @@ export function MaintenanceBanner() {
   );
 
   return (
-    <div className="relative bg-primary text-primary-foreground overflow-hidden h-8 flex items-center">
+    <div className="relative overflow-hidden h-8 flex items-center" style={{ backgroundColor: '#2cff05', color: '#0a0a0a' }}>
       {msg.link ? (
         <a
           href={msg.link}
@@ -103,7 +103,7 @@ export function MaintenanceBanner() {
       <button
         onClick={handleDismiss}
         aria-label="Fechar banner"
-        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-primary-foreground/15 transition-colors z-10"
+        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-black/15 transition-colors z-10"
       >
         <X className="h-3.5 w-3.5" />
       </button>
