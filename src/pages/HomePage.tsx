@@ -82,7 +82,7 @@ export default function HomePage() {
         }}
       />
       {/* Top Instagram banner */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground overflow-hidden h-9 flex items-center">
+      <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden h-9 flex items-center" style={{ backgroundColor: '#2cff05', color: '#0a0a0a' }}>
         <a
           href="https://www.instagram.com/gtorei/"
           target="_blank"
