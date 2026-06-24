@@ -84,7 +84,7 @@ export function MaintenanceBanner() {
   );
 
   return (
-    <div className="relative bg-primary text-primary-foreground overflow-hidden h-8 flex items-center">
+    <div className="relative overflow-hidden h-8 flex items-center" style={{ backgroundColor: '#2cff05', color: '#0a0a0a' }}>
       {msg.link ? (
         <a
           href={msg.link}
