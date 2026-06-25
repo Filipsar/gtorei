@@ -17,12 +17,15 @@ import {
 // CONSTANTS
 // ============================================================
 
-const WIZARD_COLORS: Record<ActionType, string> = {
-  fold: '#3B9EBF',
-  call: '#4CAF50',
-  raise: '#E91E63',
-  allin: '#C62828',
-};
+const COLOR_PALETTES: { id: string; label: string; colors: Record<ActionType, string> }[] = [
+  { id: 'wizard', label: 'GTO Wizard', colors: { fold: '#3B9EBF', call: '#4CAF50', raise: '#E91E63', allin: '#C62828' } },
+  { id: 'classic', label: 'Clássico', colors: { fold: '#64748b', call: '#3b82f6', raise: '#22c55e', allin: '#ef4444' } },
+  { id: 'sunset', label: 'Pôr do Sol', colors: { fold: '#78716c', call: '#f59e0b', raise: '#f97316', allin: '#dc2626' } },
+  { id: 'neon', label: 'Neon', colors: { fold: '#4b5563', call: '#a855f7', raise: '#22d3ee', allin: '#f43f5e' } },
+  { id: 'mono', label: 'Monocromático', colors: { fold: '#525252', call: '#a3a3a3', raise: '#d4d4d4', allin: '#fafafa' } },
+];
+
+type PaletteId = typeof COLOR_PALETTES[number]['id'];
 
 type PlayerMode = '8max' | '6max' | 'hu' | 'threehand';
 
