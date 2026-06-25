@@ -429,6 +429,9 @@ export default function TablesPage() {
   const [multiwayPlayers, setMultiwayPlayers] = useState<number>(3);
   const [highlightAction, setHighlightAction] = useState<ActionType | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [paletteId, setPaletteId] = useState<PaletteId>(() => (localStorage.getItem('tabelas_palette') as PaletteId) || 'wizard');
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const colors = (COLOR_PALETTES.find(p => p.id === paletteId) || COLOR_PALETTES[0]).colors;
 
   const positions = POSITIONS_BY_MODE[playerMode];
   const gameMode: GameMode = playerMode === 'threehand' ? 'threehand' : playerMode === 'hu' ? 'hu' : playerMode;
