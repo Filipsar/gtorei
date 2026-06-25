@@ -165,7 +165,7 @@ function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof
 // HAND DETAIL PANEL
 // ============================================================
 
-function HandDetailPanel({ hand }: { hand: HandData }) {
+function HandDetailPanel({ hand, colors }: { hand: HandData; colors: Record<ActionType, string> }) {
   const allActions = (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((act) => {
     const found = hand.actions.find((a) => a.action === act);
     return {
