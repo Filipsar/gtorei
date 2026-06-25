@@ -88,7 +88,7 @@ function FilterChip({
 // ACTION PANEL (RIGHT SIDE)
 // ============================================================
 
-function ActionPanel({ range, selectedHand }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null }) {
+function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null; colors: Record<ActionType, string> }) {
   const totals = useMemo(() => {
     // If a hand is selected, show its per-action breakdown instead of the aggregate
     if (selectedHand) {
