@@ -5,7 +5,7 @@ import { RANKS, POSITIONS, STACK_SIZES, getRange, type Position, type Scenario, 
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, ChevronDown, ChevronUp, Palette, ChevronRight, ChevronLeft } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -17,12 +17,15 @@ import {
 // CONSTANTS
 // ============================================================
 
-const WIZARD_COLORS: Record<ActionType, string> = {
-  fold: '#3B9EBF',
-  call: '#4CAF50',
-  raise: '#E91E63',
-  allin: '#C62828',
-};
+const COLOR_PALETTES: { id: string; label: string; colors: Record<ActionType, string> }[] = [
+  { id: 'wizard', label: 'GTO Wizard', colors: { fold: '#3B9EBF', call: '#4CAF50', raise: '#E91E63', allin: '#C62828' } },
+  { id: 'classic', label: 'Clássico', colors: { fold: '#64748b', call: '#3b82f6', raise: '#22c55e', allin: '#ef4444' } },
+  { id: 'sunset', label: 'Pôr do Sol', colors: { fold: '#78716c', call: '#f59e0b', raise: '#f97316', allin: '#dc2626' } },
+  { id: 'neon', label: 'Neon', colors: { fold: '#4b5563', call: '#a855f7', raise: '#22d3ee', allin: '#f43f5e' } },
+  { id: 'mono', label: 'Monocromático', colors: { fold: '#525252', call: '#a3a3a3', raise: '#d4d4d4', allin: '#fafafa' } },
+];
+
+type PaletteId = typeof COLOR_PALETTES[number]['id'];
 
 type PlayerMode = '8max' | '6max' | 'hu' | 'threehand';
 
@@ -85,7 +88,7 @@ function FilterChip({
 // ACTION PANEL (RIGHT SIDE)
 // ============================================================
 
-function ActionPanel({ range, selectedHand }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null }) {
+function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null; colors: Record<ActionType, string> }) {
   const totals = useMemo(() => {
     // If a hand is selected, show its per-action breakdown instead of the aggregate
     if (selectedHand) {
@@ -141,7 +144,7 @@ function ActionPanel({ range, selectedHand }: { range: ReturnType<typeof getRang
             className="absolute inset-0 opacity-25"
             style={{
               width: `${percentage}%`,
-              backgroundColor: WIZARD_COLORS[action],
+              backgroundColor: colors[action],
             }}
           />
           <div className="relative flex items-center justify-between px-3 py-2">
@@ -162,7 +165,7 @@ function ActionPanel({ range, selectedHand }: { range: ReturnType<typeof getRang
 // HAND DETAIL PANEL
 // ============================================================
 
-function HandDetailPanel({ hand }: { hand: HandData }) {
+function HandDetailPanel({ hand, colors }: { hand: HandData; colors: Record<ActionType, string> }) {
   const allActions = (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((act) => {
     const found = hand.actions.find((a) => a.action === act);
     return {
@@ -199,7 +202,7 @@ function HandDetailPanel({ hand }: { hand: HandData }) {
                 className="h-full rounded-full transition-all"
                 style={{
                   width: `${frequency}%`,
-                  backgroundColor: WIZARD_COLORS[action],
+                  backgroundColor: colors[action],
                 }}
               />
             </div>
@@ -271,11 +274,13 @@ function WizardMatrix({
   selectedHand,
   onHandClick,
   highlightAction,
+  colors,
 }: {
   range: ReturnType<typeof getRange>;
   selectedHand: string | null;
   onHandClick: (hand: HandData) => void;
   highlightAction: ActionType | null;
+  colors: Record<ActionType, string>;
 }) {
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
 
@@ -297,7 +302,7 @@ function WizardMatrix({
   function getCellBackground(hand: HandData): string {
     const visibleActions = hand.actions.filter((a) => a.frequency > 0).sort((a, b) => b.frequency - a.frequency);
     if (visibleActions.length <= 1) {
-      const color = WIZARD_COLORS[hand.primaryAction];
+      const color = colors[hand.primaryAction];
       const freq = visibleActions[0]?.frequency || 100;
       const alpha = Math.max(0.3, freq / 100);
       return hexToRgba(color, alpha);
@@ -306,7 +311,7 @@ function WizardMatrix({
     let accumulated = 0;
     const stops: string[] = [];
     for (const action of visibleActions) {
-      const color = WIZARD_COLORS[action.action];
+      const color = colors[action.action];
       stops.push(`${color} ${accumulated}%`);
       accumulated += action.frequency;
       stops.push(`${color} ${accumulated}%`);
@@ -391,7 +396,7 @@ function WizardMatrix({
                           .map((a) => (
                             <div key={a.action} className="flex items-center justify-between text-xs gap-2">
                               <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: WIZARD_COLORS[a.action] }} />
+                                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: colors[a.action] }} />
                                 <span className="capitalize">{a.action}</span>
                               </div>
                               <span className="font-medium">{a.frequency}%</span>
@@ -424,6 +429,9 @@ export default function TablesPage() {
   const [multiwayPlayers, setMultiwayPlayers] = useState<number>(3);
   const [highlightAction, setHighlightAction] = useState<ActionType | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [paletteId, setPaletteId] = useState<PaletteId>(() => (localStorage.getItem('tabelas_palette') as PaletteId) || 'wizard');
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const colors = (COLOR_PALETTES.find(p => p.id === paletteId) || COLOR_PALETTES[0]).colors;
 
   const positions = POSITIONS_BY_MODE[playerMode];
   const gameMode: GameMode = playerMode === 'threehand' ? 'threehand' : playerMode === 'hu' ? 'hu' : playerMode;
@@ -564,8 +572,8 @@ export default function TablesPage() {
               )}
             </div>
 
-            {/* Grid: Matrix + Action Panel */}
-            <div className="grid lg:grid-cols-[1fr_280px] gap-4">
+            {/* Grid: Matrix + Palette + Action Panel */}
+            <div className="grid lg:grid-cols-[1fr_auto_280px] gap-4 items-start">
               {/* Matrix */}
               <div className="bg-card rounded-lg border border-border p-3 sm:p-4">
                 <WizardMatrix
@@ -573,6 +581,7 @@ export default function TablesPage() {
                   selectedHand={selectedHand?.hand || null}
                   onHandClick={(hand) => setSelectedHand(hand)}
                   highlightAction={highlightAction}
+                  colors={colors}
                 />
 
                 {/* Legend */}
@@ -586,7 +595,7 @@ export default function TablesPage() {
                       )}
                       onClick={() => setHighlightAction(highlightAction === action ? null : action)}
                     >
-                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: WIZARD_COLORS[action] }} />
+                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: colors[action] }} />
                       <span className="text-xs text-muted-foreground capitalize">
                         {action === 'allin' ? 'All-in' : action}
                       </span>
@@ -595,17 +604,58 @@ export default function TablesPage() {
                 </div>
               </div>
 
+              {/* Palette toggle + card */}
+              <div className="flex items-start gap-0">
+                <button
+                  onClick={() => setPaletteOpen(!paletteOpen)}
+                  aria-label={paletteOpen ? 'Fechar paleta de cores' : 'Abrir paleta de cores'}
+                  className="bg-card border border-border rounded-l-lg px-1.5 py-3 hover:bg-muted/50 transition-colors flex flex-col items-center gap-1 mt-2"
+                >
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  {paletteOpen ? <ChevronRight className="h-3 w-3 text-muted-foreground" /> : <ChevronLeft className="h-3 w-3 text-muted-foreground" />}
+                </button>
+                {paletteOpen && (
+                  <div className="bg-card rounded-lg border border-border p-3 w-[200px]">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Cores</p>
+                    <div className="space-y-1.5">
+                      {COLOR_PALETTES.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setPaletteId(p.id);
+                            localStorage.setItem('tabelas_palette', p.id);
+                          }}
+                          className={cn(
+                            'w-full flex items-center justify-between gap-2 px-2 py-2 rounded border transition-all',
+                            paletteId === p.id
+                              ? 'border-primary/50 bg-primary/10'
+                              : 'border-border hover:border-primary/30 bg-card'
+                          )}
+                        >
+                          <span className="text-xs font-medium text-foreground">{p.label}</span>
+                          <div className="flex gap-0.5">
+                            {(['fold', 'call', 'raise', 'allin'] as ActionType[]).map((a) => (
+                              <div key={a} className="w-3 h-3 rounded-sm" style={{ backgroundColor: p.colors[a] }} />
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Right panel */}
               <div className="space-y-4">
                 {/* Action summary */}
                 <div className="bg-card rounded-lg border border-border p-3">
-                  <ActionPanel range={range} selectedHand={selectedHand} />
+                  <ActionPanel range={range} selectedHand={selectedHand} colors={colors} />
                 </div>
 
                 {/* Hand detail */}
                 <div className="bg-card rounded-lg border border-border p-3">
                   {selectedHand ? (
-                    <HandDetailPanel hand={selectedHand} />
+                    <HandDetailPanel hand={selectedHand} colors={colors} />
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
                       <p className="text-sm">Clique em uma mão na matriz para ver os detalhes</p>
