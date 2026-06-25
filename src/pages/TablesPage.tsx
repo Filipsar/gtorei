@@ -144,7 +144,7 @@ function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof
             className="absolute inset-0 opacity-25"
             style={{
               width: `${percentage}%`,
-              backgroundColor: WIZARD_COLORS[action],
+              backgroundColor: colors[action],
             }}
           />
           <div className="relative flex items-center justify-between px-3 py-2">
@@ -202,7 +202,7 @@ function HandDetailPanel({ hand }: { hand: HandData }) {
                 className="h-full rounded-full transition-all"
                 style={{
                   width: `${frequency}%`,
-                  backgroundColor: WIZARD_COLORS[action],
+                  backgroundColor: colors[action],
                 }}
               />
             </div>
@@ -300,7 +300,7 @@ function WizardMatrix({
   function getCellBackground(hand: HandData): string {
     const visibleActions = hand.actions.filter((a) => a.frequency > 0).sort((a, b) => b.frequency - a.frequency);
     if (visibleActions.length <= 1) {
-      const color = WIZARD_COLORS[hand.primaryAction];
+      const color = colors[hand.primaryAction];
       const freq = visibleActions[0]?.frequency || 100;
       const alpha = Math.max(0.3, freq / 100);
       return hexToRgba(color, alpha);
@@ -309,7 +309,7 @@ function WizardMatrix({
     let accumulated = 0;
     const stops: string[] = [];
     for (const action of visibleActions) {
-      const color = WIZARD_COLORS[action.action];
+      const color = colors[action.action];
       stops.push(`${color} ${accumulated}%`);
       accumulated += action.frequency;
       stops.push(`${color} ${accumulated}%`);
@@ -394,7 +394,7 @@ function WizardMatrix({
                           .map((a) => (
                             <div key={a.action} className="flex items-center justify-between text-xs gap-2">
                               <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: WIZARD_COLORS[a.action] }} />
+                                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: colors[a.action] }} />
                                 <span className="capitalize">{a.action}</span>
                               </div>
                               <span className="font-medium">{a.frequency}%</span>
@@ -589,7 +589,7 @@ export default function TablesPage() {
                       )}
                       onClick={() => setHighlightAction(highlightAction === action ? null : action)}
                     >
-                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: WIZARD_COLORS[action] }} />
+                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: colors[action] }} />
                       <span className="text-xs text-muted-foreground capitalize">
                         {action === 'allin' ? 'All-in' : action}
                       </span>
