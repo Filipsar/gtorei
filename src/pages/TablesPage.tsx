@@ -274,11 +274,13 @@ function WizardMatrix({
   selectedHand,
   onHandClick,
   highlightAction,
+  colors,
 }: {
   range: ReturnType<typeof getRange>;
   selectedHand: string | null;
   onHandClick: (hand: HandData) => void;
   highlightAction: ActionType | null;
+  colors: Record<ActionType, string>;
 }) {
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
 
