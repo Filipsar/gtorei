@@ -5,7 +5,7 @@ import { RANKS, POSITIONS, STACK_SIZES, getRange, type Position, type Scenario, 
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, ChevronDown, ChevronUp, Palette, ChevronRight, ChevronLeft } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
