@@ -572,8 +572,8 @@ export default function TablesPage() {
               )}
             </div>
 
-            {/* Grid: Matrix + Action Panel */}
-            <div className="grid lg:grid-cols-[1fr_280px] gap-4">
+            {/* Grid: Matrix + Palette + Action Panel */}
+            <div className="grid lg:grid-cols-[1fr_auto_280px] gap-4 items-start">
               {/* Matrix */}
               <div className="bg-card rounded-lg border border-border p-3 sm:p-4">
                 <WizardMatrix
@@ -581,6 +581,7 @@ export default function TablesPage() {
                   selectedHand={selectedHand?.hand || null}
                   onHandClick={(hand) => setSelectedHand(hand)}
                   highlightAction={highlightAction}
+                  colors={colors}
                 />
 
                 {/* Legend */}
@@ -603,17 +604,58 @@ export default function TablesPage() {
                 </div>
               </div>
 
+              {/* Palette toggle + card */}
+              <div className="flex items-start gap-0">
+                <button
+                  onClick={() => setPaletteOpen(!paletteOpen)}
+                  aria-label={paletteOpen ? 'Fechar paleta de cores' : 'Abrir paleta de cores'}
+                  className="bg-card border border-border rounded-l-lg px-1.5 py-3 hover:bg-muted/50 transition-colors flex flex-col items-center gap-1 mt-2"
+                >
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  {paletteOpen ? <ChevronRight className="h-3 w-3 text-muted-foreground" /> : <ChevronLeft className="h-3 w-3 text-muted-foreground" />}
+                </button>
+                {paletteOpen && (
+                  <div className="bg-card rounded-lg border border-border p-3 w-[200px]">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Cores</p>
+                    <div className="space-y-1.5">
+                      {COLOR_PALETTES.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setPaletteId(p.id);
+                            localStorage.setItem('tabelas_palette', p.id);
+                          }}
+                          className={cn(
+                            'w-full flex items-center justify-between gap-2 px-2 py-2 rounded border transition-all',
+                            paletteId === p.id
+                              ? 'border-primary/50 bg-primary/10'
+                              : 'border-border hover:border-primary/30 bg-card'
+                          )}
+                        >
+                          <span className="text-xs font-medium text-foreground">{p.label}</span>
+                          <div className="flex gap-0.5">
+                            {(['fold', 'call', 'raise', 'allin'] as ActionType[]).map((a) => (
+                              <div key={a} className="w-3 h-3 rounded-sm" style={{ backgroundColor: p.colors[a] }} />
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Right panel */}
               <div className="space-y-4">
                 {/* Action summary */}
                 <div className="bg-card rounded-lg border border-border p-3">
-                  <ActionPanel range={range} selectedHand={selectedHand} />
+                  <ActionPanel range={range} selectedHand={selectedHand} colors={colors} />
                 </div>
 
                 {/* Hand detail */}
                 <div className="bg-card rounded-lg border border-border p-3">
                   {selectedHand ? (
-                    <HandDetailPanel hand={selectedHand} />
+                    <HandDetailPanel hand={selectedHand} colors={colors} />
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
                       <p className="text-sm">Clique em uma mão na matriz para ver os detalhes</p>
@@ -622,6 +664,7 @@ export default function TablesPage() {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
