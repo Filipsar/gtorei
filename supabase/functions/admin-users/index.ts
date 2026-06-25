@@ -59,28 +59,29 @@ Deno.serve(async (req) => {
     // Use service role to bypass RLS
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Fetch all auth users to get emails
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    if (authError) throw authError;
+    // Run the three heavy queries in parallel
+    const [authRes, profilesRes, sessionsRes] = await Promise.all([
+      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
+      supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .order("total_xp", { ascending: false }),
+      supabaseAdmin
+        .from("training_sessions")
+        .select("user_id, hands_played, score, accuracy, started_at, ended_at"),
+    ]);
+
+    if (authRes.error) throw authRes.error;
+    if (profilesRes.error) throw profilesRes.error;
+    if (sessionsRes.error) throw sessionsRes.error;
+
     const emailMap: Record<string, string> = {};
-    for (const u of authData?.users || []) {
+    for (const u of authRes.data?.users || []) {
       emailMap[u.id] = u.email || '';
     }
+    const profiles = profilesRes.data;
+    const sessions = sessionsRes.data;
 
-    // Fetch all profiles
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from("profiles")
-      .select("*")
-      .order("total_xp", { ascending: false });
-
-    if (profilesError) throw profilesError;
-
-    // Fetch aggregated session data per user
-    const { data: sessions, error: sessionsError } = await supabaseAdmin
-      .from("training_sessions")
-      .select("user_id, hands_played, score, accuracy, started_at, ended_at");
-
-    if (sessionsError) throw sessionsError;
 
     // Aggregate session stats per user
     const userStats: Record<string, {
