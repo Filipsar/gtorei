@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Grid3x3, Heart, Instagram, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Brain, Grid3x3, Heart, Instagram, ChevronLeft, ChevronRight, X, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
