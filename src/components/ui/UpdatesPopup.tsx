@@ -6,8 +6,9 @@ import { Brain, Grid3x3, Heart, Instagram, ChevronLeft, ChevronRight, X } from '
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.10.0';
+const CURRENT_VERSION = '1.11.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
+const TOP1_POST_URL = 'https://www.instagram.com/p/DaQnLztGk6_/';
 const DONATE_URL = '/apoiar';
 const AUTO_ADVANCE_MS = 5000;
 
