@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Grid3x3, Heart, Instagram, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Brain, Grid3x3, Heart, Instagram, ChevronLeft, ChevronRight, X, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.10.0';
+const CURRENT_VERSION = '1.11.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
+const TOP1_POST_URL = 'https://www.instagram.com/p/DaQnLztGk6_/';
 const DONATE_URL = '/apoiar';
 const AUTO_ADVANCE_MS = 5000;
 
@@ -38,6 +39,27 @@ export function UpdatesPopup() {
   }, []);
 
   const slides: Slide[] = [
+    {
+      icon: <Trophy className="h-10 w-10" />,
+      iconBg: 'bg-primary/20 text-primary',
+      title: 'Top 1 do Mês no Instagram',
+      description:
+        'Confira o post anunciando o Top 1 do ranking mensal! A partir de agora, todo mês o campeão será publicado no nosso Instagram. Bora subir no ranking?',
+      badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
+      cta: (
+        <div className="mt-4 w-full flex justify-center">
+          <Button
+            asChild
+            className="bg-[#7B2FBE] text-white hover:bg-[#7B2FBE]/90"
+          >
+            <a href={TOP1_POST_URL} target="_blank" rel="noopener noreferrer">
+              <Instagram className="h-4 w-4 mr-2" />
+              Ver o post do Top 1
+            </a>
+          </Button>
+        </div>
+      ),
+    },
     {
       icon: <Brain className="h-10 w-10" />,
       iconBg: 'bg-primary/20 text-primary',
