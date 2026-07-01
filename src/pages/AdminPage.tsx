@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Users, Clock, Zap, Target } from 'lucide-react';
+import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -110,14 +110,27 @@ export default function AdminPage() {
     a.click();
   };
 
+  const openGmailToAllUsers = () => {
+    const emails = users.map((u) => u.email).filter((e) => !!e);
+    if (emails.length === 0) return;
+    const bcc = encodeURIComponent(emails.join(','));
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&bcc=${bcc}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Painel Admin</h1>
-          <Button variant="outline" size="sm" onClick={exportCSV}>
-            <Download className="h-4 w-4 mr-2" /> Exportar CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={openGmailToAllUsers} disabled={users.length === 0}>
+              <Mail className="h-4 w-4 mr-2" /> Enviar Gmail a todos ({users.length})
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCSV}>
+              <Download className="h-4 w-4 mr-2" /> Exportar CSV
+            </Button>
+          </div>
         </div>
 
         {/* Summary cards */}
