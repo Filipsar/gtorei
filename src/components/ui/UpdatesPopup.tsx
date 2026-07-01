@@ -40,6 +40,27 @@ export function UpdatesPopup() {
 
   const slides: Slide[] = [
     {
+      icon: <Trophy className="h-10 w-10" />,
+      iconBg: 'bg-primary/20 text-primary',
+      title: 'Top 1 do Mês no Instagram',
+      description:
+        'Confira o post anunciando o Top 1 do ranking mensal! A partir de agora, todo mês o campeão será publicado no nosso Instagram. Bora subir no ranking?',
+      badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
+      cta: (
+        <div className="mt-4 w-full flex justify-center">
+          <Button
+            asChild
+            className="bg-[#7B2FBE] text-white hover:bg-[#7B2FBE]/90"
+          >
+            <a href={TOP1_POST_URL} target="_blank" rel="noopener noreferrer">
+              <Instagram className="h-4 w-4 mr-2" />
+              Ver o post do Top 1
+            </a>
+          </Button>
+        </div>
+      ),
+    },
+    {
       icon: <Brain className="h-10 w-10" />,
       iconBg: 'bg-primary/20 text-primary',
       title: 'Análise de Torneio com IA',
