@@ -13,9 +13,11 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail } from 'lucide-react';
+import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const ADMIN_EMAIL = 'farubini2@gmail.com';
 
@@ -38,11 +40,28 @@ interface UserData {
   last_active: string | null;
 }
 
+type ColumnKey = 'username' | 'email' | 'level' | 'total_xp' | 'total_hands' | 'total_sessions' | 'avg_accuracy' | 'total_time_minutes' | 'last_active' | 'created_at';
+
+const columnLabels: Record<ColumnKey, string> = {
+  username: 'Usuário (Username)',
+  email: 'E-mail',
+  level: 'Nível',
+  total_xp: 'XP',
+  total_hands: 'Mãos Jogadas',
+  total_sessions: 'Sessões',
+  avg_accuracy: 'Precisão Média',
+  total_time_minutes: 'Tempo Total',
+  last_active: 'Último Acesso',
+  created_at: 'Cadastro',
+};
+
 export default function AdminPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedColumn, setSelectedColumn] = useState<ColumnKey>('email');
 
   useEffect(() => {
     if (user?.email === ADMIN_EMAIL) {
@@ -118,12 +137,60 @@ export default function AdminPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const copyColumnData = async () => {
+    if (filtered.length === 0) return;
+    const values = filtered.map((u) => {
+      switch (selectedColumn) {
+        case 'username': return u.username;
+        case 'email': return u.email;
+        case 'level': return levelNames[u.level - 1] || 'Amador';
+        case 'total_xp': return u.total_xp.toLocaleString('pt-BR');
+        case 'total_hands': return u.total_hands.toLocaleString('pt-BR');
+        case 'total_sessions': return String(u.total_sessions);
+        case 'avg_accuracy': return `${u.avg_accuracy}%`;
+        case 'total_time_minutes': return formatTime(u.total_time_minutes);
+        case 'last_active': return u.last_active ? new Date(u.last_active).toLocaleDateString('pt-BR') : '-';
+        case 'created_at': return new Date(u.created_at).toLocaleDateString('pt-BR');
+        default: return '';
+      }
+    });
+    const text = values.join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: 'Copiado!',
+        description: `${values.length} ${columnLabels[selectedColumn]} copiados para a área de transferência.`,
+      });
+    } catch {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível acessar a área de transferência.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Painel Admin</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex items-center gap-2">
+              <Select value={selectedColumn} onValueChange={(v) => setSelectedColumn(v as ColumnKey)}>
+                <SelectTrigger className="w-[220px] h-9 text-sm">
+                  <SelectValue placeholder="Selecionar coluna" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(columnLabels) as ColumnKey[]).map((key) => (
+                    <SelectItem key={key} value={key}>{columnLabels[key]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={copyColumnData} disabled={filtered.length === 0}>
+                <Copy className="h-4 w-4 mr-2" /> Copiar coluna ({filtered.length})
+              </Button>
+            </div>
             <Button variant="outline" size="sm" onClick={openGmailToAllUsers} disabled={users.length === 0}>
               <Mail className="h-4 w-4 mr-2" /> Enviar Gmail a todos ({users.length})
             </Button>
