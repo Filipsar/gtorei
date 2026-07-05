@@ -137,13 +137,6 @@ export default function AdminPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const formatTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}min`;
-  };
-
   const copyColumnData = async () => {
     if (filtered.length === 0) return;
     const values = filtered.map((u) => {
