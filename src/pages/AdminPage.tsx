@@ -13,9 +13,11 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail } from 'lucide-react';
+import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const ADMIN_EMAIL = 'farubini2@gmail.com';
 
