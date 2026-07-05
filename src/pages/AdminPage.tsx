@@ -40,11 +40,28 @@ interface UserData {
   last_active: string | null;
 }
 
+type ColumnKey = 'username' | 'email' | 'level' | 'total_xp' | 'total_hands' | 'total_sessions' | 'avg_accuracy' | 'total_time_minutes' | 'last_active' | 'created_at';
+
+const columnLabels: Record<ColumnKey, string> = {
+  username: 'Usuário (Username)',
+  email: 'E-mail',
+  level: 'Nível',
+  total_xp: 'XP',
+  total_hands: 'Mãos Jogadas',
+  total_sessions: 'Sessões',
+  avg_accuracy: 'Precisão Média',
+  total_time_minutes: 'Tempo Total',
+  last_active: 'Último Acesso',
+  created_at: 'Cadastro',
+};
+
 export default function AdminPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedColumn, setSelectedColumn] = useState<ColumnKey>('email');
 
   useEffect(() => {
     if (user?.email === ADMIN_EMAIL) {
