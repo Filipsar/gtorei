@@ -358,6 +358,7 @@ export type Database = {
     }
     Functions: {
       get_period_start: { Args: { period_type: string }; Returns: string }
+      unlock_achievement: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

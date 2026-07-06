@@ -32,16 +32,14 @@ export function useAchievements() {
     const achievement = getAchievement(key);
     if (!achievement) return false;
 
-    const { error } = await supabase
-      .from('user_achievements')
-      .insert({ user_id: user.id, achievement_key: key });
+    const { data, error } = await supabase.rpc('unlock_achievement', { _key: key });
 
     if (error) {
-      // Likely already exists (unique constraint)
-      if (error.code === '23505') return false;
       console.error('Error unlocking achievement:', error);
       return false;
     }
+    // RPC returns true only when server-side validation passed and the row exists.
+    if (data !== true) return false;
 
     setUnlockedKeys(prev => new Set([...prev, key]));
 
