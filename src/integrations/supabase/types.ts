@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_analysis_usage: {
+        Row: {
+          created_at: string
+          id: string
+          used_on: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          used_on?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          used_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           content: string
@@ -355,6 +376,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -367,6 +409,13 @@ export type Database = {
       calc_level: { Args: { _xp: number }; Returns: number }
       complete_level_test: { Args: { _results: Json }; Returns: Json }
       get_period_start: { Args: { period_type: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       record_hand_result: {
         Args: {
           _correct_action: string
@@ -385,7 +434,7 @@ export type Database = {
       unlock_achievement: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -512,6 +561,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
