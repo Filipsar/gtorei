@@ -209,6 +209,7 @@ export type Database = {
           hands_played: number
           id: string
           level: number
+          level_test_completed_at: string | null
           screenshot_urls: string[] | null
           total_xp: number
           updated_at: string
@@ -223,6 +224,7 @@ export type Database = {
           hands_played?: number
           id?: string
           level?: number
+          level_test_completed_at?: string | null
           screenshot_urls?: string[] | null
           total_xp?: number
           updated_at?: string
@@ -237,6 +239,7 @@ export type Database = {
           hands_played?: number
           id?: string
           level?: number
+          level_test_completed_at?: string | null
           screenshot_urls?: string[] | null
           total_xp?: number
           updated_at?: string
@@ -357,7 +360,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_ranking_delta: {
+        Args: { _correct: number; _hands: number; _uid: string; _xp: number }
+        Returns: undefined
+      }
+      calc_level: { Args: { _xp: number }; Returns: number }
+      complete_level_test: { Args: { _results: Json }; Returns: Json }
       get_period_start: { Args: { period_type: string }; Returns: string }
+      record_hand_result: {
+        Args: {
+          _correct_action: string
+          _ev_loss?: number
+          _feedback: string
+          _hand: string
+          _points: number
+          _position: string
+          _scenario: string
+          _session_id: string
+          _stack: number
+          _user_action: string
+        }
+        Returns: Json
+      }
       unlock_achievement: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
