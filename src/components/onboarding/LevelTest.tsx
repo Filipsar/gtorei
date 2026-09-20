@@ -249,7 +249,7 @@ export function LevelTest({ onComplete, onClose }: LevelTestProps) {
               </div>
               <div className="p-2 rounded bg-muted/40">
                 <p className="text-[10px] text-muted-foreground uppercase">XP</p>
-                <p className="text-lg font-bold text-primary">+{levelInfo.xp}</p>
+                <p className="text-lg font-bold text-primary">+{displayXp}</p>
               </div>
             </div>
 
