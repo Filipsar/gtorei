@@ -455,26 +455,17 @@ export default function TrainPage() {
         evLoss: feedback.evLoss
       });
 
-      if (user && supabaseSessionId.current) {
-        supabase
-          .from('played_hands')
-          .insert({
-            user_id: user.id,
-            session_id: supabaseSessionId.current,
-            hand: handName,
-            scenario,
-            position: handState.heroPosition,
-            stack: handState.heroStack,
-            user_action: action,
-            correct_action: handData.primaryAction,
-            feedback: feedback.type,
-            points: Math.round(feedback.points),
-            ev_loss: feedback.evLoss,
-          })
-          .then(({ error }) => {
-            if (error) console.error('Error saving hand:', error);
-          });
-      }
+      void recordHand({
+        hand: handName,
+        scenario,
+        position: handState.heroPosition,
+        stack: handState.heroStack,
+        userAction: action,
+        correctAction: handData.primaryAction,
+        feedback: feedback.type,
+        points: pointsToAdd,
+        evLoss: feedback.evLoss,
+      });
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
       if (isCorrect) {
