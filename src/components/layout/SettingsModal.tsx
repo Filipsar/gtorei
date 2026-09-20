@@ -104,13 +104,34 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = (e) => { setAvatarUrl(e.target?.result as string); setSelectedEmoji(null); setUploading(false); };
-      reader.onerror = () => { toast({ title: t.settings.uploadError, description: t.settings.tryAgain, variant: 'destructive' }); setUploading(false); };
-      reader.readAsDataURL(file);
+      if (user) {
+        // Logado: envia para o storage e salva só a URL pública (o banco rejeita base64)
+        const extFromType = (file.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+        const ext = (file.name.includes('.') ? file.name.split('.').pop() : extFromType)!.toLowerCase();
+        const filePath = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+        const { error } = await supabase.storage
+          .from('profile-images')
+          .upload(filePath, file, { upsert: true, contentType: file.type });
+        if (error) throw error;
+
+        const { data: urlData } = supabase.storage.from('profile-images').getPublicUrl(filePath);
+        setAvatarUrl(urlData.publicUrl);
+      } else {
+        // Sem login: a foto fica apenas no perfil local do navegador
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error('read_error'));
+          reader.readAsDataURL(file);
+        });
+        setAvatarUrl(dataUrl);
+      }
+      setSelectedEmoji(null);
     } catch {
-      setUploading(false);
       toast({ title: t.settings.uploadError, description: t.settings.tryAgain, variant: 'destructive' });
+    } finally {
+      setUploading(false);
     }
   };
 

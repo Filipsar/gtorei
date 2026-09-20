@@ -113,7 +113,8 @@ export default function TrainPage() {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
-  const sessionPromise = useRef<Promise<string | null> | null>(null);
+  // O .then() do supabase devolve PromiseLike, não Promise
+  const sessionPromise = useRef<PromiseLike<string | null> | null>(null);
   const { checkAchievements } = useAchievements();
 
   // Ensure user profile exists
