@@ -828,22 +828,17 @@ export default function TrainPage() {
       });
     }
 
-    // Update Supabase session with final stats
+    // Close the Supabase session (stats are maintained server-side)
     if (user && supabaseSessionId.current) {
-      const accuracy = handsPlayed > 0 ? Math.round((correctHandsCount / handsPlayed) * 100) : 0;
       supabase
         .from('training_sessions')
-        .update({
-          ended_at: new Date().toISOString(),
-          hands_played: handsPlayed,
-          score: sessionScore,
-          accuracy,
-        })
+        .update({ ended_at: new Date().toISOString() })
         .eq('id', supabaseSessionId.current)
         .then(({ error }) => {
           if (error) console.error('Error ending session:', error);
         });
       supabaseSessionId.current = null;
+      sessionPromise.current = null;
     }
 
     setPhase('config');

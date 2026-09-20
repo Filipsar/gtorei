@@ -5,7 +5,6 @@ import { HandDisplay, generateCardsFromHand } from '@/components/poker/PlayingCa
 import { POSITIONS, getRange, getHandData, calculateFeedback, type ActionType, type Position, type Scenario, type HandData } from '@/data/gtoRanges';
 import { Sparkles, Trophy, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserRanking, updateUserProfile } from '@/data/rankingService';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
