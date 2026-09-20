@@ -98,7 +98,6 @@ export default function RankingPage() {
   const fetchRankings = async () => {
     setLoading(true);
     try {
-      const periodStart = new Date(selectedYear, selectedMonth, 1);
 
       const { data, error } = await supabase
         .from('rankings')
