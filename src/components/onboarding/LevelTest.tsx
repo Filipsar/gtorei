@@ -78,6 +78,8 @@ export function LevelTest({ onComplete, onClose }: LevelTestProps) {
   const [correct, setCorrect] = useState(0);
   const [results, setResults] = useState<Array<{ correct: boolean; action: ActionType; gtoAction: ActionType }>>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [serverAccuracy, setServerAccuracy] = useState<number | null>(null);
+  const [serverXp, setServerXp] = useState<number | null>(null);
 
   const handleClose = () => {
     localStorage.setItem(LEVEL_TEST_KEY, 'skipped');
