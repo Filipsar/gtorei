@@ -606,18 +606,9 @@ export default function TrainPage() {
     if (feedback.type === 'best') {
       setSessionBestCount(prev => prev + 1);
     }
-    if (user && totalPoints !== 0) {
-      updateUserRanking({
-        userId: user.id,
-        xpEarned: totalPoints,
-        handsPlayed: 1,
-        correctHands: isCorrect ? 1 : 0,
-      });
-      updateSupabaseProfile(user.id, totalPoints, 1);
-    }
-    
+
     setPendingSimulationScore(null);
-  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements, calculatePostflopBonus]);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, checkAchievements, calculatePostflopBonus, recordHand]);
 
   // Auto-apply pending simulation score when hand completes and enters review
   useEffect(() => {
