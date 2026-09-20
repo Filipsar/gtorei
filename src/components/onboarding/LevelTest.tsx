@@ -104,8 +104,9 @@ export function LevelTest({ onComplete, onClose }: LevelTestProps) {
     }
   };
 
-  const accuracy = Math.round((correct / hands.length) * 100);
+  const accuracy = serverAccuracy ?? Math.round((correct / hands.length) * 100);
   const levelInfo = getLevelFromAccuracy(accuracy);
+  const displayXp = serverXp ?? levelInfo.xp;
 
   // Persist on result
   useEffect(() => {
