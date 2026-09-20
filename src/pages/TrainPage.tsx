@@ -23,7 +23,6 @@ import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { generateUniqueHandId } from '@/data/handIdGenerator';
-import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
 import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,8 +111,9 @@ export default function TrainPage() {
   const [summaryRangeViewer, setSummaryRangeViewer] = useState<{ open: boolean; stack: number } | null>(null);
   const [currentStackDistribution, setCurrentStackDistribution] = useState<StackDistribution | null>(null);
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
+  const sessionPromise = useRef<Promise<string | null> | null>(null);
   const { checkAchievements } = useAchievements();
 
   // Ensure user profile exists
