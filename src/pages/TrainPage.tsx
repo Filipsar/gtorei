@@ -483,22 +483,6 @@ export default function TrainPage() {
         setSessionBestCount(prev => prev + 1);
       }
 
-      if (user && pointsToAdd !== 0) {
-        updateUserRanking({
-          userId: user.id,
-          xpEarned: pointsToAdd,
-          handsPlayed: 1,
-          correctHands: isCorrect ? 1 : 0,
-        });
-        updateSupabaseProfile(user.id, pointsToAdd, 1);
-
-        const totalXp = (profile?.total_xp || 0) + pointsToAdd;
-        const newLevel = calculateLevel(totalXp);
-        checkAchievements({
-          totalHands: handsPlayed + 1,
-          level: newLevel,
-        });
-      }
     } else if (isSimulation && !isHandAlreadyPlayedState) {
       // Store pending score to apply after simulation completes
       setPendingSimulationScore({
