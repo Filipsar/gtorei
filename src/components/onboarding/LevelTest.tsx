@@ -112,50 +112,33 @@ export function LevelTest({ onComplete, onClose }: LevelTestProps) {
     localStorage.setItem(LEVEL_TEST_KEY, 'true');
 
     (async () => {
-      try {
-        if (user) {
-          // Create a session for the level test
-          const { data: session } = await supabase
-            .from('training_sessions')
-            .insert({
-              user_id: user.id,
-              scenario: 'openRaise',
-              position: 'BTN',
-              stack: 50,
-              hands_played: hands.length,
-              accuracy,
-              score: levelInfo.xp,
-              ended_at: new Date().toISOString(),
-            })
-            .select('id')
-            .maybeSingle();
+      if (!user) return;
+      const payload = hands.map((h, idx) => ({
+        hand: h.hand.hand,
+        scenario: h.scenario as string,
+        position: h.position as string,
+        stack: h.stack,
+        user_action: (results[idx]?.action ?? 'fold') as string,
+        correct_action: h.hand.primaryAction as string,
+        correct: !!results[idx]?.correct,
+      }));
 
-          const sessionId = session?.id;
-          if (sessionId) {
-            const records = hands.map((h, idx) => ({
-              user_id: user.id,
-              session_id: sessionId,
-              hand: h.hand.hand,
-              scenario: h.scenario as string,
-              position: h.position as string,
-              stack: h.stack,
-              user_action: (results[idx]?.action ?? 'fold') as string,
-              correct_action: h.hand.primaryAction as string,
-              feedback: results[idx]?.correct ? 'correct' : 'mistake',
-              points: results[idx]?.correct ? 10 : 0,
-              ev_loss: 0,
-            }));
-            await supabase.from('played_hands').insert(records);
-          }
+      const { data, error } = await supabase.rpc('complete_level_test', { _results: payload });
 
-          await updateUserRanking({ userId: user.id, xpEarned: levelInfo.xp, handsPlayed: hands.length, correctHands: correct });
-          await updateUserProfile(user.id, levelInfo.xp, hands.length);
+      if (error) {
+        if (!error.message?.includes('already_completed')) {
+          console.error('Error saving level test:', error);
         }
-      } catch (e) {
-        console.error('Error saving level test:', e);
+        return;
+      }
+
+      const result = data as { accuracy?: number; xp_earned?: number } | null;
+      if (result) {
+        if (typeof result.accuracy === 'number') setServerAccuracy(result.accuracy);
+        if (typeof result.xp_earned === 'number') setServerXp(result.xp_earned);
       }
     })();
-  }, [phase, submitted, user, hands, results, correct, levelInfo.xp, accuracy]);
+  }, [phase, submitted, user, hands, results]);
 
 
   return (
