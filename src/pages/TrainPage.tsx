@@ -333,6 +333,61 @@ export default function TrainPage() {
     setPhase('playing');
   }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, heroBounty]);
 
+  // Record a scored hand on the server (XP, level, session stats and ranking)
+  const recordHand = useCallback(async (params: {
+    hand: string;
+    scenario: string;
+    position: string;
+    stack: number;
+    userAction: string;
+    correctAction: string;
+    feedback: string;
+    points: number;
+    evLoss: number;
+  }) => {
+    if (!user) return;
+    let sessionId = supabaseSessionId.current;
+    if (!sessionId && sessionPromise.current) {
+      sessionId = await sessionPromise.current;
+    }
+    if (!sessionId) return;
+
+    const { data, error } = await supabase.rpc('record_hand_result', {
+      _session_id: sessionId,
+      _hand: params.hand,
+      _scenario: params.scenario,
+      _position: params.position,
+      _stack: Math.round(params.stack),
+      _user_action: params.userAction,
+      _correct_action: params.correctAction,
+      _feedback: params.feedback,
+      _points: Math.round(params.points),
+      _ev_loss: params.evLoss ?? 0,
+    });
+
+    if (error) {
+      if (error.message?.includes('rate_limited')) {
+        toast({
+          title: 'Muitas mãos em pouco tempo',
+          description: 'Aguarde alguns segundos antes de jogar a próxima mão.',
+          variant: 'destructive',
+        });
+      } else {
+        console.error('Error recording hand:', error);
+      }
+      return;
+    }
+
+    const result = data as { total_xp: number; level: number; hands_played: number } | null;
+    if (result) {
+      await refreshProfile();
+      checkAchievements({
+        totalHands: result.hands_played,
+        level: result.level,
+      });
+    }
+  }, [user, refreshProfile, checkAchievements]);
+
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
     if (!handState || !currentHandId) return;
