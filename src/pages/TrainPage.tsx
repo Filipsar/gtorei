@@ -265,9 +265,10 @@ export default function TrainPage() {
       stack: randomStack ? 'random' : stk
     });
 
-    // Persist session to Supabase
+    // Persist session to Supabase (awaited before the first hand is recorded)
     if (user) {
-      supabase
+      supabaseSessionId.current = null;
+      sessionPromise.current = supabase
         .from('training_sessions')
         .insert({
           user_id: user.id,
@@ -277,8 +278,13 @@ export default function TrainPage() {
         })
         .select('id')
         .single()
-        .then(({ data }) => {
-          if (data) supabaseSessionId.current = data.id;
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error creating session:', error);
+            return null;
+          }
+          supabaseSessionId.current = data?.id ?? null;
+          return supabaseSessionId.current;
         });
     }
 
