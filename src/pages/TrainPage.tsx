@@ -23,7 +23,6 @@ import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
 import { generateUniqueHandId } from '@/data/handIdGenerator';
-import { updateUserRanking, updateUserProfile as updateSupabaseProfile } from '@/data/rankingService';
 import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,8 +111,9 @@ export default function TrainPage() {
   const [summaryRangeViewer, setSummaryRangeViewer] = useState<{ open: boolean; stack: number } | null>(null);
   const [currentStackDistribution, setCurrentStackDistribution] = useState<StackDistribution | null>(null);
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const supabaseSessionId = useRef<string | null>(null);
+  const sessionPromise = useRef<Promise<string | null> | null>(null);
   const { checkAchievements } = useAchievements();
 
   // Ensure user profile exists
@@ -265,9 +265,10 @@ export default function TrainPage() {
       stack: randomStack ? 'random' : stk
     });
 
-    // Persist session to Supabase
+    // Persist session to Supabase (awaited before the first hand is recorded)
     if (user) {
-      supabase
+      supabaseSessionId.current = null;
+      sessionPromise.current = supabase
         .from('training_sessions')
         .insert({
           user_id: user.id,
@@ -277,8 +278,13 @@ export default function TrainPage() {
         })
         .select('id')
         .single()
-        .then(({ data }) => {
-          if (data) supabaseSessionId.current = data.id;
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error creating session:', error);
+            return null;
+          }
+          supabaseSessionId.current = data?.id ?? null;
+          return supabaseSessionId.current;
         });
     }
 
@@ -326,6 +332,61 @@ export default function TrainPage() {
     setHandsPlayed(0);
     setPhase('playing');
   }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, heroBounty]);
+
+  // Record a scored hand on the server (XP, level, session stats and ranking)
+  const recordHand = useCallback(async (params: {
+    hand: string;
+    scenario: string;
+    position: string;
+    stack: number;
+    userAction: string;
+    correctAction: string;
+    feedback: string;
+    points: number;
+    evLoss: number;
+  }) => {
+    if (!user) return;
+    let sessionId = supabaseSessionId.current;
+    if (!sessionId && sessionPromise.current) {
+      sessionId = await sessionPromise.current;
+    }
+    if (!sessionId) return;
+
+    const { data, error } = await supabase.rpc('record_hand_result', {
+      _session_id: sessionId,
+      _hand: params.hand,
+      _scenario: params.scenario,
+      _position: params.position,
+      _stack: Math.round(params.stack),
+      _user_action: params.userAction,
+      _correct_action: params.correctAction,
+      _feedback: params.feedback,
+      _points: Math.round(params.points),
+      _ev_loss: params.evLoss ?? 0,
+    });
+
+    if (error) {
+      if (error.message?.includes('rate_limited')) {
+        toast({
+          title: 'Muitas mãos em pouco tempo',
+          description: 'Aguarde alguns segundos antes de jogar a próxima mão.',
+          variant: 'destructive',
+        });
+      } else {
+        console.error('Error recording hand:', error);
+      }
+      return;
+    }
+
+    const result = data as { total_xp: number; level: number; hands_played: number } | null;
+    if (result) {
+      await refreshProfile();
+      checkAchievements({
+        totalHands: result.hands_played,
+        level: result.level,
+      });
+    }
+  }, [user, refreshProfile, checkAchievements]);
 
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
@@ -394,26 +455,17 @@ export default function TrainPage() {
         evLoss: feedback.evLoss
       });
 
-      if (user && supabaseSessionId.current) {
-        supabase
-          .from('played_hands')
-          .insert({
-            user_id: user.id,
-            session_id: supabaseSessionId.current,
-            hand: handName,
-            scenario,
-            position: handState.heroPosition,
-            stack: handState.heroStack,
-            user_action: action,
-            correct_action: handData.primaryAction,
-            feedback: feedback.type,
-            points: Math.round(feedback.points),
-            ev_loss: feedback.evLoss,
-          })
-          .then(({ error }) => {
-            if (error) console.error('Error saving hand:', error);
-          });
-      }
+      void recordHand({
+        hand: handName,
+        scenario,
+        position: handState.heroPosition,
+        stack: handState.heroStack,
+        userAction: action,
+        correctAction: handData.primaryAction,
+        feedback: feedback.type,
+        points: pointsToAdd,
+        evLoss: feedback.evLoss,
+      });
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
       if (isCorrect) {
@@ -431,22 +483,6 @@ export default function TrainPage() {
         setSessionBestCount(prev => prev + 1);
       }
 
-      if (user && pointsToAdd !== 0) {
-        updateUserRanking({
-          userId: user.id,
-          xpEarned: pointsToAdd,
-          handsPlayed: 1,
-          correctHands: isCorrect ? 1 : 0,
-        });
-        updateSupabaseProfile(user.id, pointsToAdd, 1);
-
-        const totalXp = (profile?.total_xp || 0) + pointsToAdd;
-        const newLevel = calculateLevel(totalXp);
-        checkAchievements({
-          totalHands: handsPlayed + 1,
-          level: newLevel,
-        });
-      }
     } else if (isSimulation && !isHandAlreadyPlayedState) {
       // Store pending score to apply after simulation completes
       setPendingSimulationScore({
@@ -543,26 +579,17 @@ export default function TrainPage() {
       evLoss: feedback.evLoss
     });
 
-    if (user && supabaseSessionId.current) {
-      supabase
-        .from('played_hands')
-        .insert({
-          user_id: user.id,
-          session_id: supabaseSessionId.current,
-          hand: handName,
-          scenario,
-          position: handState.heroPosition,
-          stack: handState.heroStack,
-          user_action: action,
-          correct_action: pendingSimulationScore.handData?.primaryAction || 'fold',
-          feedback: feedback.type,
-          points: Math.round(totalPoints),
-          ev_loss: feedback.evLoss,
-        })
-        .then(({ error }) => {
-          if (error) console.error('Error saving hand:', error);
-        });
-    }
+    void recordHand({
+      hand: handName,
+      scenario,
+      position: handState.heroPosition,
+      stack: handState.heroStack,
+      userAction: action,
+      correctAction: pendingSimulationScore.handData?.primaryAction || 'fold',
+      feedback: feedback.type,
+      points: totalPoints,
+      evLoss: feedback.evLoss,
+    });
 
     setSessionScore(prev => prev + totalPoints);
     setHandsPlayed(prev => prev + 1);
@@ -579,18 +606,9 @@ export default function TrainPage() {
     if (feedback.type === 'best') {
       setSessionBestCount(prev => prev + 1);
     }
-    if (user && totalPoints !== 0) {
-      updateUserRanking({
-        userId: user.id,
-        xpEarned: totalPoints,
-        handsPlayed: 1,
-        correctHands: isCorrect ? 1 : 0,
-      });
-      updateSupabaseProfile(user.id, totalPoints, 1);
-    }
-    
+
     setPendingSimulationScore(null);
-  }, [pendingSimulationScore, handState, currentHandId, scenario, user, checkAchievements, calculatePostflopBonus]);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, checkAchievements, calculatePostflopBonus, recordHand]);
 
   // Auto-apply pending simulation score when hand completes and enters review
   useEffect(() => {
@@ -810,22 +828,17 @@ export default function TrainPage() {
       });
     }
 
-    // Update Supabase session with final stats
+    // Close the Supabase session (stats are maintained server-side)
     if (user && supabaseSessionId.current) {
-      const accuracy = handsPlayed > 0 ? Math.round((correctHandsCount / handsPlayed) * 100) : 0;
       supabase
         .from('training_sessions')
-        .update({
-          ended_at: new Date().toISOString(),
-          hands_played: handsPlayed,
-          score: sessionScore,
-          accuracy,
-        })
+        .update({ ended_at: new Date().toISOString() })
         .eq('id', supabaseSessionId.current)
         .then(({ error }) => {
           if (error) console.error('Error ending session:', error);
         });
       supabaseSessionId.current = null;
+      sessionPromise.current = null;
     }
 
     setPhase('config');

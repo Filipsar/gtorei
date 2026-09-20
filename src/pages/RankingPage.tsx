@@ -98,7 +98,6 @@ export default function RankingPage() {
   const fetchRankings = async () => {
     setLoading(true);
     try {
-      const periodStart = new Date(selectedYear, selectedMonth, 1);
 
       const { data, error } = await supabase
         .from('rankings')
@@ -116,7 +115,7 @@ export default function RankingPage() {
           )
         `)
         .eq('period_type', period)
-        .eq('period_start', periodStart.toISOString().split('T')[0])
+        .eq('period_start', `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`)
         .order('xp_earned', { ascending: false })
         .limit(100);
 
