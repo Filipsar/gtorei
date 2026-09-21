@@ -52,69 +52,64 @@ Duas consequências:
 
 Por isso o cutover precisa ser feito em horário fraco e com o rollback pronto.
 
-## Passos que dependem de você
+## O que já está pronto (verificado em 21/09/2026)
 
-### 1. Dar acesso do repositório ao app do Vercel no GitHub
+Projeto `gtorei` no Vercel, conectado a `Filipsar/gtorei`, com deploy de produção
+saindo a cada push na `main`. Os domínios `gtorei.com.br` e `www.gtorei.com.br`
+já estão registrados no projeto — só não são servidos porque o DNS ainda aponta
+para o Lovable.
 
-`Filipsar/gtorei` é privado. O erro "repo does not exist" que apareceu antes é falta de permissão, não repositório errado.
+Conferido na URL `https://gtorei.vercel.app`:
 
-GitHub → Settings → Applications → Installed GitHub Apps → **Vercel** → Configure →
-em *Repository access*, incluir `gtorei` → Save.
-
-Depois: Vercel → Add New → Project → Import `Filipsar/gtorei`.
-
-### 2. Conferir as configurações de build no Vercel
-
-Devem ser detectadas sozinhas. Se não forem:
-
-| Campo | Valor |
+| Item | Resultado |
 | --- | --- |
-| Framework Preset | Vite |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Install Command | `npm install` |
-| Node.js Version | 22.x (já fixado em `package.json` e `.nvmrc`) |
+| Redirect do OAuth | `307 → https://oauth.lovable.app/initiate?provider=google&redirect_uri=...&state=...&project_id=lovp_5jamtv3ph38k6b6nr0eccjt613` — query preservada e `project_id` acrescentado, igual ao que a borda do Lovable faz |
+| `/~oauth/callback` | `307 → https://oauth.lovable.app/callback` |
+| Headers | `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`, HSTS, Referrer-Policy, Permissions-Policy, nosniff |
+| Rotas do SPA | `/iniciante`, `/atualizacoes`, `/apoiar`, `/gtoreiacessibilidade`, `/auth` abrem direto pela URL |
+| Estáticos | `robots.txt`, `sitemap.xml`, `og-gtorei.png`, ícones — todos 200 com o tipo certo |
+| Cache | `/assets/*` imutável por 1 ano, `index.html` com `must-revalidate` |
+| Supabase | Responde da origem do Vercel, sem bloqueio de CORS |
+| Console | Limpo, zero erro |
 
-**Variáveis de ambiente:** não precisa configurar. O `.env` está versionado e só tem as três chaves `VITE_*`, que já vão compiladas no bundle público de qualquer forma. Se você preferir colocá-las no painel do Vercel, os valores têm que ser idênticos aos do `.env`.
+O `frame-ancestors` é um ganho real: o host do Lovable nunca serviu esse header.
 
-### 3. Antes de mexer no DNS — o que dá para validar
+**Variáveis de ambiente:** não precisam ser configuradas. O `.env` está versionado
+e só tem as três chaves `VITE_*`, que já vão compiladas no bundle público.
 
-Na URL `*.vercel.app` que o Vercel gerar, dá para conferir tudo menos o Google:
+## O que falta: o DNS
 
-- [ ] A landing abre e a matriz de range aparece
-- [ ] Login por e-mail e senha funciona (esse não passa pelo Lovable)
-- [ ] Rotas internas abrem direto pela URL, sem 404 (`/iniciante`, `/atualizacoes`)
-- [ ] `curl -I` mostra `X-Frame-Options: DENY` e `Content-Security-Policy: frame-ancestors 'none'`
-- [ ] `curl -sD - -o /dev/null https://SEU-PROJETO.vercel.app/~oauth/initiate?provider=google` responde **302** com `Location` para `oauth.lovable.app` **com o `project_id` junto** — é isso que prova que a regra de redirect está certa
-
-O login com Google em si só dá para testar depois da troca de DNS.
-
-### 4. Trocar o DNS (HostGator)
-
-O DNS do domínio está na HostGator, não na Cloudflare:
+Isso depende de você, e é o único passo irreversível.
 
 ```
 nameservers: dns3.hostgator.com.br, dns4.hostgator.com.br
-gtorei.com.br     A      185.158.133.1     <- Lovable, ANOTE ESTE VALOR
+gtorei.com.br     A      185.158.133.1     <- Lovable, ANOTE, é o rollback
 www.gtorei.com.br CNAME  gtorei.com.br
 ```
 
-**Anote `185.158.133.1` antes de mexer.** É o valor de rollback.
+No painel de DNS da HostGator:
 
-No Vercel: Project → Settings → Domains → adicionar `gtorei.com.br` e `www.gtorei.com.br`. O Vercel mostra o valor exato do registro A (eles mudam o IP de tempos em tempos — **use o que o painel mostrar**, não um IP anotado de outro lugar).
+1. **Baixe o TTL do registro A para 300 segundos e espere o TTL antigo expirar.**
+   É isso que faz a volta atrás levar minutos em vez de horas.
+2. Troque o `A` de `gtorei.com.br` de `185.158.133.1` para **`76.76.21.21`**
+   (valor que o próprio Vercel indica para este domínio).
+3. O `www` pode continuar `CNAME` para `gtorei.com.br`.
 
-Na HostGator, painel de DNS do domínio:
-- trocar o `A` de `gtorei.com.br` para o valor que o Vercel indicar
-- `www` pode continuar `CNAME` para `gtorei.com.br`
+Não delegue os nameservers para o Vercel. O registro A resolve, e manter o DNS na
+HostGator deixa o rollback na sua mão.
 
-Antes de trocar, baixe o TTL do registro A para 300 segundos e espere o TTL antigo expirar. Isso faz a propagação — e o rollback — levar minutos em vez de horas.
-
-### 5. Logo depois da troca
+### Logo depois da troca
 
 1. Esperar o certificado do Vercel emitir (alguns minutos)
-2. **Testar o login com Google numa aba anônima.** É o teste que importa.
+2. **Testar o login com Google numa aba anônima.** É o único teste que importa,
+   e é o único que não pôde ser feito antes.
 3. Se funcionar: pronto. Testar também um cadastro novo por e-mail.
-4. Se não funcionar: voltar o registro A para `185.158.133.1`. Em poucos minutos o Lovable volta a servir e o login volta.
+4. Se não funcionar: voltar o registro A para `185.158.133.1`. Com TTL de 300s,
+   em poucos minutos o Lovable volta a servir e o login volta.
+
+Depois que o Vercel estiver servindo o domínio, o Lovable continua publicando
+em `gtorei.lovable.app`. Vale manter por um tempo como rede de segurança — e
+lembrar que um `deploy_project` lá não afeta mais o gtorei.com.br.
 
 ## Depois da migração: tirar o login do Lovable
 
