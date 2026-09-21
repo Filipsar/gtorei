@@ -38,6 +38,15 @@ const signupSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 type SignupForm = z.infer<typeof signupSchema>;
 
+// O broker de OAuth do Lovable valida o redirect_uri contra uma lista do projeto,
+// e nela está só o apex: mandar "https://www.gtorei.com.br" volta 400 e o login
+// com Google morre. Como o www só existe como atalho para o mesmo site, aqui ele
+// é normalizado para o apex. Qualquer outra origem (localhost, preview) passa reto.
+function origemParaOAuth(): string {
+  const { origin, hostname, protocol } = window.location;
+  return hostname === 'www.gtorei.com.br' ? `${protocol}//gtorei.com.br` : origin;
+}
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,7 +68,7 @@ export default function AuthPage() {
     setGoogleLoading(true);
     try {
       const { error } = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin
+        redirect_uri: origemParaOAuth()
       });
       if (error) throw error;
     } catch (error: any) {
@@ -102,7 +111,7 @@ export default function AuthPage() {
         email: data.email,
         password: data.password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: origemParaOAuth(),
           data: {
             full_name: data.username
           }
