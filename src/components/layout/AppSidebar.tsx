@@ -34,7 +34,7 @@ export function AppSidebar() {
     { title: t.sidebar.train, url: '/treinar', icon: Zap, locked: false },
     { title: t.sidebar.tables, url: '/tabelas', icon: TableProperties, locked: false },
     { title: t.sidebar.analysis, url: '/analise', icon: BarChart3, locked: false },
-    { title: 'Analisar com IA', url: '/analise-ia', icon: Brain, locked: false },
+    { title: t.sidebar.aiAnalysis, url: '/analise-ia', icon: Brain, locked: false },
     { title: t.sidebar.ranking, url: '/ranking', icon: Trophy, locked: false },
     { title: t.sidebar.achievements, url: '/conquistas', icon: Award, locked: false },
     { title: t.sidebar.community, url: '/comunidade', icon: Users, locked: false },

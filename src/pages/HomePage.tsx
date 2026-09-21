@@ -43,7 +43,7 @@ export default function HomePage() {
     { icon: Brain, title: 'Análise com IA', desc: 'Faça upload do seu hand history e receba veredicto GTO + EV mão a mão por IA.', to: '/analise-ia', tag: 'Novo' },
     { icon: TableProperties, title: 'Tabelas de Range', desc: 'Matrizes 13x13 interativas com frequências de cada ação por spot.', to: '/tabelas', tag: 'Estudo' },
     { icon: BarChart3, title: 'Análise de Mãos', desc: 'Revise suas decisões street-by-street e entenda o porquê da linha ótima.', to: '/analise', tag: 'Review' },
-    { icon: Trophy, title: 'Ranking Global', desc: 'Suba de Aprendiz até GTO Rei (250k XP) competindo com a comunidade.', to: '/ranking', tag: 'Competitivo' },
+    { icon: Trophy, title: 'Ranking Global', desc: 'Suba de Iniciante até GTO Rei (250k XP) competindo com a comunidade.', to: '/ranking', tag: 'Competitivo' },
     { icon: Award, title: 'Conquistas', desc: 'Desbloqueie achievements por precisão, volume e streaks de acertos.', to: '/conquistas', tag: 'Gamificação' },
     { icon: Users, title: 'Comunidade', desc: 'Compare resultados, siga jogadores e discuta mãos com outros estudantes.', to: '/comunidade', tag: 'Social' },
     { icon: BookOpen, title: 'Guia Iniciante', desc: 'Comece do zero com explicações de posições, ranges e fundamentos de torneio.', to: '/iniciante', tag: 'Iniciante' },
@@ -82,7 +82,7 @@ export default function HomePage() {
         }}
       />
       {/* Top Instagram banner */}
-      <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden h-9 flex items-center" style={{ backgroundColor: '#2cff05', color: '#0a0a0a' }}>
+      <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden h-9 flex items-center bg-primary/10 text-primary border-b border-primary/25">
         <a
           href="https://www.instagram.com/gtorei/"
           target="_blank"
@@ -100,14 +100,15 @@ export default function HomePage() {
 
       {/* Sticky nav */}
       <header className="fixed top-9 left-0 right-0 z-40 backdrop-blur-lg bg-background/70 border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <img
               src="/lovable-uploads/518567fe-7b99-45ff-92c1-2879711b6051.png"
               alt="GTORei"
               className="h-9 w-9 object-contain"
             />
-            <span className="text-heading-sm">
+            {/* No celular fica só o ícone: o texto encostava no botão Entrar */}
+            <span className="text-heading-sm hidden sm:inline">
               <span className="text-primary">GTO</span>
               <span>Rei</span>
             </span>
@@ -332,7 +333,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Comunidade</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Suba do Aprendiz ao GTO Rei</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-balance">Suba de Iniciante a GTO Rei</h2>
             <p className="text-muted-foreground text-lg">
               Ganhe XP a cada decisão certa, destrave conquistas e dispute o topo do ranking mensal.
             </p>
@@ -341,8 +342,8 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <Card className="p-7 bg-card border-border">
               <Trophy className="h-8 w-8 text-primary mb-4" />
-              <p className="text-3xl font-bold mb-1">7 ranks</p>
-              <p className="text-sm text-muted-foreground">de Aprendiz até GTO Rei (250.000 XP)</p>
+              <p className="text-3xl font-bold mb-1">8 ranks</p>
+              <p className="text-sm text-muted-foreground">de Iniciante até GTO Rei (250.000 XP)</p>
             </Card>
             <Card className="p-7 bg-card border-border">
               <Award className="h-8 w-8 text-primary mb-4" />
@@ -478,6 +479,9 @@ export default function HomePage() {
           100% { transform: translateX(-50%); }
         }
         .animate-marquee { animation: marquee 20s linear infinite; }
+        /* Deixa ler a mensagem inteira: pausa ao passar o mouse ou ao focar pelo teclado */
+        .animate-marquee:hover,
+        .animate-marquee:focus-visible { animation-play-state: paused; }
       `}</style>
     </div>
   );

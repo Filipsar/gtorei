@@ -135,13 +135,14 @@ export default function AuthPage() {
       />
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-5 sm:mb-8">
           <div className="relative">
-            <img alt="GTORei" className="h-20 w-20 object-contain" src="/lovable-uploads/e0ddf7f0-72f1-42b0-85e3-a9280c2915c5.png" />
-            
+            <img alt="GTORei" className="h-14 w-14 sm:h-20 sm:w-20 object-contain" src="/lovable-uploads/e0ddf7f0-72f1-42b0-85e3-a9280c2915c5.png" />
+
           </div>
-          <h1 className="text-display-md text-primary mt-4">Acesse sua conta no GTORei</h1>
-          <p className="text-body-md text-muted-foreground">Treine seu jogo GTO</p>
+          {/* Título menor e centralizado: com 48px ele empurrava o formulário para fora da tela no celular */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary text-center text-balance mt-3 sm:mt-4">Acesse sua conta no GTORei</h1>
+          <p className="text-body-md text-muted-foreground text-center">Treine seu jogo GTO</p>
         </div>
 
         <Card className="border-border/50 shadow-xl">

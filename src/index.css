@@ -103,7 +103,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
     --primary: 45 100% 45%;
-    --primary-foreground: 0 0% 100%;
+    /* Texto escuro sobre o dourado: branco dava contraste 2:1 e reprovava no WCAG AA */
+    --primary-foreground: 0 0% 12%;
     --secondary: 210 79% 46%;
     --secondary-foreground: 0 0% 100%;
     --muted: 0 0% 93%;
@@ -119,7 +120,7 @@
     --sidebar-background: 0 0% 96%;
     --sidebar-foreground: 0 0% 25%;
     --sidebar-primary: 45 100% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 12%;
     --sidebar-accent: 0 0% 90%;
     --sidebar-accent-foreground: 0 0% 15%;
     --sidebar-border: 0 0% 88%;
@@ -280,3 +281,31 @@
   }
 }
 
+
+/* Respeita quem configurou menos movimento no sistema (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  .led-pulse,
+  .fire-pulse {
+    animation: none;
+    filter: none;
+  }
+
+  .progress-animated {
+    animation: none;
+  }
+
+  .animate-marquee,
+  .animate-marquee-single {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

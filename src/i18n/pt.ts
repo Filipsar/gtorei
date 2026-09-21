@@ -17,6 +17,7 @@ export const pt = {
     train: 'Treinar',
     tables: 'Tabelas',
     analysis: 'Análise',
+    aiAnalysis: 'Analisar com IA',
     ranking: 'Ranking',
     achievements: 'Conquistas',
     community: 'Comunidade',

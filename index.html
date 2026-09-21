@@ -8,6 +8,32 @@
     <meta name="author" content="GTORei" />
     <link rel="apple-touch-icon" href="/favicon-gtorei.png" />
 
+    <!-- Aplica o tema salvo antes da página desenhar, para não piscar escuro->claro -->
+    <script>
+      (function () {
+        function apply() {
+          var theme = 'dark';
+          try { theme = localStorage.getItem('gtorei_theme') || 'dark'; } catch (e) {}
+          var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+          var isLight = theme === 'light' || (theme === 'system' && prefersLight);
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(isLight ? 'light' : 'dark');
+        }
+        apply();
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-color-scheme: light)');
+          var onChange = function () {
+            var theme = 'dark';
+            try { theme = localStorage.getItem('gtorei_theme') || 'dark'; } catch (e) {}
+            if (theme === 'system') apply();
+          };
+          if (mq.addEventListener) mq.addEventListener('change', onChange);
+          else if (mq.addListener) mq.addListener(onChange);
+        }
+      })();
+    </script>
+
     
     
     <meta property="og:type" content="website" />

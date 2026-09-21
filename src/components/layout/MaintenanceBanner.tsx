@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Instagram, X, Heart, Brain, Sparkles, Trophy } from 'lucide-react';
 
 const BANNER_MESSAGES = [
@@ -37,9 +38,12 @@ const BANNER_MESSAGES = [
 const DISMISS_KEY = 'gtorei_banner_dismissed';
 
 export function MaintenanceBanner() {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem(DISMISS_KEY) === '1') {
@@ -47,14 +51,24 @@ export function MaintenanceBanner() {
     }
   }, []);
 
+  // Quem pediu menos movimento no sistema vê a mensagem parada
   useEffect(() => {
-    if (dismissed) return;
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mq.matches);
+    const onChange = () => setReducedMotion(mq.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (dismissed || reducedMotion || paused) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % BANNER_MESSAGES.length);
       setAnimKey((k) => k + 1);
     }, 4000);
     return () => clearInterval(interval);
-  }, [dismissed]);
+  }, [dismissed, reducedMotion, paused]);
 
   if (dismissed) return null;
 
@@ -70,21 +84,31 @@ export function MaintenanceBanner() {
   const handleClick = (e: React.MouseEvent) => {
     if (!msg.link) return;
     if (msg.internal) {
+      // Navegação do react-router: sem recarregar a página inteira
       e.preventDefault();
-      window.location.href = msg.link;
+      navigate(msg.link);
     }
     // external links use normal <a> behavior
   };
 
   const content = (
-    <span className="animate-marquee-single whitespace-nowrap inline-flex items-center gap-2 text-sm font-medium" key={animKey}>
+    <span
+      className={`${reducedMotion ? '' : 'animate-marquee-single'} whitespace-nowrap inline-flex items-center gap-2 text-sm font-medium`}
+      key={animKey}
+    >
       {msg.icon}
       {msg.text}
     </span>
   );
 
   return (
-    <div className="relative overflow-hidden h-8 flex items-center" style={{ backgroundColor: '#2cff05', color: '#0a0a0a' }}>
+    <div
+      className="relative overflow-hidden h-8 flex items-center bg-primary/10 text-primary border-b border-primary/25"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
       {msg.link ? (
         <a
           href={msg.link}
@@ -103,7 +127,7 @@ export function MaintenanceBanner() {
       <button
         onClick={handleDismiss}
         aria-label="Fechar banner"
-        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-black/15 transition-colors z-10"
+        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-primary/20 transition-colors z-10"
       >
         <X className="h-3.5 w-3.5" />
       </button>

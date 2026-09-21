@@ -19,6 +19,7 @@ export const en: Translations = {
     train: 'Train',
     tables: 'Tables',
     analysis: 'Analysis',
+    aiAnalysis: 'AI Analysis',
     ranking: 'Ranking',
     achievements: 'Achievements',
     community: 'Community',
