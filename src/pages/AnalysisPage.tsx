@@ -247,8 +247,8 @@ export default function AnalysisPage() {
 
   // Vazamento: pior posição ou cenário com amostra suficiente
   const candidatosVazamento = [
-    ...positionRows.filter(p => p.hands >= MIN_MAOS_RELEVANTE).map(p => ({ tipo: 'posição', nome: p.label, acc: p.accuracy, hands: p.hands })),
-    ...stats.scenarioStats.filter(s => s.hands >= MIN_MAOS_RELEVANTE).map(s => ({ tipo: 'cenário', nome: s.label, acc: s.accuracy, hands: s.hands })),
+    ...positionRows.filter(p => p.hands >= MIN_MAOS_RELEVANTE).map(p => ({ tipo: 'a posição', nome: p.label, acc: p.accuracy, hands: p.hands })),
+    ...stats.scenarioStats.filter(s => s.hands >= MIN_MAOS_RELEVANTE).map(s => ({ tipo: 'o cenário', nome: s.label, acc: s.accuracy, hands: s.hands })),
   ];
   const vazamento = candidatosVazamento.length > 0
     ? candidatosVazamento.reduce((pior, c) => (c.acc < pior.acc ? c : pior))
@@ -448,7 +448,7 @@ export default function AnalysisPage() {
                   <h3 className="font-bold text-foreground">Onde focar agora</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     Seu ponto mais fraco é {vazamento.tipo}{' '}
-                    <span className="font-bold text-primary">{vazamento.nome}</span>: {' '}
+                    <span className="font-bold text-primary">{vazamento.nome}</span>:{' '}
                     <span className="font-bold text-foreground">{vazamento.acc}%</span> de precisão em {vazamento.hands} mãos.
                   </p>
                   <Button size="sm" className="mt-3 gap-2" onClick={irTreinar}>
