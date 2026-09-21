@@ -66,11 +66,12 @@ export function getRange(
   finalTable: boolean = false,
   gameMode: GameMode = '8max',
   bountyMultiplier: number = 0,
-  multiwayPlayers: number = 3
+  multiwayPlayers: number = 3,
+  villainPosition?: Position
 ): RangeData {
-  const key = `${gameMode}-${scenario}-${position}-${stack}-${finalTable}-${bountyMultiplier}-${multiwayPlayers}`;
+  const key = `${gameMode}-${scenario}-${position}-${stack}-${finalTable}-${bountyMultiplier}-${multiwayPlayers}-${villainPosition ?? '-'}`;
   if (!rangeCache.has(key)) {
-    rangeCache.set(key, interpolateRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers));
+    rangeCache.set(key, interpolateRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers, villainPosition));
   }
   return rangeCache.get(key)!;
 }
@@ -82,9 +83,10 @@ export function getHandData(
   stack: number,
   finalTable: boolean = false,
   gameMode: GameMode = '8max',
-  bountyMultiplier: number = 0
+  bountyMultiplier: number = 0,
+  villainPosition?: Position
 ): HandData | undefined {
-  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
+  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier, 3, villainPosition);
   return range.hands.find(h => h.hand === hand);
 }
 

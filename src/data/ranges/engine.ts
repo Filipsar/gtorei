@@ -5,16 +5,21 @@ import {
   ActionFrequency, ActionType, HandData, HandEntry,
   Position, RangeData, Scenario, GameMode, RANKS, STACK_SIZES
 } from './types';
+import { HAND_ORDER } from './handorder.generated';
+import { PF_HANDS, PF_SHOVE, PF_CALL, PF_STACKS, decodePF } from './pushfold.generated';
 
 // ============================================================
 // HAND STRENGTH CALCULATION
 // ============================================================
 
-function baseHandStrength(highIdx: number, lowIdx: number, suited: boolean, pair: boolean): number {
-  if (pair) return 90 - highIdx * 5;
-  let s = 70 - highIdx * 3 - lowIdx * 2 - (lowIdx - highIdx) * 2;
-  if (suited) s += 10;
-  return Math.max(0, Math.min(100, s));
+// A força vem da ordem calculada em handorder.generated.ts (equity contra o
+// top 40% mais jogabilidade). A fórmula anterior punha Q8s e J8s à frente de
+// 66 e 55, e KJo à frente de ATo.
+const ORDER_INDEX = new Map(HAND_ORDER.map((h, i) => [h, i]));
+function baseHandStrength(hand: string): number {
+  const i = ORDER_INDEX.get(hand);
+  if (i === undefined) return 0;
+  return 100 - (i / (HAND_ORDER.length - 1)) * 100;
 }
 
 let _allHandsRaw: HandEntry[] | null = null;
@@ -29,21 +34,21 @@ function getAllHandsRaw(): HandEntry[] {
           hand: `${RANKS[i]}${RANKS[j]}`,
           highIdx: i, lowIdx: i,
           suited: false, pair: true,
-          baseStrength: baseHandStrength(i, i, false, true),
+          baseStrength: baseHandStrength(`${RANKS[i]}${RANKS[j]}`),
         });
       } else if (i < j) {
         hands.push({
           hand: `${RANKS[i]}${RANKS[j]}s`,
           highIdx: i, lowIdx: j,
           suited: true, pair: false,
-          baseStrength: baseHandStrength(i, j, true, false),
+          baseStrength: baseHandStrength(`${RANKS[i]}${RANKS[j]}s`),
         });
       } else {
         hands.push({
           hand: `${RANKS[j]}${RANKS[i]}o`,
           highIdx: j, lowIdx: i,
           suited: false, pair: false,
-          baseStrength: baseHandStrength(j, i, false, false),
+          baseStrength: baseHandStrength(`${RANKS[j]}${RANKS[i]}o`),
         });
       }
     }
@@ -387,6 +392,110 @@ function assignHandActions(
 }
 
 // ============================================================
+// RANGES CALCULADAS (push/fold de stack curto)
+// ============================================================
+
+function comboCount(h: { pair: boolean; suited: boolean }): number {
+  return h.pair ? 6 : h.suited ? 4 : 12;
+}
+
+const MODE_KEY: Record<GameMode, string> = {
+  '8max': '8max', '6max': '6max', hu: 'hu', threehand: 'threehand', bounty: '8max',
+};
+
+// Tabela tem stacks discretos; entre dois valores, interpola
+function vizinhosDeStack(stack: number): { baixo: number; alto: number; peso: number } {
+  const s = PF_STACKS;
+  if (stack <= s[0]) return { baixo: s[0], alto: s[0], peso: 0 };
+  if (stack >= s[s.length - 1]) return { baixo: s[s.length - 1], alto: s[s.length - 1], peso: 0 };
+  for (let i = 0; i < s.length - 1; i++) {
+    if (stack >= s[i] && stack <= s[i + 1]) {
+      return { baixo: s[i], alto: s[i + 1], peso: (stack - s[i]) / (s[i + 1] - s[i]) };
+    }
+  }
+  return { baixo: s[0], alto: s[0], peso: 0 };
+}
+
+function lerTabela(
+  tabela: Record<string, { f: string; ev: string }>,
+  chaves: string[]
+): { freq: number[]; ev: number[] } | null {
+  const existentes = chaves.map((k) => tabela[k]).filter(Boolean);
+  if (existentes.length === 0) return null;
+  const freq = new Array(PF_HANDS.length).fill(0);
+  const ev = new Array(PF_HANDS.length).fill(0);
+  for (const e of existentes) {
+    const f = decodePF(e.f);
+    const v = decodePF(e.ev, true);
+    for (let i = 0; i < PF_HANDS.length; i++) {
+      freq[i] += f[i] / existentes.length;
+      ev[i] += v[i] / 10 / existentes.length;
+    }
+  }
+  return { freq, ev };
+}
+
+// Devolve a range calculada por EV, ou null quando o caso sai do modelo
+// (mesa final usa ICM, bounty muda os incentivos, stack alto não é push/fold)
+function getSolvedRange(
+  gameMode: GameMode,
+  scenario: Scenario,
+  position: Position,
+  stack: number,
+  finalTable: boolean,
+  bountyMultiplier: number,
+  villainPosition?: Position
+): RangeData | null {
+  if (finalTable || bountyMultiplier > 0) return null;
+  if (stack > PF_STACKS[PF_STACKS.length - 1]) return null;
+  if (scenario !== 'openRaise' && scenario !== 'vsOpenShove') return null;
+
+  const modo = MODE_KEY[gameMode];
+  const { baixo, alto, peso } = vizinhosDeStack(stack);
+
+  const chavesPara = (s: number): string[] => {
+    if (scenario === 'openRaise') return [`${modo}|${position}|${s}`];
+    // Pagar all-in: se souber quem deu o all-in, usa o par exato;
+    // senão, média de todos os agressores possíveis
+    if (villainPosition) return [`${modo}|${position}|vs${villainPosition}|${s}`];
+    return Object.keys(PF_CALL).filter((k) => k.startsWith(`${modo}|${position}|vs`) && k.endsWith(`|${s}`));
+  };
+
+  const tabela = scenario === 'openRaise' ? PF_SHOVE : PF_CALL;
+  const a = lerTabela(tabela, chavesPara(baixo));
+  const b = peso > 0 ? lerTabela(tabela, chavesPara(alto)) : a;
+  if (!a || !b) return null;
+
+  const acao: ActionType = scenario === 'openRaise' ? 'allin' : 'call';
+  const porMao = new Map<string, { freq: number; ev: number }>();
+  for (let i = 0; i < PF_HANDS.length; i++) {
+    porMao.set(PF_HANDS[i], {
+      freq: a.freq[i] * (1 - peso) + b.freq[i] * peso,
+      ev: a.ev[i] * (1 - peso) + b.ev[i] * peso,
+    });
+  }
+
+  const sorted = getSortedHands(gameMode);
+  const hands: HandData[] = sorted.map((entry) => {
+    const dado = porMao.get(entry.hand) ?? { freq: 0, ev: 0 };
+    const f = Math.max(0, Math.min(100, Math.round(dado.freq)));
+    const actions: ActionFrequency[] = [
+      { action: acao, frequency: f, ev: Number(dado.ev.toFixed(2)) },
+      { action: 'fold', frequency: 100 - f, ev: 0 },
+    ];
+    return {
+      hand: entry.hand,
+      actions,
+      primaryAction: f >= 50 ? acao : 'fold',
+      suited: entry.suited,
+      pair: entry.pair,
+    };
+  });
+
+  return { scenario, position, stack, finalTable, hands };
+}
+
+// ============================================================
 // RANGE GENERATION
 // ============================================================
 
@@ -397,14 +506,26 @@ export function generateModeRange(
   stack: number,
   finalTable: boolean = false,
   bountyMultiplier: number = 0,
-  multiwayPlayers: number = 3
+  multiwayPlayers: number = 3,
+  villainPosition?: Position
 ): RangeData {
+  // Stack curto sem bounty e fora de mesa final: usa a range calculada por EV
+  const solved = getSolvedRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, villainPosition);
+  if (solved) return solved;
+
   const config = getScenarioConfig(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers);
   const sorted = getSortedHands(gameMode);
-  const total = sorted.length;
 
-  const hands: HandData[] = sorted.map((entry, index) => {
-    const percentile = (index / total) * 100;
+  // O corte é por combos (1326), não por classes de mão (169): uma mão offsuit
+  // vale 12 combos e um par vale 6, então cortar por classe deixava toda range
+  // mais estreita do que o configurado (UTG saía 10,3% onde devia dar 15%).
+  const totalCombos = sorted.reduce((acc, h) => acc + comboCount(h), 0);
+  let acumulado = 0;
+
+  const hands: HandData[] = sorted.map((entry) => {
+    const c = comboCount(entry);
+    const percentile = ((acumulado + c / 2) / totalCombos) * 100;
+    acumulado += c;
     const actions = assignHandActions(
       percentile,
       config.raisePercent,
@@ -458,10 +579,11 @@ export function interpolateRange(
   stack: number,
   finalTable: boolean = false,
   bountyMultiplier: number = 0,
-  multiwayPlayers: number = 3
+  multiwayPlayers: number = 3,
+  villainPosition?: Position
 ): RangeData {
   if (STACK_SIZES.includes(stack)) {
-    return generateModeRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers);
+    return generateModeRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, multiwayPlayers, villainPosition);
   }
 
   let lower = STACK_SIZES[0];
@@ -474,12 +596,12 @@ export function interpolateRange(
     }
   }
 
-  if (stack <= lower) return generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier, multiwayPlayers);
-  if (stack >= upper) return generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier, multiwayPlayers);
+  if (stack <= lower) return generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier, multiwayPlayers, villainPosition);
+  if (stack >= upper) return generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier, multiwayPlayers, villainPosition);
 
   const weight = (stack - lower) / (upper - lower);
-  const rL = generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier, multiwayPlayers);
-  const rU = generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier, multiwayPlayers);
+  const rL = generateModeRange(gameMode, scenario, position, lower, finalTable, bountyMultiplier, multiwayPlayers, villainPosition);
+  const rU = generateModeRange(gameMode, scenario, position, upper, finalTable, bountyMultiplier, multiwayPlayers, villainPosition);
 
   const hands: HandData[] = rL.hands.map((hL, idx) => {
     const hU = rU.hands[idx];
