@@ -1,6 +1,5 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { getLevelName, getLevelProgress } from '@/data/localStorage';
 import { POSITIONS } from '@/data/gtoRanges';
@@ -8,14 +7,32 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
-import { 
-  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye, Info
+import {
+  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye, Info, Play
 } from 'lucide-react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import { cn } from '@/lib/utils';
+
+// Abaixo disso a precisão é ruído: 3 mãos numa posição não dizem nada
+const MIN_MAOS_RELEVANTE = 15;
+
+const SCENARIO_LABELS: Record<string, string> = {
+  openRaise: 'Open Raise',
+  vsOpenRaise: 'Vs Open Raise',
+  vs3bet: 'Vs 3-Bet',
+  vsOpenShove: 'Vs Open Shove',
+  multiway: 'Multiway',
+  simulation: 'Simulação',
+};
+
+interface Breakdown {
+  key: string;
+  label: string;
+  hands: number;
+  accuracy: number;
+}
 
 interface MonthlyStats {
   totalHands: number;
@@ -24,8 +41,55 @@ interface MonthlyStats {
   bestStreak: number;
   feedbackDistribution: { best: number; correct: number; inaccuracy: number; mistake: number; blunder: number };
   positionStats: Record<string, { hands: number; accuracy: number }>;
+  scenarioStats: Breakdown[];
   recentTrend: 'improving' | 'stable' | 'declining';
   sessions: { id: string; startedAt: string; handsPlayed: number; score: number; accuracy: number }[];
+}
+
+// Barra horizontal com rótulo e número na própria linha.
+// A cor é reforço: quem identifica a linha é o texto.
+function BarRow({
+  label, pct, right, color, muted, hint,
+}: {
+  label: string;
+  pct: number;
+  right: string;
+  color?: string;
+  muted?: boolean;
+  hint?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className={cn('w-28 sm:w-32 shrink-0 text-sm truncate', muted ? 'text-muted-foreground/70' : 'text-foreground')}>
+        {label}
+      </span>
+      <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full transition-[width] duration-500"
+          style={{
+            width: `${Math.max(0, Math.min(100, pct))}%`,
+            backgroundColor: muted ? 'hsl(var(--muted-foreground) / 0.35)' : color ?? 'hsl(var(--primary))',
+          }}
+        />
+      </div>
+      <span className="w-24 shrink-0 text-right text-sm tabular-nums">
+        <span className={cn('font-medium', muted ? 'text-muted-foreground' : 'text-foreground')}>{right}</span>
+        {hint && <span className="block text-[11px] text-muted-foreground leading-tight">{hint}</span>}
+      </span>
+    </div>
+  );
+}
+
+function EmptyState({ texto, onTreinar }: { texto: string; onTreinar: () => void }) {
+  return (
+    <div className="py-10 text-center">
+      <p className="text-muted-foreground text-sm">{texto}</p>
+      <Button size="sm" className="mt-4 gap-2" onClick={onTreinar}>
+        <Play className="h-4 w-4" />
+        Treinar agora
+      </Button>
+    </div>
+  );
 }
 
 export default function AnalysisPage() {
@@ -57,7 +121,7 @@ export default function AnalysisPage() {
         .limit(50),
       supabase
         .from('played_hands')
-        .select('feedback, position, points')
+        .select('feedback, position, points, scenario')
         .eq('user_id', userId)
         .gte('played_at', monthStart),
     ]);
@@ -68,16 +132,23 @@ export default function AnalysisPage() {
     const feedbackDistribution = { best: 0, correct: 0, inaccuracy: 0, mistake: 0, blunder: 0 };
     const posMap: Record<string, { hands: number; correct: number }> = {};
     POSITIONS.forEach(p => posMap[p] = { hands: 0, correct: 0 });
+    const scenMap: Record<string, { hands: number; correct: number }> = {};
 
     let bestStreak = 0, currentStreak = 0;
     hands.forEach(h => {
       const fb = h.feedback as keyof typeof feedbackDistribution;
+      const acertou = fb === 'best' || fb === 'correct';
       if (fb in feedbackDistribution) feedbackDistribution[fb]++;
       if (posMap[h.position]) {
         posMap[h.position].hands++;
-        if (fb === 'best' || fb === 'correct') posMap[h.position].correct++;
+        if (acertou) posMap[h.position].correct++;
       }
-      if (fb === 'best' || fb === 'correct') {
+      if (h.scenario) {
+        if (!scenMap[h.scenario]) scenMap[h.scenario] = { hands: 0, correct: 0 };
+        scenMap[h.scenario].hands++;
+        if (acertou) scenMap[h.scenario].correct++;
+      }
+      if (acertou) {
         currentStreak++;
         bestStreak = Math.max(bestStreak, currentStreak);
       } else {
@@ -102,6 +173,15 @@ export default function AnalysisPage() {
       Object.entries(posMap).map(([pos, s]) => [pos, { hands: s.hands, accuracy: s.hands > 0 ? Math.round((s.correct / s.hands) * 100) : 0 }])
     );
 
+    const scenarioStats: Breakdown[] = Object.entries(scenMap)
+      .map(([key, s]) => ({
+        key,
+        label: SCENARIO_LABELS[key] ?? key,
+        hands: s.hands,
+        accuracy: Math.round((s.correct / s.hands) * 100),
+      }))
+      .sort((a, b) => b.hands - a.hands);
+
     const totalScore = sessions.reduce((a, s) => a + s.score, 0);
 
     setStats({
@@ -111,6 +191,7 @@ export default function AnalysisPage() {
       bestStreak,
       feedbackDistribution,
       positionStats,
+      scenarioStats,
       recentTrend: trend,
       sessions: sessions.map(s => ({ id: s.id, startedAt: s.started_at, handsPlayed: s.hands_played, score: s.score, accuracy: Number(s.accuracy) })),
     });
@@ -127,42 +208,62 @@ export default function AnalysisPage() {
     );
   }
 
-  // Aggregate XP by day of week
-  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const xpByDay: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-  stats.sessions.forEach((s) => {
-    const day = new Date(s.startedAt).getDay();
-    xpByDay[day] += s.score;
-  });
-  const sessionChartData = daysOfWeek.map((name, idx) => ({
-    name,
-    xp: xpByDay[idx],
-  }));
+  const irTreinar = () => navigate('/treinar');
 
-  const feedbackChartData = [
-    { name: 'Best', value: stats.feedbackDistribution.best, color: 'hsl(142, 71%, 45%)' },
-    { name: 'Correct', value: stats.feedbackDistribution.correct, color: 'hsl(142, 50%, 40%)' },
-    { name: 'Inaccuracy', value: stats.feedbackDistribution.inaccuracy, color: 'hsl(45, 100%, 50%)' },
-    { name: 'Mistake', value: stats.feedbackDistribution.mistake, color: 'hsl(25, 95%, 53%)' },
-    { name: 'Blunder', value: stats.feedbackDistribution.blunder, color: 'hsl(0, 72%, 51%)' },
-  ].filter(d => d.value > 0);
+  // Precisão sessão a sessão, em ordem cronológica
+  const accuracyOverTime = [...stats.sessions]
+    .filter(s => s.handsPlayed >= 5)
+    .sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime())
+    .map((s, i) => ({
+      i: i + 1,
+      label: new Date(s.startedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      accuracy: Math.round(s.accuracy),
+      hands: s.handsPlayed,
+    }));
 
-  const positionChartData = POSITIONS.map(pos => ({
-    name: pos,
-    accuracy: stats.positionStats[pos]?.accuracy || 0,
-    hands: stats.positionStats[pos]?.hands || 0,
-  }));
+  const feedbackRows = [
+    { key: 'best', label: 'Melhor jogada', value: stats.feedbackDistribution.best, color: 'hsl(var(--feedback-best))' },
+    { key: 'correct', label: 'Correta', value: stats.feedbackDistribution.correct, color: 'hsl(var(--feedback-correct))' },
+    { key: 'inaccuracy', label: 'Imprecisão', value: stats.feedbackDistribution.inaccuracy, color: 'hsl(var(--feedback-inaccuracy))' },
+    { key: 'mistake', label: 'Erro', value: stats.feedbackDistribution.mistake, color: 'hsl(var(--feedback-mistake))' },
+    { key: 'blunder', label: 'Erro grave', value: stats.feedbackDistribution.blunder, color: 'hsl(var(--feedback-blunder))' },
+  ];
 
-  const TrendIcon = stats.recentTrend === 'improving' ? TrendingUp : 
+  const positionRows = POSITIONS
+    .map(pos => ({
+      key: pos,
+      label: pos,
+      hands: stats.positionStats[pos]?.hands || 0,
+      accuracy: stats.positionStats[pos]?.accuracy || 0,
+    }))
+    .filter(p => p.hands > 0);
+
+  const TrendIcon = stats.recentTrend === 'improving' ? TrendingUp :
                     stats.recentTrend === 'declining' ? TrendingDown : Minus;
   const trendColor = stats.recentTrend === 'improving' ? 'text-feedback-best' :
                      stats.recentTrend === 'declining' ? 'text-feedback-blunder' : 'text-muted-foreground';
 
   const currentMonth = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
+  // Vazamento: pior posição ou cenário com amostra suficiente
+  const candidatosVazamento = [
+    ...positionRows.filter(p => p.hands >= MIN_MAOS_RELEVANTE).map(p => ({ tipo: 'posição', nome: p.label, acc: p.accuracy, hands: p.hands })),
+    ...stats.scenarioStats.filter(s => s.hands >= MIN_MAOS_RELEVANTE).map(s => ({ tipo: 'cenário', nome: s.label, acc: s.accuracy, hands: s.hands })),
+  ];
+  const vazamento = candidatosVazamento.length > 0
+    ? candidatosVazamento.reduce((pior, c) => (c.acc < pior.acc ? c : pior))
+    : null;
+
+  const tooltipStyle = {
+    backgroundColor: 'hsl(var(--card))',
+    border: '1px solid hsl(var(--border))',
+    borderRadius: '8px',
+    fontSize: '12px',
+  };
+
   return (
     <MainLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto overflow-x-hidden">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
@@ -171,121 +272,93 @@ export default function AnalysisPage() {
           </h1>
           <p className="text-body-sm text-muted-foreground mt-1">
             Desempenho de <span className="capitalize font-medium">{currentMonth}</span>
+            <span className="inline-flex items-center gap-1 ml-2 text-xs">
+              <Info className="h-3 w-3" />
+              reinicia todo mês
+            </span>
           </p>
-          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 w-fit">
-            <Info className="h-3.5 w-3.5 shrink-0" />
-            <span>O desempenho é resetado mensalmente</span>
-          </div>
         </div>
 
-        {/* Overview cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Números do mês */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/20">
-                  <Trophy className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">XP Total</p>
-                  <p className="text-2xl font-bold">{stats.totalScore}</p>
-                </div>
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Target className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wide">Precisão</p>
               </div>
+              <p className="text-3xl font-bold tabular-nums">{stats.averageAccuracy}%</p>
+              <p className="text-xs text-muted-foreground mt-1">{stats.totalHands} mãos no mês</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-secondary/20">
-                  <Target className="h-5 w-5 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Precisão</p>
-                  <p className="text-2xl font-bold">{stats.averageAccuracy}%</p>
-                </div>
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Trophy className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wide">XP no mês</p>
               </div>
+              <p className="text-3xl font-bold tabular-nums text-primary">{stats.totalScore}</p>
+              <p className="text-xs text-muted-foreground mt-1">{stats.sessions.length} sessões</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-feedback-best/20">
-                  <Zap className="h-5 w-5 text-feedback-best" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Melhor Streak</p>
-                  <p className="text-2xl font-bold">{stats.bestStreak}</p>
-                </div>
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Zap className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wide">Melhor sequência</p>
               </div>
+              <p className="text-3xl font-bold tabular-nums">{stats.bestStreak}</p>
+              <p className="text-xs text-muted-foreground mt-1">acertos seguidos</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className={cn('p-2 rounded-lg', 
-                  stats.recentTrend === 'improving' ? 'bg-feedback-best/20' :
-                  stats.recentTrend === 'declining' ? 'bg-feedback-blunder/20' : 'bg-muted'
-                )}>
-                  <TrendIcon className={cn('h-5 w-5', trendColor)} />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Tendência</p>
-                  <p className={cn('text-lg font-bold capitalize', trendColor)}>
-                    {stats.recentTrend === 'improving' ? 'Melhorando' :
-                     stats.recentTrend === 'declining' ? 'Declinando' : 'Estável'}
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <TrendIcon className={cn('h-4 w-4', trendColor)} />
+                <p className="text-xs uppercase tracking-wide">Tendência</p>
               </div>
+              <p className={cn('text-2xl font-bold', trendColor)}>
+                {stats.recentTrend === 'improving' ? 'Melhorando' :
+                 stats.recentTrend === 'declining' ? 'Caindo' : 'Estável'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">últimas 5 sessões</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Level progress */}
+        {/* Nível */}
         {authProfile && (
           <Card className="mb-6">
             <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <h2 className="text-heading-sm">{getLevelName(level)}</h2>
-                    <p className="text-sm text-muted-foreground">
-                      {stats.totalHands} mãos este mês
-                    </p>
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="min-w-0">
+                    <h2 className="text-heading-sm truncate">{getLevelName(level)}</h2>
+                    <p className="text-sm text-muted-foreground">Nível {level}</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/ranking')}
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => navigate('/ranking')} className="gap-2 shrink-0">
                     <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline">Ver Ranking</span>
+                    <span className="hidden sm:inline">Ver ranking</span>
                   </Button>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-primary">{totalXp}</p>
-                  <p className="text-sm text-muted-foreground">
-                    XP Total
-                  </p>
+                <div className="text-right shrink-0">
+                  <p className="text-2xl font-bold text-primary tabular-nums">{totalXp}</p>
+                  <p className="text-sm text-muted-foreground">XP total</p>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Nível {level}</span>
-                  <span>{levelProgress.progress}%</span>
-                </div>
-                <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
+                <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full progress-animated transition-all duration-700 ease-out"
+                    className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
                     style={{ width: `${levelProgress.progress}%` }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  {levelProgress.next === Infinity 
-                    ? 'Nível máximo atingido!' 
+                <p className="text-xs text-muted-foreground">
+                  {levelProgress.next === Infinity
+                    ? 'Nível máximo atingido'
                     : `${levelProgress.next - totalXp} XP para o próximo nível`}
                 </p>
               </div>
@@ -293,205 +366,186 @@ export default function AnalysisPage() {
           </Card>
         )}
 
-        {/* Charts grid */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          {/* Score evolution */}
+        {/* Evolução + decisões */}
+        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-heading-xs">Evolução do Score</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-heading-xs">Precisão por sessão</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {accuracyOverTime.length > 1
+                  ? 'Cada ponto é uma sessão; a linha tracejada é sua média do mês'
+                  : 'Aparece quando você tiver mais de uma sessão de 5+ mãos'}
+              </p>
             </CardHeader>
             <CardContent>
-              {stats.sessions.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={sessionChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: number) => [`${value} XP`, 'XP Adquirido']}
+              {accuracyOverTime.length > 1 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={accuracyOverTime} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} minTickGap={24} />
+                    <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} unit="%" />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      labelFormatter={(l) => `Sessão de ${l}`}
+                      formatter={(value: number, _n, item: any) => [`${value}% em ${item?.payload?.hands ?? 0} mãos`, 'Precisão']}
                     />
-                    <Bar dataKey="xp" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                    <ReferenceLine
+                      y={stats.averageAccuracy}
+                      stroke="hsl(var(--muted-foreground))"
+                      strokeDasharray="4 4"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="accuracy"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={accuracyOverTime.length <= 15 ? { r: 4, fill: 'hsl(var(--primary))' } : false}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  Jogue algumas sessões para ver estatísticas
-                </div>
+                <EmptyState texto="Ainda não há sessões suficientes para mostrar evolução." onTreinar={irTreinar} />
               )}
             </CardContent>
           </Card>
 
-          {/* Feedback distribution */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-heading-xs">Distribuição de Resultados</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-heading-xs">Como você decidiu</CardTitle>
+              <p className="text-xs text-muted-foreground">Distribuição das {stats.totalHands} mãos do mês</p>
             </CardHeader>
             <CardContent>
-              {feedbackChartData.length > 0 ? (
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <div className="w-full sm:w-1/2 h-[200px] sm:h-[250px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={feedbackChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={70}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {feedbackChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                    </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="w-full sm:flex-1 space-y-2">
-                    {feedbackChartData.map((item) => (
-                      <div key={item.name} className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-sm flex-1">{item.name}</span>
-                        <span className="text-sm font-medium">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
+              {stats.totalHands > 0 ? (
+                <div className="space-y-3 py-2">
+                  {feedbackRows.map(row => (
+                    <BarRow
+                      key={row.key}
+                      label={row.label}
+                      pct={(row.value / stats.totalHands) * 100}
+                      color={row.color}
+                      right={`${Math.round((row.value / stats.totalHands) * 100)}%`}
+                      hint={`${row.value} mãos`}
+                    />
+                  ))}
                 </div>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  Nenhuma mão jogada ainda
-                </div>
+                <EmptyState texto="Nenhuma mão jogada este mês." onTreinar={irTreinar} />
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Position suggestion */}
-        {(() => {
-          const positionsWithHands = POSITIONS.filter(p => (stats.positionStats[p]?.hands || 0) > 0);
-          if (positionsWithHands.length >= 2) {
-            const worstPos = positionsWithHands.reduce((worst, pos) => {
-              const acc = stats.positionStats[pos]?.accuracy ?? 100;
-              const worstAcc = stats.positionStats[worst]?.accuracy ?? 100;
-              return acc < worstAcc ? pos : worst;
-            }, positionsWithHands[0]);
-            const worstAcc = stats.positionStats[worstPos]?.accuracy ?? 0;
-            return (
-              <Card className="mb-6 border-primary/30 bg-primary/5">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-primary/20">
-                      <Target className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground">Sugestão de Treino</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Sua pior posição é <span className="font-bold text-primary">{worstPos}</span> com{' '}
-                        <span className="font-bold text-feedback-blunder">{worstAcc}%</span> de precisão.
-                        Recomendamos treinar mais nessa posição para melhorar seu jogo geral.
-                      </p>
-                      <Button
-                        size="sm"
-                        className="mt-3"
-                        onClick={() => navigate('/train')}
-                      >
-                        Treinar como {worstPos}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          }
-          return null;
-        })()}
+        {/* Vazamento */}
+        {vazamento && (
+          <Card className="mb-6 border-primary/30 bg-primary/5">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-primary/20 shrink-0">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground">Onde focar agora</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Seu ponto mais fraco é {vazamento.tipo}{' '}
+                    <span className="font-bold text-primary">{vazamento.nome}</span>: {' '}
+                    <span className="font-bold text-foreground">{vazamento.acc}%</span> de precisão em {vazamento.hands} mãos.
+                  </p>
+                  <Button size="sm" className="mt-3 gap-2" onClick={irTreinar}>
+                    <Play className="h-4 w-4" />
+                    Treinar isso
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Position performance */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-heading-xs">Performance por Posição</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={positionChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} domain={[0, 100]} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value: number, name: string) => [
-                    name === 'accuracy' ? `${value}%` : value,
-                    name === 'accuracy' ? 'Precisão' : 'Mãos'
-                  ]}
-                />
-                <Bar dataKey="accuracy" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Posição + cenário */}
+        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-heading-xs">Precisão por posição</CardTitle>
+              <p className="text-xs text-muted-foreground">Cinza: menos de {MIN_MAOS_RELEVANTE} mãos, amostra pequena demais</p>
+            </CardHeader>
+            <CardContent>
+              {positionRows.length > 0 ? (
+                <div className="space-y-3 py-2">
+                  {positionRows.map(p => (
+                    <BarRow
+                      key={p.key}
+                      label={p.label}
+                      pct={p.accuracy}
+                      right={`${p.accuracy}%`}
+                      hint={`${p.hands} mãos`}
+                      muted={p.hands < MIN_MAOS_RELEVANTE}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState texto="Jogue algumas mãos para ver seu desempenho por posição." onTreinar={irTreinar} />
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Recent sessions */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-heading-xs">Precisão por cenário</CardTitle>
+              <p className="text-xs text-muted-foreground">Cinza: menos de {MIN_MAOS_RELEVANTE} mãos, amostra pequena demais</p>
+            </CardHeader>
+            <CardContent>
+              {stats.scenarioStats.length > 0 ? (
+                <div className="space-y-3 py-2">
+                  {stats.scenarioStats.map(s => (
+                    <BarRow
+                      key={s.key}
+                      label={s.label}
+                      pct={s.accuracy}
+                      right={`${s.accuracy}%`}
+                      hint={`${s.hands} mãos`}
+                      muted={s.hands < MIN_MAOS_RELEVANTE}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState texto="Jogue algumas mãos para ver seu desempenho por cenário." onTreinar={irTreinar} />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sessões recentes */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-heading-xs">Sessões Recentes</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-heading-xs">Sessões recentes</CardTitle>
           </CardHeader>
           <CardContent>
             {stats.sessions.length > 0 ? (
-              <div className="space-y-3">
-                {stats.sessions.slice(0, 5).map((session) => (
-                  <div 
-                    key={session.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                  >
+              <div className="divide-y divide-border">
+                {stats.sessions.slice(0, 6).map((session) => (
+                  <div key={session.id} className="flex items-center justify-between py-3 first:pt-1">
                     <div>
-                      <p className="font-medium">
+                      <p className="font-medium text-sm">
                         {new Date(session.startedAt).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
+                          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
                         })}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {session.handsPlayed} mãos • {session.accuracy}% precisão
+                      <p className="text-xs text-muted-foreground">
+                        {session.handsPlayed} mãos · {session.accuracy}% de precisão
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className={cn(
-                        'text-lg font-bold',
-                        session.score >= 0 ? 'text-feedback-best' : 'text-feedback-blunder'
-                      )}>
-                        {session.score > 0 ? '+' : ''}{session.score}
-                      </p>
-                      <p className="text-xs text-muted-foreground">XP</p>
-                    </div>
+                    <p className={cn(
+                      'text-lg font-bold tabular-nums',
+                      session.score > 0 ? 'text-feedback-best' : session.score < 0 ? 'text-feedback-blunder' : 'text-muted-foreground'
+                    )}>
+                      {session.score > 0 ? '+' : ''}{session.score}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">XP</span>
+                    </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma sessão registrada este mês
-              </div>
+              <EmptyState texto="Nenhuma sessão registrada este mês." onTreinar={irTreinar} />
             )}
           </CardContent>
         </Card>
