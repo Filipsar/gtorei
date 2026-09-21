@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/seo/SEO';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -29,6 +29,50 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { RangePreview, VerdictPreview } from '@/components/home/HomePreviews';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+
+// Conferidos no banco em 21/09/2026: 152 contas, 126 jogadores com mãos registradas,
+// 39.552 mãos. Arredondados para baixo — só ficam mais verdadeiros com o tempo.
+// Reconferir antes de aumentar qualquer um deles.
+const NUMEROS = [
+  { valor: '39 mil+', label: 'mãos treinadas na plataforma' },
+  { valor: '120+', label: 'jogadores estudando aqui' },
+  { valor: '7', label: 'stacks de push/fold resolvidos' },
+  { valor: 'R$ 0', label: 'agora e sempre' },
+];
+
+const FAQ = [
+  {
+    q: 'O GTORei é gratuito de verdade?',
+    a: 'É. Não existe plano pago, paywall nem pedido de cartão. O projeto se mantém com doações de quem usa, e quem não doa nada continua com o treino inteiro liberado.',
+  },
+  {
+    q: 'As ranges são calculadas ou copiadas de alguma tabela?',
+    a: 'Os spots de stack curto, de 8bb a 20bb, são calculados aqui: uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta amortecida até o equilíbrio de push/fold. Os resultados batem com as tabelas de Nash publicadas. Os spots de stack profundo ainda usam ranges de referência e estão sendo reconstruídos do mesmo jeito.',
+  },
+  {
+    q: 'Serve para torneio ou para cash game?',
+    a: 'O foco é torneio. Você treina 8-max, 6-max, heads-up, bounty e mesa final, com stacks de 10bb a 200bb. Boa parte serve para cash, mas as ranges curtas foram feitas pensando em torneio.',
+  },
+  {
+    q: 'Preciso instalar alguma coisa?',
+    a: 'Não. Roda no navegador, inclusive no celular. Basta criar uma conta grátis para o progresso e a posição no ranking ficarem salvos.',
+  },
+  {
+    q: 'Posso usar o GTORei enquanto jogo uma mão de verdade?',
+    a: 'Não use. As salas proíbem assistência em tempo real, e a punição vai de banimento a confisco de saldo. O GTORei é ferramenta de estudo: você treina antes para decidir sozinho na mesa.',
+  },
+  {
+    q: 'Como funciona a análise por IA?',
+    a: 'Você envia o hand history exportado da sala — o parser entende seis salas, entre elas PokerStars, GGPoker e ACR. A análise devolve, mão a mão, a linha GTO, a sua ação e quanto de EV a diferença custou.',
+  },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -66,20 +110,34 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <SEO
-        title="GTORei — Treinador de Poker GTO em Português"
-        description="Treine decisões pré-flop e pós-flop, estude ranges GTO, analise mãos com IA e suba no ranking. Plataforma de poker GTO gratuita em português."
+        title="GTORei — Treinador de Poker GTO grátis em português"
+        description="Treine decisões de poker GTO de graça: ranges pré-flop por posição e stack, push/fold calculado por EV, análise de mãos por IA e ranking. Em português."
         path="/"
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          name: "GTORei",
-          applicationCategory: "EducationApplication",
-          operatingSystem: "Web",
-          inLanguage: "pt-BR",
-          offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" },
-          description:
-            "Treinador de poker GTO com simulações, ranges pré-flop, análise de mãos por IA e ranking competitivo.",
-        }}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: "GTORei",
+            url: "https://gtorei.com.br/",
+            applicationCategory: "EducationApplication",
+            operatingSystem: "Web",
+            inLanguage: "pt-BR",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" },
+            description:
+              "Treinador de poker GTO com ranges pré-flop calculadas por EV, análise de mãos por IA e ranking competitivo.",
+          },
+          // Mesmo conteúdo do bloco de perguntas na página: o Google exige que a
+          // resposta marcada esteja visível para quem abre o site.
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQ.map((item) => ({
+              "@type": "Question",
+              name: item.q,
+              acceptedAnswer: { "@type": "Answer", text: item.a },
+            })),
+          },
+        ]}
       />
       {/* Top Instagram banner */}
       <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden h-9 flex items-center bg-primary/10 text-primary border-b border-primary/25">
@@ -102,9 +160,12 @@ export default function HomePage() {
       <header className="fixed top-9 left-0 right-0 z-40 backdrop-blur-lg bg-background/70 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* 128px em vez do original de 540px: mesmo logo, 12 KB no lugar de 145 KB */}
             <img
-              src="/lovable-uploads/518567fe-7b99-45ff-92c1-2879711b6051.png"
+              src="/logo-128.png"
               alt="GTORei"
+              width={128}
+              height={128}
               className="h-9 w-9 object-contain"
             />
             {/* No celular fica só o ícone: o texto encostava no botão Entrar */}
@@ -118,6 +179,7 @@ export default function HomePage() {
             <a href="#modos" className="hover:text-foreground transition-colors">Modos</a>
             <a href="#como-funciona" className="hover:text-foreground transition-colors">Como funciona</a>
             <a href="#comunidade" className="hover:text-foreground transition-colors">Comunidade</a>
+            <a href="#perguntas" className="hover:text-foreground transition-colors">Perguntas</a>
           </nav>
           <div className="flex items-center gap-2">
             {!user && (
@@ -152,7 +214,7 @@ export default function HomePage() {
             Agora com Análise de Torneio por IA
           </div>
 
-          <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
+          <h1 className="text-4xl sm:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
             Treine como um <span className="text-primary">solver</span>.<br />
             Jogue como um <span className="text-primary">rei</span>.
           </h1>
@@ -184,9 +246,26 @@ export default function HomePage() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> 100% gratuito</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Sem cartão</span>
-            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ranges de solver real</span>
+            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ranges calculadas por EV</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Português & Inglês</span>
           </div>
+
+          {/* Em vez de descrever o produto, mostrar uma range que o solver calculou */}
+          <div className="mt-14 max-w-xl mx-auto">
+            <RangePreview />
+          </div>
+        </div>
+      </section>
+
+      {/* NÚMEROS — fundo igual ao do hero para não colar na seção de recursos */}
+      <section className="border-y border-border bg-background py-10 px-6">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 md:grid-cols-4">
+          {NUMEROS.map((n) => (
+            <div key={n.label} className="text-center">
+              <p className="text-3xl sm:text-4xl font-bold text-primary tabular-nums">{n.valor}</p>
+              <p className="mt-1 text-sm text-muted-foreground text-balance">{n.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -195,7 +274,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Recursos</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Tudo o que você precisa para evoluir</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">Tudo o que você precisa para evoluir</h2>
             <p className="text-muted-foreground text-lg">
               Cada funcionalidade pensada para transformar estudo em decisão automática na mesa.
             </p>
@@ -238,7 +317,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Modos de jogo</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Cobertura completa de torneios</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">Cobertura completa de torneios</h2>
             <p className="text-muted-foreground text-lg">
               De 6-Max a Heads-Up, com bounty e ICM de mesa final — todos os formatos importantes.
             </p>
@@ -267,7 +346,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Como funciona</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Do cadastro à evolução em 4 passos</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">Do cadastro à evolução em 4 passos</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -300,7 +379,7 @@ export default function HomePage() {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold mb-5">
                   <Brain className="h-3.5 w-3.5" /> Novo
                 </div>
-                <h2 className="text-4xl font-bold mb-4 leading-tight">
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight">
                   Análise de Torneio com <span className="text-primary">IA</span>
                 </h2>
                 <p className="text-muted-foreground text-lg mb-6">
@@ -318,10 +397,9 @@ export default function HomePage() {
                   {user ? 'Analisar agora' : 'Criar conta e analisar'} <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
+              {/* Um ícone gigante não dizia nada: melhor mostrar o formato do veredicto */}
               <div className="relative">
-                <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-transparent border border-primary/20 flex items-center justify-center">
-                  <Brain className="h-40 w-40 text-primary/60" strokeWidth={1.2} />
-                </div>
+                <VerdictPreview />
               </div>
             </div>
           </Card>
@@ -333,7 +411,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Comunidade</p>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-balance">Suba de Iniciante a GTO Rei</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Suba de Iniciante a GTO Rei</h2>
             <p className="text-muted-foreground text-lg">
               Ganhe XP a cada decisão certa, destrave conquistas e dispute o topo do ranking mensal.
             </p>
@@ -360,11 +438,50 @@ export default function HomePage() {
       </section>
 
 
+      {/* PERGUNTAS — o mesmo texto vai no FAQPage lá em cima; se mudar aqui, mudar lá */}
+      <section id="perguntas" className="py-24 px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Perguntas</p>
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Antes de criar sua conta</h2>
+            <p className="text-muted-foreground text-lg">
+              O que as pessoas mais perguntam antes de começar a treinar.
+            </p>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            {FAQ.map((item, i) => (
+              <AccordionItem key={item.q} value={`p-${i}`} className="border-border">
+                <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Ficou faltando alguma?{' '}
+            <a
+              href="https://www.instagram.com/gtorei/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Pergunte no Instagram
+            </a>
+            .
+          </p>
+        </div>
+      </section>
+
       {/* FINAL CTA */}
-      <section className="py-28 px-6 relative overflow-hidden">
+      <section className="py-28 px-6 relative overflow-hidden border-t border-border">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
         <div className="relative max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-6xl font-bold mb-6 leading-tight">
+          <h2 className="text-3xl sm:text-6xl font-bold mb-6 leading-tight">
             Pronto para jogar como um <span className="text-primary">rei</span>?
           </h2>
           <p className="text-lg text-muted-foreground mb-10">
@@ -453,23 +570,26 @@ export default function HomePage() {
       <footer className="border-t border-border py-10 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src="/lovable-uploads/518567fe-7b99-45ff-92c1-2879711b6051.png" alt="GTORei" className="h-7 w-7 object-contain" />
+            <img src="/logo-128.png" alt="GTORei" width={128} height={128} loading="lazy" className="h-7 w-7 object-contain" />
             <span className="text-sm">
               <span className="text-primary font-bold">GTO</span>
               <span className="font-bold">Rei</span>
               <span className="text-muted-foreground ml-2">© 2026 — Treine como um solver.</span>
             </span>
           </div>
-          <div className="flex items-center gap-5 text-sm text-muted-foreground">
-            <button onClick={() => navigate('/atualizacoes')} className="hover:text-foreground transition-colors">Atualizações</button>
-            <button onClick={() => navigate('/apoiar')} className="hover:text-foreground transition-colors">Apoiar</button>
-            <button onClick={() => navigate('/gtoreiacessibilidade')} className="hover:text-foreground transition-colors inline-flex items-center gap-1">
+          {/* Link em vez de button: eram os únicos caminhos para as páginas públicas e,
+              como onClick, nenhum robô conseguia seguir nem indexar o destino. */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <Link to="/iniciante" className="hover:text-foreground transition-colors">Guia do iniciante</Link>
+            <Link to="/atualizacoes" className="hover:text-foreground transition-colors">Atualizações</Link>
+            <Link to="/apoiar" className="hover:text-foreground transition-colors">Apoiar</Link>
+            <Link to="/gtoreiacessibilidade" className="hover:text-foreground transition-colors inline-flex items-center gap-1">
               <Accessibility className="h-4 w-4" /> Acessibilidade
-            </button>
+            </Link>
             <a href="https://www.instagram.com/gtorei/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors inline-flex items-center gap-1">
               <Instagram className="h-4 w-4" /> Instagram
             </a>
-          </div>
+          </nav>
         </div>
       </footer>
 

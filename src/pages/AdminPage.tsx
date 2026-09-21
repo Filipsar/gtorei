@@ -26,6 +26,18 @@ const ADMIN_EMAIL = 'farubini2@gmail.com';
 
 const levelNames = ['Iniciante', 'Amador', 'Intermediário', 'Avançado', 'Expert', 'Mestre', 'Lenda', 'GTO Rei'];
 
+// Início de célula que o Excel e o Sheets tratam como fórmula. O username é escolhido
+// pelo usuário: sem escapar, um nome como "=1+1" ou "@SUM(...)" executa na máquina de
+// quem abre o CSV exportado.
+const INICIO_DE_FORMULA = ['=', '+', '-', '@', String.fromCharCode(9), String.fromCharCode(13)];
+
+const csvCell = (valor: unknown): string => {
+  const texto = valor === null || valor === undefined ? '' : String(valor);
+  const ehNumero = texto !== '' && !Number.isNaN(Number(texto));
+  const perigoso = INICIO_DE_FORMULA.includes(texto.charAt(0)) && !ehNumero;
+  return '"' + (perigoso ? "'" : '') + texto.replace(/"/g, '""') + '"';
+};
+
 interface UserData {
   user_id: string;
   email: string;
@@ -126,13 +138,15 @@ export default function AdminPage() {
       u.last_active ? new Date(u.last_active).toLocaleDateString('pt-BR') : '-',
       new Date(u.created_at).toLocaleDateString('pt-BR'),
     ]);
-    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
+    // BOM para o Excel em pt-BR abrir "Mãos" e "Nível" sem quebrar os acentos
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'gtorei-users.csv';
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const openGmailToAllUsers = () => {

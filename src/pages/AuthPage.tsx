@@ -13,7 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
-import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 // Password: min 8 chars, 1 uppercase, 1 symbol
 const passwordSchema = z.string().

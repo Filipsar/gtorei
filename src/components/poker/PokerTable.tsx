@@ -5,7 +5,6 @@ import { PlayerSeat, getPositionColor } from './PlayerSeat';
 import { ChipStack, PlayerBet } from './ChipStack';
 import { CommunityCards } from './CommunityCards';
 import { CardType, HandDisplay } from './PlayingCard';
-import gtoreiLogo from '@/assets/gtorei-logo.png';
 import gtoreiCrown from '@/assets/gtorei-crown.png';
 
 // Tipos de ação para o histórico

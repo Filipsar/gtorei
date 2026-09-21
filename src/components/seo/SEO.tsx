@@ -1,8 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
 const SITE = "https://gtorei.com.br";
-const DEFAULT_IMAGE =
-  "https://storage.googleapis.com/gpt-engineer-file-uploads/pBSluvZK1PXRsQ6DbXOXmxpNYcv2/social-images/social-1772648004313-GTOREI.webp";
+const DEFAULT_IMAGE = `${SITE}/og-gtorei.png`;
 
 interface SEOProps {
   title: string;

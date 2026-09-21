@@ -5,7 +5,6 @@ import { SEO } from '@/components/seo/SEO';
 import { ArrowLeft, Heart, ExternalLink, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import qrCodeImage from '@/assets/qr-code-donate.png';
-import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 const DONATION_LINK = 'https://cobranca.c6pix.com.br/01KGMHQ3SVAQM3S0EQ6MNZP8YE';
 

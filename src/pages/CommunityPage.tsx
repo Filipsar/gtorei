@@ -55,6 +55,10 @@ const REACTION_TYPES = [
   { type: 'gg', icon: Trophy, label: 'GG', color: 'text-yellow-400' },
 ];
 
+// Espelham os CHECK do banco: community_posts 2000 e post_comments 1000 caracteres.
+const MAX_POST = 2000;
+const MAX_COMENTARIO = 1000;
+
 export default function CommunityPage() {
   const { user, profile } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -267,10 +271,17 @@ export default function CommunityPage() {
                 placeholder="Compartilhe uma mão, análise ou discussão..."
                 value={newPostContent}
                 onChange={e => setNewPostContent(e.target.value)}
+                maxLength={MAX_POST}
                 className="min-h-[80px] resize-none bg-muted/30 border-muted"
               />
             </div>
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-3">
+              {/* O banco corta em 2000; sem o contador o post só falhava com "Erro ao publicar" */}
+              {newPostContent.length > MAX_POST - 200 && (
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {newPostContent.length}/{MAX_POST}
+                </span>
+              )}
               <Button
                 onClick={handleCreatePost}
                 disabled={!newPostContent.trim() || posting}
@@ -439,6 +450,7 @@ export default function CommunityPage() {
                         <input
                           type="text"
                           placeholder="Escreva um comentário..."
+                          maxLength={MAX_COMENTARIO}
                           className="flex-1 bg-muted/40 rounded-full px-3 py-1.5 text-xs border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                           value={commentTexts[post.id] || ''}
                           onChange={e => setCommentTexts(prev => ({ ...prev, [post.id]: e.target.value }))}
