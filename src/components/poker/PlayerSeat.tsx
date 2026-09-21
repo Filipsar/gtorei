@@ -15,6 +15,8 @@ interface PlayerSeatProps {
     amount?: number;
   };
   showCards?: boolean;
+  /** Metade da mesa em que o assento está: decide se o balão de ação sai por cima ou por baixo */
+  half?: 'top' | 'bottom';
   className?: string;
 }
 
@@ -76,71 +78,89 @@ export function PlayerSeat({
   stack,
   lastAction,
   showCards = false,
+  half = 'bottom',
   className
 }: PlayerSeatProps) {
   const positionColorClass = getPositionColorClass(position);
 
   return (
-    <div className={cn(
-      'flex flex-col items-center gap-1 transition-all duration-300',
-      isHero && 'scale-110',
-      hasFolded && 'opacity-40',
-      className
-    )}>
-      {/* Avatar do jogador */}
+    <div
+      className={cn(
+        'relative flex flex-col items-center transition-all duration-300',
+        hasFolded && 'opacity-35 saturate-0',
+        className
+      )}
+      title={getPositionFullName(position)}
+    >
+      {/* Avatar e stack num bloco só. Soltos, os dois brigavam por espaço e o
+          nome por extenso ("Under The...") ainda cortava no meio. */}
       <div
         className={cn(
-          'relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center font-bold text-xs sm:text-sm shadow-lg transition-all',
-          positionColorClass,
-          isHero ? 'border-primary' : isVillain ? 'border-destructive ring-2 ring-destructive/50' : 'border-transparent',
-          isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-        )}>
-        <span className="text-white drop-shadow-md">{position}</span>
-        
-        {/* Indicador de herói */}
-        {isHero && (
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-[8px] text-primary-foreground font-bold">H</span>
-          </div>
+          'flex flex-col items-center rounded-xl border bg-black/55 px-1.5 pb-1 pt-1.5 shadow-lg backdrop-blur-sm',
+          isHero
+            ? 'border-primary/70 shadow-[0_0_18px_-4px_hsl(var(--primary)/0.7)]'
+            : isVillain
+              ? 'border-destructive/70'
+              : 'border-white/10'
         )}
+      >
+        <div
+          className={cn(
+            'relative flex h-8 w-8 items-center justify-center rounded-full border-2 text-[10px] font-bold shadow-md sm:h-10 sm:w-10 sm:text-xs',
+            positionColorClass,
+            isHero ? 'border-primary' : isVillain ? 'border-destructive' : 'border-white/20',
+            isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-black/60'
+          )}
+        >
+          <span className="text-white drop-shadow-md">{position}</span>
 
-        {/* Indicador de vilão */}
-        {isVillain && !hasFolded && (
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
-            <span className="text-[8px] text-destructive-foreground font-bold">V</span>
-          </div>
+          {isHero && (
+            <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
+              H
+            </span>
+          )}
+          {isVillain && !hasFolded && (
+            <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground">
+              V
+            </span>
+          )}
+        </div>
+
+        {stack !== undefined && stack > 0 && (
+          <span className="mt-0.5 text-[9px] font-semibold leading-none tabular-nums text-white/80 sm:text-[10px]">
+            {stack} <span className="text-white/45">BB</span>
+          </span>
         )}
       </div>
 
-      {/* Nome da posição (apenas em telas maiores) */}
-      <span className="hidden sm:block text-[10px] text-muted-foreground text-center max-w-[60px] truncate">
-        {getPositionFullName(position)}
-      </span>
-
-      {/* Stack do jogador */}
-      {stack !== undefined && stack > 0 && (
-        <div className="text-xs text-muted-foreground bg-background/80 px-2 py-0.5 rounded shadow-sm">
-          {stack} BB
-        </div>
-      )}
-
-      {/* Cartas do jogador - compactas para não atrapalhar a mesa */}
+      {/* Cartas do vilão, viradas para baixo até o showdown */}
       {cards && cards.length > 0 && !isHero && (
-        <div className="mt-0.5">
+        <div className="mt-1">
           <HandDisplay cards={cards} size="xs" faceDown={!showCards} />
         </div>
       )}
 
-      {/* Indicador de ação do villain */}
+      {/* Balão de ação fora do fluxo, para não mudar a altura do assento. Sai
+          sempre em direção à borda da mesa, nunca por cima das fichas do meio. */}
       {lastAction && !hasFolded && (
-        <div className="text-[10px] sm:text-xs font-semibold bg-accent/90 text-accent-foreground px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-          {lastAction.action}{lastAction.amount ? ` ${lastAction.amount}BB` : ''}
+        <div
+          className={cn(
+            'absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-accent px-1.5 py-0.5 text-[9px] font-bold text-accent-foreground shadow-md sm:text-[10px]',
+            half === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+          )}
+        >
+          {lastAction.action}
+          {lastAction.amount ? ` ${lastAction.amount}BB` : ''}
         </div>
       )}
 
-      {/* Indicador de fold */}
       {hasFolded && (
-        <div className="text-[10px] text-muted-foreground italic">
+        <div
+          className={cn(
+            'absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/60',
+            half === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+          )}
+        >
           Fold
         </div>
       )}

@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Position, POSITIONS } from '@/data/gtoRanges';
 import { PlayerSeat, getPositionColor } from './PlayerSeat';
-import { ChipStack, PlayerBet } from './ChipStack';
+import { PlayerBet } from './ChipStack';
 import { CommunityCards } from './CommunityCards';
-import { CardType, HandDisplay } from './PlayingCard';
+import { CardType } from './PlayingCard';
 import gtoreiCrown from '@/assets/gtorei-crown.png';
 
 // Tipos de ação para o histórico
@@ -39,83 +39,44 @@ interface PokerTableProps {
   className?: string;
 }
 
-// Layout fixo de posições (8-max) - coordenadas em % do container
-const positionLayout: Record<Position, {
-  left: string;
-  top: string;
-}> = {
-  BB: {
-    left: '65%',
-    top: '12%'
-  },
-  SB: {
-    left: '35%',
-    top: '12%'
-  },
-  BTN: {
-    left: '10%',
-    top: '40%'
-  },
-  CO: {
-    left: '15%',
-    top: '75%'
-  },
-  HJ: {
-    left: '40%',
-    top: '88%'
-  },
-  LJ: {
-    left: '60%',
-    top: '88%'
-  },
-  UTG1: {
-    left: '85%',
-    top: '75%'
-  },
-  UTG: {
-    left: '90%',
-    top: '40%'
-  }
-};
+const TAU = Math.PI * 2;
+// Raios em % do container. O feltro é a elipse inscrita, então esses valores
+// deixam o assento encostado na borda, meio dentro meio fora.
+const RAIO_ASSENTO = 45;
+const RAIO_APOSTA = 31;
+const RAIO_BOTAO = 37;
+// Desloca o botao do dealer de lado: em cima do mesmo raio ele cobria a aposta
+const DESVIO_BOTAO = 0.2;
 
-// Posições das apostas (fichas) próximas a cada jogador
-const betPositions: Record<Position, {
-  left: string;
-  top: string;
-}> = {
-  BB: {
-    left: '60%',
-    top: '25%'
-  },
-  SB: {
-    left: '40%',
-    top: '25%'
-  },
-  BTN: {
-    left: '20%',
-    top: '45%'
-  },
-  CO: {
-    left: '25%',
-    top: '65%'
-  },
-  HJ: {
-    left: '42%',
-    top: '72%'
-  },
-  LJ: {
-    left: '58%',
-    top: '72%'
-  },
-  UTG1: {
-    left: '75%',
-    top: '65%'
-  },
-  UTG: {
-    left: '80%',
-    top: '45%'
-  }
-};
+/**
+ * Distribui os assentos na elipse com o herói sempre na base.
+ *
+ * Antes as coordenadas eram fixas para 8-max, o que dava dois problemas: no
+ * heads-up e no 3-handed os jogadores ficavam nos lugares do 8-max, e o herói
+ * mudava de lugar a cada mão conforme a posição sorteada. Ter o próprio assento
+ * sempre no mesmo ponto é o que torna a mesa jogável — é assim em qualquer sala.
+ */
+function anguloDosAssentos(visiveis: Position[], heroi: Position): Map<Position, number> {
+  const ordem = POSITIONS.filter((p) => visiveis.includes(p));
+  const i = ordem.indexOf(heroi);
+  const girada = i >= 0 ? [...ordem.slice(i), ...ordem.slice(0, i)] : ordem;
+
+  const mapa = new Map<Position, number>();
+  girada.forEach((pos, k) => {
+    // 90° é a base da elipse (y cresce para baixo) e o ângulo cresce no sentido
+    // horário — o mesmo sentido em que a ação anda na mesa.
+    mapa.set(pos, Math.PI / 2 + (k / girada.length) * TAU);
+  });
+  return mapa;
+}
+
+function pontoNaElipse(angulo: number, raio: number) {
+  return {
+    left: `${50 + Math.cos(angulo) * raio}%`,
+    top: `${50 + Math.sin(angulo) * raio}%`
+  };
+}
+
 export function PokerTable({
   heroPosition,
   heroCards,
@@ -136,66 +97,94 @@ export function PokerTable({
 }: PokerTableProps) {
   const navigate = useNavigate();
 
+  const visiveis = visiblePositions?.length ? visiblePositions : POSITIONS;
+  const angulos = anguloDosAssentos(visiveis, heroPosition);
+  const mesaCheia = visiveis.length >= 7;
+
+  // Em heads-up quem tem o botão é o SB
+  const posicaoDoBotao = visiveis.includes('BTN') ? 'BTN' : visiveis.includes('SB') ? 'SB' : undefined;
+  const anguloDoBotao = posicaoDoBotao ? angulos.get(posicaoDoBotao) : undefined;
+
+  const mostrarComunitarias = street !== 'preflop' && communityCards.length > 0;
+
   return (
     <div className={cn('flex flex-col items-center gap-2 sm:gap-4', className)}>
-      {/* Container da mesa */}
-      <div className="relative w-full max-w-2xl mx-auto aspect-[2/1] scale-[0.78] -my-[11%] sm:scale-100 sm:my-0 origin-center">
-        {/* Mesa oval com feltro verde */}
-        <div className="absolute inset-4 rounded-[50%] table-felt border-8 border-[hsl(var(--table-border))] shadow-2xl overflow-hidden">
-          {/* Borda interna decorativa */}
-          <div className="absolute inset-3 rounded-[50%] border-2 border-foreground/10" />
-          
-          {/* Padrão sutil do feltro */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,hsl(var(--background)/0.3)_80%)]" />
+      <div className="relative mx-auto aspect-[2/1] w-full max-w-2xl px-6 sm:px-8">
+        {/* Feltro */}
+        <div className="absolute inset-x-6 inset-y-3 overflow-hidden rounded-[50%] border-[6px] border-[hsl(var(--table-border))] table-felt shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)] sm:inset-x-8 sm:inset-y-4">
+          {/* Fio dourado interno, no lugar da borda marrom que destoava do resto do site */}
+          <div className="pointer-events-none absolute inset-2 rounded-[50%] border border-primary/20" />
+          <div className="pointer-events-none absolute inset-0 rounded-[50%] shadow-[inset_0_0_60px_rgba(0,0,0,0.55)]" />
 
-          {/* Logo GTORei no centro - clickable */}
-          <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] flex items-center gap-2 cursor-pointer hover:opacity-30 transition-opacity"
+          {/* Marca d'água no centro */}
+          <button
+            type="button"
             onClick={() => navigate('/')}
             title="Voltar ao início"
+            className="absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 opacity-[0.13] transition-opacity hover:opacity-[0.22]"
           >
-            <img src={gtoreiCrown} alt="GTORei" className="w-10 h-10 sm:w-14 sm:h-14 opacity-20 object-contain" />
-            <span className="text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase opacity-20">
-              <span className="text-primary">GTO</span><span className="text-white">REI</span>
+            <img src={gtoreiCrown} alt="" className="h-8 w-8 object-contain sm:h-12 sm:w-12" />
+            <span className="text-lg font-bold uppercase tracking-[0.2em] sm:text-2xl">
+              <span className="text-primary">GTO</span>
+              <span className="text-white">REI</span>
             </span>
-          </div>
+          </button>
+        </div>
 
-          {/* Community Cards */}
-          {street !== 'preflop' && communityCards.length > 0 && (
-            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5]">
-              <CommunityCards cards={communityCards} street={street} />
-            </div>
-          )}
-
-          {/* Pot no centro - estilo GGPoker */}
+        {/* Cartas comunitárias e pote, empilhados no centro */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[5] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5">
+          {mostrarComunitarias && <CommunityCards cards={communityCards} street={street} />}
           {pot > 0 && (
-            <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-[4]">
-              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-border/30 shadow-lg">
-                <div className="flex -space-x-1">
-                  <div className="w-3 h-3 rounded-full bg-red-500 border border-red-700" />
-                  <div className="w-3 h-3 rounded-full bg-green-500 border border-green-700" />
-                  <div className="w-3 h-3 rounded-full bg-blue-400 border border-blue-600" />
-                </div>
-                <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
-                  {pot.toFixed(pot % 1 !== 0 ? 1 : 0)} BB
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-black/70 px-3 py-1 shadow-lg backdrop-blur-sm">
+              <span className="flex -space-x-1">
+                <span className="h-2.5 w-2.5 rounded-full border border-red-700 bg-red-500" />
+                <span className="h-2.5 w-2.5 rounded-full border border-green-700 bg-green-500" />
+                <span className="h-2.5 w-2.5 rounded-full border border-blue-600 bg-blue-400" />
+              </span>
+              <span className="whitespace-nowrap text-xs font-bold text-primary tabular-nums sm:text-sm">
+                {pot.toFixed(pot % 1 !== 0 ? 1 : 0)} BB
+              </span>
             </div>
           )}
         </div>
 
-        {/* Posições dos jogadores */}
-        {(() => {
-          const visible = visiblePositions || POSITIONS;
-          const isCrowded = visible.length >= 7;
-          return visible.map(pos => {
+        {/* Botão do dealer */}
+        {anguloDoBotao !== undefined && (
+          <div
+            className="absolute z-[6] -translate-x-1/2 -translate-y-1/2"
+            style={pontoNaElipse(anguloDoBotao + DESVIO_BOTAO, RAIO_BOTAO)}
+          >
+            <span
+              className="flex h-5 w-5 items-center justify-center rounded-full border border-black/30 bg-white text-[10px] font-black text-black shadow-md"
+              title="Botão do dealer"
+            >
+              D
+            </span>
+          </div>
+        )}
+
+        {/* Apostas: mesmo ângulo do assento, puxadas para o centro */}
+        {activeBets
+          .filter((bet) => visiveis.includes(bet.position) && angulos.has(bet.position))
+          .map((bet) => (
+            <div
+              key={`bet-${bet.position}`}
+              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+              style={pontoNaElipse(angulos.get(bet.position)!, RAIO_APOSTA)}
+            >
+              <PlayerBet amount={bet.amount} />
+            </div>
+          ))}
+
+        {/* Assentos */}
+        {visiveis.map((pos) => {
+          const angulo = angulos.get(pos);
+          if (angulo === undefined) return null;
+
           const isHero = pos === heroPosition;
           const isVillain = pos === villainPosition;
           const hasFolded = foldedPositions.includes(pos);
-          const layout = positionLayout[pos];
-          const activeBet = activeBets.find(b => b.position === pos);
 
-          // Determinar cartas a mostrar abaixo do seat
           let cardsToShow: CardType[] | undefined;
           let shouldShowCards = false;
           if (isHero && heroCards && heroCards.length > 0) {
@@ -203,10 +192,9 @@ export function PokerTable({
             shouldShowCards = true;
           } else if (isVillain && villainCards && villainCards.length > 0) {
             cardsToShow = villainCards;
-            shouldShowCards = street === 'showdown'; // face down unless showdown
+            shouldShowCards = street === 'showdown';
           }
 
-          // Determinar stack a mostrar
           let stackToShow: number | undefined;
           if (isHero) {
             stackToShow = heroStack;
@@ -217,56 +205,33 @@ export function PokerTable({
           }
 
           return (
-            <div 
-              key={pos} 
+            <div
+              key={pos}
               className={cn(
-                'absolute transform -translate-x-1/2 -translate-y-1/2',
-                isCrowded && 'scale-[0.78] sm:scale-100'
+                'absolute z-[15] -translate-x-1/2 -translate-y-1/2',
+                mesaCheia && 'scale-[0.82] sm:scale-100'
               )}
-              style={{
-                left: layout.left,
-                top: layout.top
-              }}
+              style={pontoNaElipse(angulo, RAIO_ASSENTO)}
             >
-              {/* Bounty badge - compact, inside seat */}
               {bounties && bounties[pos] !== undefined && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-                  <div className="bg-rank-first/80 text-primary-foreground text-[8px] sm:text-[9px] font-bold px-1 py-px rounded-sm shadow whitespace-nowrap leading-none">
+                <div className="absolute -top-3 left-1/2 z-20 -translate-x-1/2">
+                  <span className="rounded-sm bg-rank-first/90 px-1 py-px text-[8px] font-bold leading-none text-primary-foreground shadow sm:text-[9px]">
                     ${bounties[pos]}
-                  </div>
+                  </span>
                 </div>
               )}
-              <PlayerSeat 
-                position={pos} 
-                isHero={isHero} 
+              <PlayerSeat
+                position={pos}
+                isHero={isHero}
                 isVillain={isVillain}
-                isActive={isHero && street === 'preflop'} 
-                hasFolded={hasFolded} 
-                cards={cardsToShow} 
-                stack={stackToShow} 
-                showCards={shouldShowCards} 
-                lastAction={isVillain && villainAction ? villainAction : undefined} 
+                isActive={isHero && street === 'preflop'}
+                hasFolded={hasFolded}
+                cards={cardsToShow}
+                stack={stackToShow}
+                showCards={shouldShowCards}
+                half={Math.sin(angulo) < 0 ? 'top' : 'bottom'}
+                lastAction={isVillain && villainAction ? villainAction : undefined}
               />
-            </div>
-          );
-        });
-        })()}
-
-
-        {/* Fichas de apostas ativas */}
-        {activeBets.filter(bet => !visiblePositions || visiblePositions.includes(bet.position)).map(bet => {
-          const betPos = betPositions[bet.position];
-          if (!betPos) return null;
-          return (
-            <div 
-              key={`bet-${bet.position}`} 
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" 
-              style={{
-                left: betPos.left,
-                top: betPos.top
-              }}
-            >
-              <PlayerBet amount={bet.amount} />
             </div>
           );
         })}
