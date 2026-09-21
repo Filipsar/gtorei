@@ -3,12 +3,12 @@ import { useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Grid3x3, Heart, Instagram, ChevronLeft, ChevronRight, X, Trophy } from 'lucide-react';
+import { Brain, Heart, Instagram, ChevronLeft, ChevronRight, X, Trophy, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.11.0';
+const CURRENT_VERSION = '1.12.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
 const TOP1_POST_URL = 'https://www.instagram.com/p/DaQnLztGk6_/';
 const DONATE_URL = '/apoiar';
@@ -53,6 +53,15 @@ export function UpdatesPopup() {
 
   const slides: Slide[] = [
     {
+      icon: <Sparkles className="h-10 w-10" />,
+      iconBg: 'bg-primary/20 text-primary',
+      title: 'O GTORei está ficando ainda melhor',
+      titleClass: 'text-primary',
+      description:
+        'Estamos reconstruindo a base de ranges do zero: cálculo de equity próprio e push/fold calculado para stacks curtos, que é onde o torneio se decide. As melhorias começam a chegar nos próximos dias, modo por modo.',
+      badge: { label: 'EM ANDAMENTO', className: 'bg-primary text-primary-foreground' },
+    },
+    {
       icon: <Trophy className="h-10 w-10" />,
       iconBg: 'bg-primary/20 text-primary',
       title: 'Top 1 do Mês no Instagram',
@@ -77,14 +86,6 @@ export function UpdatesPopup() {
       description:
         'Importe seu histórico PokerStars (e outras plataformas) e receba análise completa mão por mão com ICM, bubble factor e recomendações GTO.',
       badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
-    },
-    {
-      icon: <Grid3x3 className="h-10 w-10" />,
-      iconBg: 'bg-secondary/20 text-secondary',
-      title: 'Base GTO Atualizada',
-      description:
-        'Ranges mais precisas para todos os modos — 8-Max, Heads-Up, Three-Hand e Bounty — com interpolação automática por stack size.',
-      badge: { label: 'MELHORIA', className: 'bg-secondary text-background' },
     },
     {
       icon: <Heart className="h-10 w-10" />,
