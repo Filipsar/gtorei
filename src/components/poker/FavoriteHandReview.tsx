@@ -19,12 +19,16 @@ export function FavoriteHandReview({ open, onClose, hand }: FavoriteHandReviewPr
 
   if (!hand) return null;
 
+  // Mesmo contexto em que a mão foi jogada, e não o padrão 8-max sem bounty
   const handData = getHandData(
     hand.hand,
     hand.scenario,
     hand.position,
     hand.stack,
-    hand.finalTable
+    hand.finalTable,
+    hand.gameMode,
+    hand.bountyMultiplier,
+    hand.villainPosition
   );
 
   const getActionBadgeColor = (action: string) => {
@@ -145,6 +149,9 @@ export function FavoriteHandReview({ open, onClose, hand }: FavoriteHandReviewPr
         position={hand.position}
         stack={hand.stack}
         finalTable={hand.finalTable}
+        gameMode={hand.gameMode}
+        bountyMultiplier={hand.bountyMultiplier}
+        villainPosition={hand.villainPosition}
         heroHand={hand.hand}
         heroAction={hand.correctAction}
       />

@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.15.2',
+    date: '22/09/2026',
+    type: 'fix',
+    title: 'Gráfico de Range Discordava da Nota da Mão',
+    description: 'A tela dizia "Jogada GTO: Fold", você abria o gráfico de range na mesma mão e via Call — e ficava com a impressão de ter perdido pontos por uma jogada certa. A nota estava certa; quem mentia era o gráfico. Ele refazia a conta do zero e esquecia quatro coisas que a nota levava em conta: o modo de jogo (mostrava sempre 8-max, mesmo no heads-up), o bounty, o stack efetivo (usava o seu, não o menor entre você e o adversário) e, ao pagar um all-in, a posição de quem tinha dado o all-in — pagar o UTG é muito diferente de pagar o botão, e ele fazia a média de todos. Medindo: 3,5% das mãos mudavam de ação por causa da posição do all-in, 10,2% por causa do stack, 6,2% no bounty e 15,7% no heads-up. Agora o gráfico recebe a mesma range que deu a nota, sem refazer conta nenhuma, e os dois não têm mais como divergir. A revisão de mãos favoritas também passou a guardar o modo, o bounty e o adversário da mão, em vez de redesenhar tudo como se fosse 8-max.',
+  },
+  {
     version: '1.15.1',
     date: '22/09/2026',
     type: 'fix',

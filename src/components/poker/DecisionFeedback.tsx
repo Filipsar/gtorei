@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ActionType, FeedbackType, HandData, Scenario, Position, GameMode } from '@/data/gtoRanges';
+import { ActionType, FeedbackType, HandData, RangeData, Scenario, Position, GameMode } from '@/data/gtoRanges';
 import { RangeViewerModal } from './RangeViewerModal';
 import { CheckCircle2, XCircle, AlertTriangle, Skull, Trophy, BarChart3, Copy, Check } from 'lucide-react';
 
@@ -28,6 +28,9 @@ interface DecisionFeedbackProps {
   finalTable?: boolean;
   gameMode?: GameMode;
   bountyMultiplier?: number;
+  villainPosition?: Position;
+  // A range que deu esta nota, repassada ao gráfico para os dois não divergirem
+  range?: RangeData;
   // Flag para mão já jogada
   alreadyPlayed?: boolean;
   previousResult?: {
@@ -104,6 +107,8 @@ export function DecisionFeedback({
   finalTable = false,
   gameMode = '8max',
   bountyMultiplier = 0,
+  villainPosition,
+  range,
   alreadyPlayed = false,
   previousResult,
   isReviewMode = false,
@@ -309,6 +314,8 @@ export function DecisionFeedback({
           finalTable={finalTable}
           gameMode={gameMode}
           bountyMultiplier={bountyMultiplier}
+          villainPosition={villainPosition}
+          range={range}
           heroHand={handData.hand}
           heroAction={userAction}
         />

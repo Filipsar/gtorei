@@ -1,7 +1,7 @@
 // GTORei - Sistema de Armazenamento Local
 // Gerencia persistência de dados do usuário
 
-import { ActionType, FeedbackType, Position, Scenario } from './gtoRanges';
+import { ActionType, FeedbackType, GameMode, Position, Scenario } from './gtoRanges';
 
 // Tipos de dados persistentes
 export interface UserProfile {
@@ -69,6 +69,12 @@ export interface FavoriteHand {
   finalTable: boolean;
   correctAction: ActionType;
   createdAt: string;
+  // Contexto do spot. Sem ele a revisão redesenhava a range como se fosse
+  // sempre 8-max, sem bounty e sem saber quem tinha dado o all-in. Opcionais
+  // porque os favoritos salvos antes disso não têm esses campos.
+  gameMode?: GameMode;
+  bountyMultiplier?: number;
+  villainPosition?: Position;
 }
 
 // Keys do localStorage

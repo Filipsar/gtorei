@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RANKS, Scenario, Position, ActionType, HandData, getRange, GameMode } from '@/data/gtoRanges';
+import { RANKS, Scenario, Position, ActionType, HandData, RangeData, getRange, GameMode } from '@/data/gtoRanges';
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +23,16 @@ interface RangeViewerModalProps {
   bountyMultiplier?: number;
   heroHand: string;
   heroAction: ActionType;
+  villainPosition?: Position;
+  /**
+   * A range exata que deu a nota da mão.
+   *
+   * Sem ela, este gráfico recalculava tudo de novo a partir dos parâmetros
+   * soltos — e bastava faltar um deles para a tela dizer Fold e o gráfico
+   * mostrar Call na mesma mão. Faltavam quatro: o modo de jogo, o bounty, o
+   * stack efetivo e a posição de quem deu o all-in.
+   */
+  range?: RangeData;
 }
 
 // Cores para cada ação
@@ -60,8 +70,14 @@ export function RangeViewerModal({
   bountyMultiplier = 0,
   heroHand,
   heroAction,
+  villainPosition,
+  range: rangeRecebida,
 }: RangeViewerModalProps) {
-  const range = getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier);
+  // Quem chama de dentro do treino manda a range pronta. O cálculo aqui embaixo
+  // é só para quem não tem como mandar, e agora leva os mesmos parâmetros.
+  const range =
+    rangeRecebida ??
+    getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier, 3, villainPosition);
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
 
   // Encontrar dados da mão do herói

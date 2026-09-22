@@ -17,7 +17,7 @@ import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '
 import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
-import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
+import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, RangeData, getRange, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
 import { getStackDistribution, StackDistribution } from '@/data/stackDistribution';
 import { initializeHandState, getVillainPosition, getScenarioDescription, processHeroAction, processPostflopAction, HandState, Street } from '@/data/handState';
 import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
@@ -94,6 +94,8 @@ export default function TrainPage() {
     userAction: ActionType;
     handData: ReturnType<typeof getHandData>;
     feedback: ReturnType<typeof calculateFeedback>;
+    // Guardada para o gráfico mostrar exatamente a range que deu a nota
+    range: RangeData;
   } | null>(null);
   const [isCurrentHandFavorited, setIsCurrentHandFavorited] = useState(false);
   const [correctHandsCount, setCorrectHandsCount] = useState(0);
@@ -423,7 +425,12 @@ export default function TrainPage() {
     const gm = getGameMode();
     const bm = getBountyMultiplier();
     const effectiveStack = currentStackDistribution?.effectiveStack || handState.heroStack;
-    const handData = getHandData(handName, scenario, handState.heroPosition, effectiveStack, finalTable, gm, bm, handState.villainPosition);
+    // Uma range só, usada para dar a nota e para desenhar o gráfico. Antes cada
+    // lado calculava a sua, e o gráfico esquecia o modo de jogo, o bounty, o
+    // stack efetivo e quem tinha dado o all-in — daí a tela dizer Fold e o
+    // gráfico mostrar Call na mesma mão.
+    const gradedRange = getRange(scenario, handState.heroPosition, effectiveStack, finalTable, gm, bm, 3, handState.villainPosition);
+    const handData = gradedRange.hands.find(h => h.hand === handName);
     if (!handData) return;
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
@@ -500,7 +507,8 @@ export default function TrainPage() {
     setLastFeedback({
       userAction: action,
       handData,
-      feedback
+      feedback,
+      range: gradedRange
     });
 
     // In simulation mode, skip popup for non-fold actions — continue directly to postflop
@@ -799,13 +807,21 @@ export default function TrainPage() {
         });
       }
     } else {
-      const handData = getHandData(handName, scenario, handState.heroPosition, handState.heroStack, finalTable, getGameMode());
+      // Mesmos parâmetros da nota. Sem eles o favorito guardava outra jogada
+      // certa e, na revisão, mostrava um gráfico de outro spot.
+      const gm = getGameMode();
+      const bm = getBountyMultiplier();
+      const effectiveStack = currentStackDistribution?.effectiveStack || handState.heroStack;
+      const handData = getHandData(handName, scenario, handState.heroPosition, effectiveStack, finalTable, gm, bm, handState.villainPosition);
       addFavoriteHand({
         hand: handName,
         scenario,
         position: handState.heroPosition,
-        stack: handState.heroStack,
+        stack: effectiveStack,
         finalTable,
+        gameMode: gm,
+        bountyMultiplier: bm,
+        villainPosition: handState.villainPosition,
         correctAction: handData?.primaryAction || 'fold',
       });
       setIsCurrentHandFavorited(true);
@@ -814,7 +830,7 @@ export default function TrainPage() {
         description: `${handName} em ${handState.heroPosition} foi salvo.`,
       });
     }
-  }, [handState, scenario, finalTable, isCurrentHandFavorited]);
+  }, [handState, scenario, finalTable, isCurrentHandFavorited, currentStackDistribution, trainingMode, currentBounties, heroBounty]);
 
   // End session
   const endSession = useCallback(() => {
@@ -1596,7 +1612,10 @@ export default function TrainPage() {
                                       <button
                                         className="p-1 rounded hover:bg-primary/20 transition-colors group relative"
                                         title="Ver Range GTO"
-                                        onClick={() => setSummaryRangeViewer({ open: true, stack: sa.effectiveStack || handState.heroStack })}
+                                        // O stack aqui é só o rótulo do cabeçalho: tem de ser o
+                                        // mesmo da range que deu a nota, senão o gráfico diz
+                                        // estar mostrando um spot e mostra outro.
+                                        onClick={() => setSummaryRangeViewer({ open: true, stack: currentStackDistribution?.effectiveStack || handState.heroStack })}
                                       >
                                         <BarChart3 className="h-4 w-4 text-primary" />
                                       </button>
@@ -1700,6 +1719,10 @@ export default function TrainPage() {
                     position={handState.heroPosition}
                     stack={summaryRangeViewer.stack}
                     finalTable={finalTable}
+                    gameMode={getGameMode()}
+                    bountyMultiplier={getBountyMultiplier()}
+                    villainPosition={handState.villainPosition}
+                    range={lastFeedback.range}
                     heroHand={lastFeedback.handData?.hand || ''}
                     heroAction={lastFeedback.userAction}
                   />
@@ -1808,7 +1831,7 @@ export default function TrainPage() {
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} uniqueHandId={currentUniqueHandId || undefined} previousResult={previousHandResult ? {
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={currentStackDistribution?.effectiveStack || handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} villainPosition={handState.villainPosition} range={lastFeedback.range} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} uniqueHandId={currentUniqueHandId || undefined} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
