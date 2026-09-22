@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Zap, TableProperties, BarChart3, Trophy, Award, Users, Heart, 
-  User, ChevronRight, ChevronLeft, X, Sparkles, Target, Swords,
+import {
+  Zap, Trophy, Award, Users, ChevronRight, ChevronLeft, X, Sparkles, Target, Swords,
   UsersRound, Crown
 } from 'lucide-react';
 import rangeImg from '@/assets/modes/range-training.png';
@@ -15,7 +14,6 @@ interface OnboardingStep {
   description: string;
   icon: React.ReactNode;
   image?: string;
-  highlight?: string;
 }
 
 const steps: OnboardingStep[] = [
@@ -27,25 +25,25 @@ const steps: OnboardingStep[] = [
   {
     title: 'Treino de Range (8-max)',
     description: 'O modo clássico! Mesa completa com todas as 8 posições. Escolha cenários como Open Raise, vs 3-Bet, e até Simulação pós-flop. Ideal para dominar os ranges de cada posição.',
-    icon: <Target className="h-6 w-6 text-primary" />,
+    icon: <Target className="h-5 w-5 text-primary" />,
     image: rangeImg,
   },
   {
     title: 'HU — Heads-Up (1x1)',
     description: 'Treine decisões diretas contra um único oponente (SB vs BB). Ranges mais amplos e dinâmica agressiva. Perfeito para torneios finais e sit-and-gos.',
-    icon: <Swords className="h-6 w-6 text-primary" />,
+    icon: <Swords className="h-5 w-5 text-primary" />,
     image: huImg,
   },
   {
     title: 'Three Hand (3 jogadores)',
     description: 'Mesa com BTN, SB e BB. Ranges intermediários entre o full ring e o heads-up. Ótimo para praticar dinâmicas de mesa curta.',
-    icon: <UsersRound className="h-6 w-6 text-primary" />,
+    icon: <UsersRound className="h-5 w-5 text-primary" />,
     image: threeHandImg,
   },
   {
     title: 'Modo Bounty (PKO)',
     description: 'Torneio Progressive Knockout! O valor do bounty de cada jogador altera os ranges GTO. Aprenda quando vale a pena arriscar pelo prêmio na cabeça do oponente.',
-    icon: <Crown className="h-6 w-6 text-primary" />,
+    icon: <Crown className="h-5 w-5 text-primary" />,
     image: bountyImg,
   },
   {
@@ -55,12 +53,12 @@ const steps: OnboardingStep[] = [
   },
   {
     title: 'Tabelas, Análise e Ranking',
-    description: 'Consulte matrizes de range GTO por posição/stack. Analise suas sessões com gráficos de desempenho. Suba no ranking semanal e mensal competindo com outros jogadores!',
+    description: 'Consulte matrizes de range GTO por posição e stack. Analise suas sessões com gráficos de desempenho. Dispute o ranking mensal, que zera todo mês e dá a todo mundo uma nova chance de chegar ao topo.',
     icon: <Trophy className="h-8 w-8 text-primary" />,
   },
   {
     title: 'XP, Níveis e Conquistas',
-    description: 'Ganhe XP a cada mão jogada (mais XP para decisões difíceis). Evolua de Iniciante a Lenda em 7 níveis. Desbloqueie conquistas especiais como "Sem Erro" e "Maratonista".',
+    description: 'Ganhe XP a cada mão jogada (mais XP para decisões difíceis). Evolua de Iniciante a GTO Rei em 8 níveis. Desbloqueie conquistas como "Sessão Perfeita", "Imparável" e "Maratonista".',
     icon: <Award className="h-8 w-8 text-primary" />,
   },
   {
@@ -77,139 +75,178 @@ const steps: OnboardingStep[] = [
 
 const ONBOARDING_KEY = 'gtorei_onboarding_completed_v2';
 
+// Quando o navegador bloqueia o armazenamento (aba anônima, cookies negados) o
+// localStorage lança em vez de devolver null. Sem este fallback em memória, o
+// clique em "Começar a treinar" estourava antes de fechar e prendia o usuário
+// dentro do modal.
+let vistoNestaSessao = false;
+
+function jaViuOnboarding(): boolean {
+  if (vistoNestaSessao) return true;
+  try {
+    return localStorage.getItem(ONBOARDING_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function marcarOnboardingVisto() {
+  vistoNestaSessao = true;
+  try {
+    localStorage.setItem(ONBOARDING_KEY, 'true');
+  } catch {
+    // Segue sem persistir: vale ao menos para esta sessão
+  }
+}
+
 export function OnboardingTutorial({ onComplete }: { onComplete: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const tituloId = useId();
   const step = steps[currentStep];
   const isLast = currentStep === steps.length - 1;
   const isFirst = currentStep === 0;
 
-  const handleComplete = () => {
-    localStorage.setItem(ONBOARDING_KEY, 'true');
+  const handleComplete = useCallback(() => {
+    marcarOnboardingVisto();
     setIsVisible(false);
     onComplete();
-  };
+  }, [onComplete]);
 
-  const handleSkip = () => {
-    handleComplete();
-  };
+  // Trava a rolagem do fundo: sem isso a página deslizava por trás do modal.
+  // Precisa ser nos dois elementos — só no body a viewport continuava rolando.
+  useEffect(() => {
+    const raiz = document.documentElement;
+    const anteriorRaiz = raiz.style.overflow;
+    const anteriorBody = document.body.style.overflow;
+    raiz.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      raiz.style.overflow = anteriorRaiz;
+      document.body.style.overflow = anteriorBody;
+    };
+  }, []);
+
+  // Esc fecha, setas navegam
+  useEffect(() => {
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') {
+        evento.preventDefault();
+        handleComplete();
+      } else if (evento.key === 'ArrowRight') {
+        setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
+      } else if (evento.key === 'ArrowLeft') {
+        setCurrentStep((s) => Math.max(s - 1, 0));
+      }
+    };
+    window.addEventListener('keydown', aoTeclar);
+    return () => window.removeEventListener('keydown', aoTeclar);
+  }, [handleComplete]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
-        {/* Progress bar */}
-        <div className="h-1 bg-muted">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+      <div
+        role="dialog"
+        aria-modal="true"
+        data-state="open"
+        aria-labelledby={tituloId}
+        className="relative my-auto flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+      >
+        <div className="h-1 shrink-0 bg-muted">
           <div
             className="h-full bg-primary transition-all duration-500 ease-out"
             style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
           />
         </div>
 
-        {/* Skip button */}
         <button
-          onClick={handleSkip}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10"
+          onClick={handleComplete}
+          aria-label="Fechar tutorial"
+          className="absolute right-4 top-4 z-10 text-muted-foreground transition-colors hover:text-foreground"
         >
           <X className="h-5 w-5" />
         </button>
 
-        {/* Content */}
-        <div className="p-6 pt-8">
-          {/* Step counter */}
-          <p className="text-xs text-muted-foreground mb-4">
+        {/* Só o conteúdo rola. A navegação fica fixa embaixo: numa janela baixa
+            (celular deitado) os botões saíam da tela e não dava para avançar. */}
+        <div className="flex-1 overflow-y-auto p-6 pt-8">
+          <p className="mb-4 text-xs text-muted-foreground">
             {currentStep + 1} de {steps.length}
           </p>
 
-          {/* Icon / Image */}
-          <div className="flex justify-center mb-5">
+          <div className="mb-5 flex justify-center">
             {step.image ? (
               <div className="relative">
-                <img
-                  src={step.image}
-                  alt={step.title}
-                  className="w-28 h-28 object-contain rounded-xl border border-border bg-muted/30 p-2"
-                />
-                <div className="absolute -bottom-2 -right-2 bg-card border border-border rounded-full p-1.5">
+                {/* A arte tem 64px de origem: exibi-la a 112px deixava tudo borrado.
+                    O emblema passou para a moldura, em vez de cobrir o desenho. */}
+                <div className="rounded-xl border border-border bg-muted/30 p-4">
+                  <img src={step.image} alt="" width={64} height={64} className="h-16 w-16 object-contain" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 rounded-full border border-border bg-card p-1.5">
                   {step.icon}
                 </div>
               </div>
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
                 {step.icon}
               </div>
             )}
           </div>
 
-          {/* Title */}
-          <h2 className="text-xl font-bold text-foreground text-center mb-3">
+          <h2 id={tituloId} className="mb-3 text-center text-xl font-bold text-foreground">
             {step.title}
           </h2>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground text-center leading-relaxed mb-6">
+          <p className="text-center text-sm leading-relaxed text-muted-foreground">
             {step.description}
           </p>
+        </div>
 
-          {/* Navigation */}
+        <div className="shrink-0 border-t border-border px-6 pb-4 pt-4">
           <div className="flex items-center justify-between gap-3">
             {!isFirst ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentStep(s => s - 1)}
-                className="gap-1"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep((s) => s - 1)} className="gap-1">
                 <ChevronLeft className="h-4 w-4" />
                 Voltar
               </Button>
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSkip}
-                className="text-muted-foreground"
-              >
+              <Button variant="ghost" size="sm" onClick={handleComplete} className="text-muted-foreground">
                 Pular
               </Button>
             )}
 
             {isLast ? (
-              <Button
-                onClick={handleComplete}
-                className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+              <Button onClick={handleComplete} className="gap-1">
                 Começar a treinar!
                 <Zap className="h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                onClick={() => setCurrentStep(s => s + 1)}
-                className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+              <Button onClick={() => setCurrentStep((s) => s + 1)} className="gap-1">
                 Próximo
                 <ChevronRight className="h-4 w-4" />
               </Button>
             )}
           </div>
-        </div>
 
-        {/* Dots */}
-        <div className="flex justify-center gap-1.5 pb-5">
-          {steps.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentStep(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === currentStep
-                  ? 'w-6 bg-primary'
-                  : i < currentStep
-                  ? 'w-1.5 bg-primary/50'
-                  : 'w-1.5 bg-muted-foreground/30'
-              }`}
-            />
-          ))}
+          <div className="mt-4 flex justify-center gap-1.5">
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentStep(i)}
+                aria-label={`Ir para o passo ${i + 1}`}
+                aria-current={i === currentStep ? 'step' : undefined}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === currentStep
+                    ? 'w-6 bg-primary'
+                    : i < currentStep
+                      ? 'w-1.5 bg-primary/50'
+                      : 'w-1.5 bg-muted-foreground/30'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -220,13 +257,11 @@ export function useOnboardingStatus() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
-    const completed = localStorage.getItem(ONBOARDING_KEY);
-    if (!completed) {
-      setNeedsOnboarding(true);
-    }
+    if (!jaViuOnboarding()) setNeedsOnboarding(true);
   }, []);
 
   const completeOnboarding = () => {
+    marcarOnboardingVisto();
     setNeedsOnboarding(false);
   };
 

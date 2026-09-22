@@ -13,11 +13,48 @@ interface UpdateNote {
 }
 
 const UPCOMING: string[] = [
+  'Ranges de stack profundo recalculadas pelo mesmo método do push/fold',
+  'Ante do BB no cálculo das ranges curtas',
   'Análise de straight draw (OESD, gutshot) no board',
   'Aulas gratuitas de poker GTO',
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.13.0',
+    date: '21/09/2026',
+    type: 'improvement',
+    title: 'Mesa Virtual e Botões de Ação Refeitos',
+    description: 'Agora você senta sempre embaixo, no centro, e a mesa gira em volta — antes o seu assento mudava de lugar a cada mão. Os assentos passaram a ser calculados na elipse, o que corrigiu jogadores sobrepostos no 8-max e a mesa meio vazia no heads-up e no 3-handed. Os botões de ação ganharam atalhos de teclado (F, C, R, B, A), mostram quanto custa cada jogada em BB e tiveram o contraste corrigido.',
+  },
+  {
+    version: '1.12.1',
+    date: '21/09/2026',
+    type: 'improvement',
+    title: 'Site Mais Rápido, Bloco de Perguntas e Correções de Segurança',
+    description: 'A página inicial passou a mostrar uma range de verdade calculada pelo solver, números conferidos no banco e um bloco de perguntas frequentes. Imagens pesadas foram reduzidas: 1,5 MB a menos em toda página logada e favicon de 93 KB para 1,4 KB. Também foram corrigidos o escape do CSV exportado no admin, o limite de caracteres na comunidade e vulnerabilidades das dependências.',
+  },
+  {
+    version: '1.12.0',
+    date: '21/09/2026',
+    type: 'feature',
+    title: 'Ranges de Push/Fold Calculadas por EV',
+    description: 'As ranges de stack curto (8bb a 20bb) deixaram de ser copiadas de tabela: agora são calculadas aqui, a partir de uma matriz de equity 169x169 gerada por simulação de Monte Carlo, com iteração de melhor-resposta amortecida até o equilíbrio. Os resultados batem com as tabelas de Nash publicadas. A ordem de força das mãos também passou a vir da equity, corrigindo casos como Q8s aparecendo à frente de 66.',
+  },
+  {
+    version: '1.11.0',
+    date: '20/09/2026',
+    type: 'improvement',
+    title: 'Dashboard de Análise Redesenhado',
+    description: 'A página de análise ganhou gráfico de precisão ao longo do tempo com a média do mês como referência, quebra por cenário e um card de "onde focar agora" que aponta a posição e o cenário em que você mais perde EV.',
+  },
+  {
+    version: '1.10.3',
+    date: '20/09/2026',
+    type: 'fix',
+    title: 'Contraste, Tema e Acessibilidade',
+    description: 'Corrigido o contraste do texto sobre o dourado no tema claro, que reprovava no WCAG AA. O tema salvo passa a ser aplicado antes da página desenhar, acabando com a piscada de escuro para claro. As animações agora respeitam a preferência de movimento reduzido do sistema, e o idioma é detectado pelo navegador em vez de por consulta a serviço externo.',
+  },
   {
     version: '1.10.2',
     date: '23/06/2026',

@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Heart, Instagram, ChevronLeft, ChevronRight, X, Trophy, Sparkles } from 'lucide-react';
+import { Heart, Instagram, ChevronLeft, ChevronRight, X, Sparkles, ListChecks } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.12.0';
+const CURRENT_VERSION = '1.13.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
-const TOP1_POST_URL = 'https://www.instagram.com/p/DaQnLztGk6_/';
 const DONATE_URL = '/apoiar';
+const UPDATES_URL = '/atualizacoes';
 
 // Páginas abertas ao público (SEO e conteúdo): o popup não abre nelas
 const QUIET_PATHS = ['/iniciante', '/atualizacoes', '/gtoreiacessibilidade', '/apoiar'];
@@ -29,6 +29,7 @@ type Slide = {
 export function UpdatesPopup() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -51,41 +52,38 @@ export function UpdatesPopup() {
     return () => clearTimeout(t);
   }, [user, location.pathname]);
 
+  const close = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+    } catch {
+      // sem storage o popup volta na próxima visita, mas não quebra nada
+    }
+    setOpen(false);
+  };
+
+  // Fecha antes de navegar: com <a href> o app recarregava inteiro
+  const irPara = (rota: string) => {
+    close();
+    navigate(rota);
+  };
+
   const slides: Slide[] = [
     {
       icon: <Sparkles className="h-10 w-10" />,
       iconBg: 'bg-primary/20 text-primary',
-      title: 'O GTORei está ficando ainda melhor',
+      title: 'As melhorias chegaram',
       titleClass: 'text-primary',
       description:
-        'Estamos reconstruindo a base de ranges do zero: cálculo de equity próprio e push/fold calculado para stacks curtos, que é onde o torneio se decide. As melhorias começam a chegar nos próximos dias, modo por modo.',
-      badge: { label: 'EM ANDAMENTO', className: 'bg-primary text-primary-foreground' },
-    },
-    {
-      icon: <Trophy className="h-10 w-10" />,
-      iconBg: 'bg-primary/20 text-primary',
-      title: 'Top 1 do Mês no Instagram',
-      description:
-        'Confira o post anunciando o Top 1 do ranking mensal! A partir de agora, todo mês o campeão será publicado no nosso Instagram. Bora subir no ranking?',
+        'As ranges de stack curto agora são calculadas por EV, e não copiadas de tabela. A mesa foi refeita: você senta sempre embaixo e a mesa gira em volta. Os botões de ação ganharam atalho de teclado e mostram quanto custa cada jogada. A lista completa fica em Atualizações, na barra lateral.',
       badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
       cta: (
         <div className="mt-4 w-full flex justify-center">
-          <Button asChild variant="outline">
-            <a href={TOP1_POST_URL} target="_blank" rel="noopener noreferrer">
-              <Instagram className="h-4 w-4 mr-2" />
-              Ver o post do Top 1
-            </a>
+          <Button variant="outline" onClick={() => irPara(UPDATES_URL)}>
+            <ListChecks className="h-4 w-4 mr-2" />
+            Ver tudo em Atualizações
           </Button>
         </div>
       ),
-    },
-    {
-      icon: <Brain className="h-10 w-10" />,
-      iconBg: 'bg-primary/20 text-primary',
-      title: 'Análise de Torneio com IA',
-      description:
-        'Importe seu histórico PokerStars (e outras plataformas) e receba análise completa mão por mão com ICM, bubble factor e recomendações GTO.',
-      badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
     },
     {
       icon: <Heart className="h-10 w-10" />,
@@ -97,12 +95,10 @@ export function UpdatesPopup() {
       cta: (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 w-full">
           <Button
-            asChild
             className="bg-feedback-best text-background hover:bg-feedback-best/90"
+            onClick={() => irPara(DONATE_URL)}
           >
-            <a href={DONATE_URL}>
-              Apoiar o Projeto ☕
-            </a>
+            Apoiar o Projeto ☕
           </Button>
           <Button asChild variant="outline">
             <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
@@ -114,15 +110,6 @@ export function UpdatesPopup() {
       ),
     },
   ];
-
-  const close = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
-    } catch {
-      // sem storage o popup volta na próxima visita, mas não quebra nada
-    }
-    setOpen(false);
-  };
 
   const next = () => setIndex((i) => (i + 1) % slides.length);
   const prev = () => setIndex((i) => (i - 1 + slides.length) % slides.length);
@@ -147,7 +134,6 @@ export function UpdatesPopup() {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Close */}
         <button
           aria-label="Fechar"
           onClick={close}
@@ -156,7 +142,6 @@ export function UpdatesPopup() {
           <X className="h-4 w-4" />
         </button>
 
-        {/* Slide content */}
         <div className="px-6 sm:px-8 pt-10 pb-6 text-center min-h-[340px] flex flex-col items-center justify-center">
           <div className={cn('p-4 rounded-2xl mb-4 inline-flex', slide.iconBg)}>{slide.icon}</div>
 
@@ -173,7 +158,6 @@ export function UpdatesPopup() {
           {slide.cta}
         </div>
 
-        {/* Arrows */}
         <button
           onClick={prev}
           aria-label="Anterior"
@@ -189,7 +173,6 @@ export function UpdatesPopup() {
           <ChevronRight className="h-5 w-5" />
         </button>
 
-        {/* Dots */}
         <div className="flex justify-center gap-2 pb-5">
           {slides.map((_, i) => (
             <button
