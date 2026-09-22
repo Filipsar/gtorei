@@ -120,7 +120,7 @@ Para cortar essa dependência:
 1. No Google Cloud Console, criar uma credencial OAuth 2.0 (Web application) com o redirect autorizado
    `https://dejfimivoonbmgfxtbdf.supabase.co/auth/v1/callback`
 2. Colar client id e secret no provedor Google do Supabase (pelo backend do Lovable)
-3. Adicionar `https://gtorei.com.br` na lista de Redirect URLs do Supabase
+3. Adicionar `https://www.gtorei.com.br` (endereço oficial) e `https://gtorei.com.br` na lista de Redirect URLs do Supabase
 4. No código, trocar `lovable.auth.signInWithOAuth('google', ...)` por
    `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })`
    e apagar `src/integrations/lovable/`

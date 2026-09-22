@@ -2,7 +2,7 @@
 
 ## O que é
 
-Treinador de poker GTO gratuito, em português, no ar em https://gtorei.com.br com cerca
+Treinador de poker GTO gratuito, em português, no ar em https://www.gtorei.com.br com cerca
 de 150 usuários reais. Não há plano pago nem anúncios: o projeto se mantém por doações
 via Pix (`/apoiar`). **Cada push na `main` vai para produção em ~25 segundos** pelo
 Vercel — não existe ambiente de homologação.
@@ -64,9 +64,12 @@ passo está em `MIGRACAO-VERCEL.md`.
 ### Hospedagem e domínio
 
 Vercel, com DNS na HostGator (registro A `76.76.21.21`). O valor de rollback para o
-Lovable é `185.158.133.1`. Hoje o apex responde 308 para o `www`, enquanto sitemap,
-canonical e Open Graph apontam para o apex — inconsistência conhecida, resolvida
-trocando o domínio principal no painel do Vercel ou mudando a base no código.
+Lovable é `185.158.133.1`.
+
+**O endereço oficial é `www.gtorei.com.br`.** O apex responde 308 para o www, e
+sitemap, canonical, Open Graph e dados estruturados apontam para o www. A única
+exceção deliberada é o `redirect_uri` do OAuth, que continua saindo no apex porque é
+só isso que o broker aceita — está explicado no comentário do `AuthPage.tsx`.
 
 ### localStorage e sessionStorage lançam exceção
 

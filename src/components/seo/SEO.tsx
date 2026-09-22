@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE = "https://gtorei.com.br";
+const SITE = "https://www.gtorei.com.br";
 const DEFAULT_IMAGE = `${SITE}/og-gtorei.png`;
 
 interface SEOProps {

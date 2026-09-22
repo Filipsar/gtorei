@@ -38,10 +38,13 @@ const signupSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 type SignupForm = z.infer<typeof signupSchema>;
 
-// O broker de OAuth do Lovable valida o redirect_uri contra uma lista do projeto,
-// e nela está só o apex: mandar "https://www.gtorei.com.br" volta 400 e o login
-// com Google morre. Como o www só existe como atalho para o mesmo site, aqui ele
-// é normalizado para o apex. Qualquer outra origem (localhost, preview) passa reto.
+// Parece invertido, mas não é: o endereço oficial do site é o www, e ainda assim
+// o redirect do OAuth sai no apex. O broker do Lovable valida o redirect_uri
+// contra uma lista do projeto onde só está o apex — mandar
+// "https://www.gtorei.com.br" volta 400 e o login com Google morre. Na volta, o
+// Vercel devolve 308 do apex para o www antes de qualquer script rodar, então o
+// token chega no www, que é de onde o login partiu.
+// Qualquer outra origem (localhost, preview) passa reto.
 function origemParaOAuth(): string {
   const { origin, hostname, protocol } = window.location;
   return hostname === 'www.gtorei.com.br' ? `${protocol}//gtorei.com.br` : origin;

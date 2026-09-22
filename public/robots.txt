@@ -22,4 +22,4 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-Sitemap: https://gtorei.com.br/sitemap.xml
+Sitemap: https://www.gtorei.com.br/sitemap.xml

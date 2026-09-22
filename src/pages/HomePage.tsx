@@ -118,7 +118,7 @@ export default function HomePage() {
             "@context": "https://schema.org",
             "@type": "WebApplication",
             name: "GTORei",
-            url: "https://gtorei.com.br/",
+            url: "https://www.gtorei.com.br/",
             applicationCategory: "EducationApplication",
             operatingSystem: "Web",
             inLanguage: "pt-BR",
