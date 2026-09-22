@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.14.0',
+    date: '22/09/2026',
+    type: 'improvement',
+    title: 'Página Inicial com Animações de Entrada',
+    description: 'O topo da página inicial entra escalonado assim que a tela desenha, as seções sobem conforme você rola e os números da plataforma contam a partir do zero. A biblioteca de animação fica num arquivo separado, só é baixada na página inicial e nem chega a ser carregada por quem configurou menos movimento no sistema. Nada do conteúdo depende dela para aparecer: se o script falhar, a página continua completa e legível.',
+  },
+  {
     version: '1.13.1',
     date: '22/09/2026',
     type: 'fix',

@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/seo/SEO';
+import { useReveal } from '@/hooks/useReveal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -82,6 +84,18 @@ export default function HomePage() {
   const goCTA = () => navigate(user ? '/treinar' : '/auth');
   const ctaLabel = user ? t.home.play : 'Criar conta grátis';
 
+  // Animações de entrada das seções abaixo da dobra (ver o comentário do hook)
+  const pagina = useRef<HTMLDivElement>(null);
+  useReveal(pagina);
+
+  // A entrada do topo é CSS puro, e não GSAP: ela precisa desenhar junto com a
+  // página. Se dependesse do script, o herói apareceria, sumiria e voltaria.
+  const entrada = (atraso: number) => ({
+    animationDelay: `${atraso}ms`,
+    animationDuration: '700ms',
+    animationFillMode: 'both' as const,
+  });
+
   const features = [
     { icon: Zap, title: 'Treinador GTO', desc: 'Pratique decisões pré-flop e pós-flop com ranges de solver para cada posição e stack.', to: '/treinar', tag: 'Treino' },
     { icon: Brain, title: 'Análise com IA', desc: 'Faça upload do seu hand history e receba veredicto GTO + EV mão a mão por IA.', to: '/analise-ia', tag: 'Novo' },
@@ -108,7 +122,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div ref={pagina} className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <SEO
         title="GTORei — Treinador de Poker GTO grátis em português"
         description="Treine decisões de poker GTO de graça: ranges pré-flop por posição e stack, push/fold calculado por EV, análise de mãos por IA e ranking. Em português."
@@ -209,22 +223,34 @@ export default function HomePage() {
         </div>
 
         <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-8">
+          <div
+            style={entrada(0)}
+            className="animate-in fade-in slide-in-from-bottom-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-8"
+          >
             <Sparkles className="h-3.5 w-3.5" />
             Agora com Análise de Torneio por IA
           </div>
 
-          <h1 className="text-4xl sm:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
+          <h1
+            style={entrada(80)}
+            className="animate-in fade-in slide-in-from-bottom-3 text-4xl sm:text-7xl font-bold tracking-tight mb-6 leading-[1.05]"
+          >
             Treine como um <span className="text-primary">solver</span>.<br />
             Jogue como um <span className="text-primary">rei</span>.
           </h1>
 
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          <p
+            style={entrada(160)}
+            className="animate-in fade-in slide-in-from-bottom-3 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
+          >
             O GTORei é o treinador de poker GTO gratuito mais completo em português.
             Ranges de solver, IA, ranking global e conquistas — tudo num só lugar.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div
+            style={entrada(240)}
+            className="animate-in fade-in slide-in-from-bottom-3 flex flex-col sm:flex-row items-center justify-center gap-3"
+          >
             <Button
               size="lg"
               onClick={goCTA}
@@ -243,7 +269,10 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
+          <div
+            style={entrada(320)}
+            className="animate-in fade-in slide-in-from-bottom-3 mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground"
+          >
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> 100% gratuito</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Sem cartão</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ranges calculadas por EV</span>
@@ -251,7 +280,10 @@ export default function HomePage() {
           </div>
 
           {/* Em vez de descrever o produto, mostrar uma range que o solver calculou */}
-          <div className="mt-14 max-w-xl mx-auto">
+          <div
+            style={entrada(400)}
+            className="animate-in fade-in slide-in-from-bottom-3 mt-14 max-w-xl mx-auto"
+          >
             <RangePreview />
           </div>
         </div>
@@ -259,10 +291,10 @@ export default function HomePage() {
 
       {/* NÚMEROS — fundo igual ao do hero para não colar na seção de recursos */}
       <section className="border-y border-border bg-background py-10 px-6">
-        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 md:grid-cols-4">
+        <div data-reveal-stagger className="mx-auto grid max-w-5xl grid-cols-2 gap-8 md:grid-cols-4">
           {NUMEROS.map((n) => (
-            <div key={n.label} className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-primary tabular-nums">{n.valor}</p>
+            <div key={n.label} data-reveal-item className="text-center">
+              <p data-contar className="text-3xl sm:text-4xl font-bold text-primary tabular-nums">{n.valor}</p>
               <p className="mt-1 text-sm text-muted-foreground text-balance">{n.label}</p>
             </div>
           ))}
@@ -272,7 +304,7 @@ export default function HomePage() {
       {/* FEATURES — card presentation */}
       <section id="recursos" className="relative py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Recursos</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Tudo o que você precisa para evoluir</h2>
             <p className="text-muted-foreground text-lg">
@@ -280,10 +312,11 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div data-reveal-stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {features.map((f) => (
               <Card
                 key={f.title}
+                data-reveal-item
                 onClick={() => user ? navigate(f.to) : navigate('/auth')}
                 className="group cursor-pointer p-6 bg-card hover:bg-card/80 border-border hover:border-primary/40 transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-15px_rgba(255,184,0,0.3)]"
               >
@@ -315,7 +348,7 @@ export default function HomePage() {
       {/* MODES — split presentation cards */}
       <section id="modos" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Modos de jogo</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Cobertura completa de torneios</h2>
             <p className="text-muted-foreground text-lg">
@@ -323,9 +356,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {modes.map((m) => (
-              <Card key={m.title} className="p-8 bg-card border-border hover:border-primary/30 transition-colors">
+              <Card key={m.title} data-reveal-item className="p-8 bg-card border-border hover:border-primary/30 transition-colors">
                 <div className="flex items-start gap-5">
                   <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
                     <m.icon className="h-7 w-7 text-primary" />
@@ -344,14 +377,14 @@ export default function HomePage() {
       {/* HOW IT WORKS — numbered cards */}
       <section id="como-funciona" className="py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Como funciona</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Do cadastro à evolução em 4 passos</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {steps.map((s) => (
-              <Card key={s.n} className="p-7 bg-card border-border relative overflow-hidden">
+              <Card key={s.n} data-reveal-item className="p-7 bg-card border-border relative overflow-hidden">
                 <span className="absolute -top-3 -right-3 text-7xl font-black text-primary/10 select-none">{s.n}</span>
                 <div className="relative">
                   <p className="text-primary text-sm font-bold mb-3">{s.n}</p>
@@ -480,7 +513,7 @@ export default function HomePage() {
       {/* FINAL CTA */}
       <section className="py-28 px-6 relative overflow-hidden border-t border-border">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-        <div className="relative max-w-3xl mx-auto text-center">
+        <div data-reveal className="relative max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-6xl font-bold mb-6 leading-tight">
             Pronto para jogar como um <span className="text-primary">rei</span>?
           </h2>
