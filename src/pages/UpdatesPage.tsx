@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.15.0',
+    date: '22/09/2026',
+    type: 'improvement',
+    title: 'Mesa com Movimento, Barra Lateral em Seções e Ícones Novos',
+    description: 'A mesa ganhou movimento: as fichas apostadas entram empurradas do lugar do jogador, o pote conta em vez de saltar de um número para outro, as apostas são varridas para o meio na virada da rua e cada carta comunitária cai na hora em que sai. A barra lateral foi dividida em quatro seções — Treino, Análise, Comunidade e Mais — cada uma com seta para abrir e fechar, e o que você fecha continua fechado na próxima página. Os quatro modos de treino trocaram a arte antiga por um desenho da mesa real de cada modo, com o seu lugar sempre embaixo. E cada uma das 28 conquistas ganhou um ícone próprio no lugar do emoji: dois deles eram repetidos, e emoji muda de cara conforme o aparelho.',
+  },
+  {
     version: '1.14.0',
     date: '22/09/2026',
     type: 'improvement',

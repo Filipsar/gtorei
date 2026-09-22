@@ -1,7 +1,5 @@
 import { useEffect, type RefObject } from 'react';
-import type { gsap as GSAPType } from 'gsap';
-
-type Gsap = typeof GSAPType;
+import { carregarGsap, prefereMenosMovimento, type Gsap } from '@/lib/motion';
 
 /**
  * Animações de entrada da landing page, com GSAP.
@@ -26,14 +24,6 @@ type Gsap = typeof GSAPType;
 
 const SELETOR = '[data-reveal], [data-reveal-stagger], [data-contar]';
 const DESLOCAMENTO = 24;
-
-function prefereMenosMovimento(): boolean {
-  try {
-    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  } catch {
-    return false;
-  }
-}
 
 function jaEstaNaTela(elemento: Element): boolean {
   const caixa = elemento.getBoundingClientRect();
@@ -93,8 +83,8 @@ export function useReveal(raiz: RefObject<HTMLElement | null>) {
     let observador: IntersectionObserver | null = null;
     let contexto: { revert: () => void } | null = null;
 
-    import('gsap')
-      .then(({ gsap }) => {
+    carregarGsap()
+      ?.then((gsap) => {
         if (cancelado || !container.isConnected) return;
 
         contexto = gsap.context(() => {
@@ -137,7 +127,7 @@ export function useReveal(raiz: RefObject<HTMLElement | null>) {
           });
         }, container);
       })
-      .catch(() => {
+      ?.catch(() => {
         // Sem GSAP a página continua completa, só sem as animações de entrada
       });
 

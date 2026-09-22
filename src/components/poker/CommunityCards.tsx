@@ -33,13 +33,10 @@ export function CommunityCards({ cards, street = 'preflop', className }: Communi
       {visibleCards.map((card, index) => (
         <div
           key={`${card.rank}-${card.suit}-${index}`}
-          className={cn(
-            'animate-fade-in',
-            index >= 3 && 'animate-scale-in' // Animação especial para turn e river
-          )}
-          style={{
-            animationDelay: `${index * 100}ms`,
-          }}
+          // Quem anima a carta que acabou de sair é a mesa, que usa esta marca
+          // para achar só as novas. A classe antiga animava todas de novo a
+          // cada street, e metade dela (animate-scale-in) nem existia.
+          data-carta-comunitaria
         >
           <PlayingCard
             rank={card.rank}
