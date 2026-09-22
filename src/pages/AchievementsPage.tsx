@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, Lock } from 'lucide-react';
 import { useAchievements } from '@/hooks/useAchievements';
 import { ACHIEVEMENTS, CATEGORY_LABELS, AchievementDef } from '@/data/achievements';
+import { AchievementIcon } from '@/components/achievements/AchievementIcon';
 import { cn } from '@/lib/utils';
 
 export default function AchievementsPage() {
@@ -65,10 +66,12 @@ export default function AchievementsPage() {
                     >
                       <CardContent className="p-4 flex items-center gap-4">
                         <div className={cn(
-                          'text-3xl w-12 h-12 flex items-center justify-center rounded-lg',
-                          unlocked ? 'bg-primary/10' : 'bg-muted'
+                          'w-12 h-12 flex items-center justify-center rounded-lg shrink-0',
+                          unlocked ? 'bg-primary/10 text-primary' : 'bg-muted'
                         )}>
-                          {unlocked ? achievement.icon : <Lock className="h-5 w-5 text-muted-foreground" />}
+                          {unlocked
+                            ? <AchievementIcon achievement={achievement.key} className="h-7 w-7" />
+                            : <Lock className="h-5 w-5 text-muted-foreground" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground">{achievement.name}</p>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ACHIEVEMENTS, AchievementDef, getAchievement } from '@/data/achievements';
+import { AchievementIcon } from '@/components/achievements/AchievementIcon';
 import { toast } from 'sonner';
 
 export function useAchievements() {
@@ -44,7 +45,8 @@ export function useAchievements() {
     setUnlockedKeys(prev => new Set([...prev, key]));
 
     // Show notification
-    toast.success(`${achievement.icon} Conquista Desbloqueada!`, {
+    toast.success('Conquista Desbloqueada!', {
+      icon: <AchievementIcon achievement={achievement.key} className="h-5 w-5 text-primary" />,
       description: `${achievement.name}: ${achievement.description}`,
       duration: 5000,
       position: 'bottom-right',
