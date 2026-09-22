@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.15.1',
+    date: '22/09/2026',
+    type: 'fix',
+    title: 'Animações da Página Inicial Piscando',
+    description: 'Ao rolar a página inicial, cada bloco aparecia, sumia e voltava. O motivo: ele só era escondido no instante em que já estava na tela — medi um card de recursos inteiro, com 262 pixels visíveis, sumindo depois de já ter sido desenhado. Agora quem ainda está abaixo da dobra já entra escondido, e nada que você esteja lendo é tocado: se a animação não carregar, a página continua inteira. Os cards também entram em fila, de cima para baixo e da esquerda para a direita, em vez de a linha de baixo gastar a entrada fora da tela. A transição de 150 milissegundos do hover dos cards, que arrastava cada quadro da animação, agora fica desligada enquanto o bloco entra e volta no fim. E a página não para mais de animar no meio: análise por IA, comunidade, perguntas e transparência também entram quando chega a vez delas.',
+  },
+  {
     version: '1.15.0',
     date: '22/09/2026',
     type: 'improvement',

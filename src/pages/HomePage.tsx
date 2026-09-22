@@ -406,7 +406,7 @@ export default function HomePage() {
       {/* AI HIGHLIGHT */}
       <section className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
-          <Card className="overflow-hidden bg-gradient-to-br from-primary/15 via-card to-card border-primary/30 p-10 md:p-14">
+          <Card data-reveal className="overflow-hidden bg-gradient-to-br from-primary/15 via-card to-card border-primary/30 p-10 md:p-14">
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold mb-5">
@@ -442,7 +442,7 @@ export default function HomePage() {
       {/* COMMUNITY / RANKING */}
       <section id="comunidade" className="py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Comunidade</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Suba de Iniciante a GTO Rei</h2>
             <p className="text-muted-foreground text-lg">
@@ -450,18 +450,18 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Card className="p-7 bg-card border-border">
+          <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Card data-reveal-item className="p-7 bg-card border-border">
               <Trophy className="h-8 w-8 text-primary mb-4" />
               <p className="text-3xl font-bold mb-1">8 ranks</p>
               <p className="text-sm text-muted-foreground">de Iniciante até GTO Rei (250.000 XP)</p>
             </Card>
-            <Card className="p-7 bg-card border-border">
+            <Card data-reveal-item className="p-7 bg-card border-border">
               <Award className="h-8 w-8 text-primary mb-4" />
               <p className="text-3xl font-bold mb-1">Dezenas</p>
               <p className="text-sm text-muted-foreground">de conquistas para precisão, volume e streaks</p>
             </Card>
-            <Card className="p-7 bg-card border-border">
+            <Card data-reveal-item className="p-7 bg-card border-border">
               <Users className="h-8 w-8 text-primary mb-4" />
               <p className="text-3xl font-bold mb-1">Ranking mensal</p>
               <p className="text-sm text-muted-foreground">reset todo mês, novas chances de subir ao topo</p>
@@ -474,7 +474,7 @@ export default function HomePage() {
       {/* PERGUNTAS — o mesmo texto vai no FAQPage lá em cima; se mudar aqui, mudar lá */}
       <section id="perguntas" className="py-24 px-6">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
+          <div data-reveal className="text-center mb-12">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Perguntas</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Antes de criar sua conta</h2>
             <p className="text-muted-foreground text-lg">
@@ -482,7 +482,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion data-reveal type="single" collapsible className="w-full">
             {FAQ.map((item, i) => (
               <AccordionItem key={item.q} value={`p-${i}`} className="border-border">
                 <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
@@ -554,7 +554,7 @@ export default function HomePage() {
       {/* PRIVACY / TERMS / LGPD */}
       <section className="py-16 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-12 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Transparência</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Privacidade, Dados e Termos</h2>
             <p className="text-muted-foreground">
@@ -562,8 +562,8 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Card className="p-7 bg-card border-border">
+          <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Card data-reveal-item className="p-7 bg-card border-border">
               <Shield className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Política de Privacidade</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -572,7 +572,7 @@ export default function HomePage() {
               </p>
             </Card>
 
-            <Card className="p-7 bg-card border-border">
+            <Card data-reveal-item className="p-7 bg-card border-border">
               <FileText className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Termos de Uso</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -581,7 +581,7 @@ export default function HomePage() {
               </p>
             </Card>
 
-            <Card className="p-7 bg-card border-border">
+            <Card data-reveal-item className="p-7 bg-card border-border">
               <Cookie className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Cookies e Marketing</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">

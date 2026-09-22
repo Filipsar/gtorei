@@ -4,47 +4,68 @@ import { carregarGsap, prefereMenosMovimento, type Gsap } from '@/lib/motion';
 /**
  * Animações de entrada da landing page, com GSAP.
  *
- * Três decisões que importam mais que os efeitos em si:
+ * Quatro decisões que importam mais que os efeitos em si:
  *
  * 1. O GSAP entra por import dinâmico. Fica fora do bundle inicial, e quem
  *    pediu menos movimento no sistema nem chega a baixar o arquivo.
- * 2. Tudo usa gsap.from(): o estado final é o que já está no HTML. Se o script
- *    falhar, for bloqueado ou demorar, a página aparece inteira do mesmo jeito.
- *    Nada de texto invisível esperando JavaScript — isso também vale para o
- *    robô do Google.
- * 3. Nada que já esteja na tela quando o GSAP fica pronto é animado. Animar o
- *    topo depois do primeiro desenho faria o conteúdo piscar: aparece, some e
- *    volta. A entrada do topo é feita em CSS, que desenha junto com a página.
+ * 2. O bloco é escondido assim que o GSAP fica pronto, e não no momento em que
+ *    ele aparece. Esconder na hora de aparecer faz o conteúdo piscar: ele já
+ *    foi desenhado, some e volta. Era isso que acontecia aqui — media-se um
+ *    card inteiro, 262px visíveis, sumindo depois de estar na tela.
+ * 3. Nada que já esteja visível quando o GSAP carrega é tocado. Se o script
+ *    demorar, falhar ou for bloqueado, o que a pessoa está lendo fica onde
+ *    está. Só some o que ainda está abaixo da dobra, que ninguém viu.
+ * 4. A transição do CSS é desligada durante o tween. Os cards de recursos têm
+ *    transition-all de 150ms para o hover; sem desligar, cada quadro do GSAP
+ *    passava por ela e a entrada ficava arrastada.
  *
  * Marcação:
  *   data-reveal          → sobe e aparece
- *   data-reveal-stagger  → anima os [data-reveal-item] de dentro, em sequência
+ *   data-reveal-stagger  → quem sobe são os [data-reveal-item] de dentro
  *   data-contar          → conta de zero até o número que está no texto
  */
 
-const SELETOR = '[data-reveal], [data-reveal-stagger], [data-contar]';
 const DESLOCAMENTO = 24;
+const DURACAO = 0.6;
+const PASSO = 0.07;
+const MAXIMO_DE_PASSOS = 5;
 
-function jaEstaNaTela(elemento: Element): boolean {
-  const caixa = elemento.getBoundingClientRect();
-  return caixa.top < window.innerHeight && caixa.bottom > 0;
+function abaixoDaDobra(elemento: Element): boolean {
+  return elemento.getBoundingClientRect().top >= window.innerHeight;
 }
 
-function animarEntrada(gsap: Gsap, elemento: HTMLElement) {
-  const itens = elemento.hasAttribute('data-reveal-stagger')
-    ? Array.from(elemento.querySelectorAll<HTMLElement>('[data-reveal-item]'))
-    : [];
-  const alvos = itens.length > 0 ? itens : [elemento];
+function coletarAlvos(container: HTMLElement): HTMLElement[] {
+  const alvos: HTMLElement[] = [];
 
-  gsap.from(alvos, {
-    y: DESLOCAMENTO,
-    opacity: 0,
-    duration: 0.6,
+  container.querySelectorAll<HTMLElement>('[data-reveal], [data-reveal-stagger]').forEach((elemento) => {
+    const itens = elemento.hasAttribute('data-reveal-stagger')
+      ? Array.from(elemento.querySelectorAll<HTMLElement>('[data-reveal-item]'))
+      : [];
+
+    // Numa grade, quem anima é cada card, nunca a grade inteira: assim os de
+    // baixo esperam a própria vez em vez de chegarem prontos fora da tela.
+    if (itens.length > 0) alvos.push(...itens);
+    else alvos.push(elemento);
+  });
+
+  return alvos.filter(abaixoDaDobra);
+}
+
+function soltar(elemento: HTMLElement) {
+  elemento.style.transition = '';
+}
+
+function animarEntrada(gsap: Gsap, alvo: HTMLElement, atraso: number) {
+  gsap.to(alvo, {
+    opacity: 1,
+    y: 0,
+    duration: DURACAO,
+    delay: atraso,
     ease: 'power2.out',
-    stagger: itens.length > 0 ? 0.08 : 0,
     // Devolve o controle ao CSS no fim: hover e transições do Tailwind
     // continuam funcionando como antes nos cards.
     clearProps: 'transform,opacity',
+    onComplete: () => soltar(alvo),
   });
 }
 
@@ -62,7 +83,7 @@ function animarContagem(gsap: Gsap, elemento: HTMLElement) {
 
   gsap.to(contador, {
     valor: destino,
-    duration: 1.1,
+    duration: 0.9,
     ease: 'power2.out',
     onUpdate: () => {
       elemento.textContent = `${antes}${Math.round(contador.valor)}${depois}`;
@@ -82,49 +103,68 @@ export function useReveal(raiz: RefObject<HTMLElement | null>) {
     let cancelado = false;
     let observador: IntersectionObserver | null = null;
     let contexto: { revert: () => void } | null = null;
+    let escondidos: HTMLElement[] = [];
 
     carregarGsap()
       ?.then((gsap) => {
         if (cancelado || !container.isConnected) return;
 
         contexto = gsap.context(() => {
-          observador = new IntersectionObserver(
-            (entradas) => {
-              for (const entrada of entradas) {
-                if (!entrada.isIntersecting) continue;
-                const alvo = entrada.target as HTMLElement;
-                observador?.unobserve(alvo);
-                if (alvo.hasAttribute('data-contar')) animarContagem(gsap, alvo);
-                else animarEntrada(gsap, alvo);
-              }
-            },
-            // threshold fica em 0 de propósito. Com uma fração (0.2, por
-            // exemplo), um bloco alto nunca dispara: a grade de recursos tem
-            // 2053px e numa janela de 346px a razão máxima possível é 0,169.
-            // Quem decide o momento é a margem: o topo do elemento precisa
-            // cruzar 12% acima da borda de baixo da janela.
-            { threshold: 0, rootMargin: '0px 0px -12% 0px' }
-          );
+          try {
+            escondidos = coletarAlvos(container);
+            escondidos.forEach((alvo) => {
+              alvo.style.transition = 'none';
+            });
+            gsap.set(escondidos, { opacity: 0, y: DESLOCAMENTO });
 
-          const alvos: HTMLElement[] = [];
-          container.querySelectorAll<HTMLElement>(SELETOR).forEach((elemento) => {
-            const itens = elemento.hasAttribute('data-reveal-stagger')
-              ? Array.from(elemento.querySelectorAll<HTMLElement>('[data-reveal-item]'))
-              : [];
+            observador = new IntersectionObserver(
+              (entradas) => {
+                const entrando = entradas.filter((entrada) => entrada.isIntersecting);
+                if (entrando.length === 0) return;
 
-            // Uma grade mais alta que a janela nunca cabe inteira na tela — no
-            // celular todas são. Animar os cards em sequência a partir do topo
-            // dela gastaria o efeito nos de baixo, que ninguém está vendo: eles
-            // chegariam prontos. Aí cada card espera a própria vez.
-            const maiorQueAJanela = elemento.getBoundingClientRect().height > window.innerHeight;
-            if (itens.length > 0 && maiorQueAJanela) alvos.push(...itens);
-            else alvos.push(elemento);
-          });
+                // Quem cruza a linha no mesmo instante entra em fila, de cima
+                // para baixo e da esquerda para a direita — a ordem em que os
+                // olhos leem. A fila tem teto: uma rolagem rápida pode trazer
+                // oito cards de uma vez, e meio segundo de espera no último
+                // pareceria travamento.
+                entrando.sort((a, b) => {
+                  const alturaA = Math.round(a.boundingClientRect.top);
+                  const alturaB = Math.round(b.boundingClientRect.top);
+                  return alturaA - alturaB || a.boundingClientRect.left - b.boundingClientRect.left;
+                });
 
-          alvos.forEach((alvo) => {
-            if (jaEstaNaTela(alvo)) return;
-            observador?.observe(alvo);
-          });
+                entrando.forEach((entrada, indice) => {
+                  const alvo = entrada.target as HTMLElement;
+                  observador?.unobserve(alvo);
+                  if (alvo.hasAttribute('data-contar')) animarContagem(gsap, alvo);
+                  else animarEntrada(gsap, alvo, Math.min(indice, MAXIMO_DE_PASSOS) * PASSO);
+                });
+              },
+              // threshold fica em 0 de propósito. Com uma fração (0.2, por
+              // exemplo), um bloco alto nunca dispara: a grade de recursos tem
+              // 2053px e numa janela de 346px a razão máxima possível é 0,169.
+              // Quem decide o momento é a margem: o topo do elemento precisa
+              // cruzar 10% acima da borda de baixo da janela.
+              { threshold: 0, rootMargin: '0px 0px -10% 0px' }
+            );
+
+            escondidos.forEach((alvo) => observador?.observe(alvo));
+
+            // O contador não é escondido: quem cuida da opacidade dele é o card
+            // em volta. Ele só precisa saber a hora de começar a contar.
+            container.querySelectorAll<HTMLElement>('[data-contar]').forEach((alvo) => {
+              if (abaixoDaDobra(alvo)) observador?.observe(alvo);
+            });
+          } catch {
+            // Página escondida e sem animação é o pior resultado possível:
+            // na dúvida, devolve tudo à vista.
+            escondidos.forEach((alvo) => {
+              soltar(alvo);
+              alvo.style.opacity = '';
+              alvo.style.transform = '';
+            });
+            escondidos = [];
+          }
         }, container);
       })
       ?.catch(() => {
@@ -135,6 +175,7 @@ export function useReveal(raiz: RefObject<HTMLElement | null>) {
       cancelado = true;
       observador?.disconnect();
       contexto?.revert();
+      escondidos.forEach(soltar);
     };
   }, [raiz]);
 }
