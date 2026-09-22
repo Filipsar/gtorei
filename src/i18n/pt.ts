@@ -35,6 +35,10 @@ export const pt = {
     collapse: 'Recolher',
     giveOpinion: 'Dê sua opinião',
     player: 'Jogador',
+    sectionTraining: 'Treino',
+    sectionAnalysis: 'Análise',
+    sectionCommunity: 'Comunidade',
+    sectionMore: 'Mais',
   },
 
   // Settings

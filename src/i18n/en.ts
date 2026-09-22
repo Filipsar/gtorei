@@ -37,6 +37,10 @@ export const en: Translations = {
     collapse: 'Collapse',
     giveOpinion: 'Give your opinion',
     player: 'Player',
+    sectionTraining: 'Training',
+    sectionAnalysis: 'Analysis',
+    sectionCommunity: 'Community',
+    sectionMore: 'More',
   },
 
   // Settings
