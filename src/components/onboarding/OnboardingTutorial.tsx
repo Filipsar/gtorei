@@ -81,7 +81,7 @@ const ONBOARDING_KEY = 'gtorei_onboarding_completed_v2';
 // dentro do modal.
 let vistoNestaSessao = false;
 
-function jaViuOnboarding(): boolean {
+export function jaViuOnboarding(): boolean {
   if (vistoNestaSessao) return true;
   try {
     return localStorage.getItem(ONBOARDING_KEY) === 'true';
@@ -146,7 +146,10 @@ export function OnboardingTutorial({ onComplete }: { onComplete: () => void }) {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+    // pointer-events-auto não é enfeite: um modal do Radix aberto em qualquer
+    // lugar da página marca o body com pointer-events: none, e este overlay,
+    // que não é do Radix, herdava isso e ficava sem responder a clique nenhum.
+    <div className="pointer-events-auto fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-300">
       <div
         role="dialog"
         aria-modal="true"

@@ -145,7 +145,10 @@ export function LevelTest({ onComplete, onClose }: LevelTestProps) {
 
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+    // pointer-events-auto: este overlay não é do Radix, e um modal do Radix
+    // aberto em qualquer lugar deixa o body com pointer-events: none, o que
+    // travava os botões daqui (mesmo caso do tutorial inicial).
+    <div className="pointer-events-auto fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 p-4">
       <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-border bg-muted/30">

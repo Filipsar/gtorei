@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Instagram, ChevronLeft, ChevronRight, X, Sparkles, ListChecks } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
@@ -34,10 +35,29 @@ export function UpdatesPopup() {
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
+  const marcarVersaoVista = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+    } catch {
+      // sem storage o popup volta na próxima visita, mas não quebra nada
+    }
+  };
+
   useEffect(() => {
     // Só para quem está logado e fora das páginas públicas de conteúdo
     if (!user) return;
     if (QUIET_PATHS.includes(location.pathname)) return;
+
+    // Quem ainda não terminou o tutorial inicial não vê este pop-up. Dois
+    // motivos: "as melhorias chegaram" não diz nada a quem chegou agora, e
+    // este é um modal do Radix — ao abrir, ele marca o body com
+    // pointer-events: none e congela o tutorial e o teste de nível, que são
+    // overlays comuns. Marcar a versão como vista evita que ele pule na cara
+    // do usuário no instante em que o tutorial termina.
+    if (!jaViuOnboarding()) {
+      marcarVersaoVista();
+      return;
+    }
 
     let seen: string | null = null;
     try {
@@ -53,11 +73,7 @@ export function UpdatesPopup() {
   }, [user, location.pathname]);
 
   const close = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
-    } catch {
-      // sem storage o popup volta na próxima visita, mas não quebra nada
-    }
+    marcarVersaoVista();
     setOpen(false);
   };
 

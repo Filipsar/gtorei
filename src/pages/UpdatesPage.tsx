@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.13.1',
+    date: '22/09/2026',
+    type: 'fix',
+    title: 'Tutorial Inicial Travado no Primeiro Acesso',
+    description: 'Quem entrava pela primeira vez encontrava o tutorial de boas-vindas com os botões sem responder. O pop-up de novidades abria atrás dele e, por ser um modal, desligava o clique no resto da página — inclusive no tutorial, que estava por cima e continuava visível. Agora o pop-up não aparece para quem ainda está no tutorial, e o tutorial e o teste de nível mantêm o clique próprio mesmo com outro modal aberto. Também foi atualizado o banner do topo, com as novidades da semana e um atalho para apoiar o projeto.',
+  },
+  {
     version: '1.13.0',
     date: '21/09/2026',
     type: 'improvement',
