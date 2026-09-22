@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { PokerTable } from '@/components/poker/PokerTable';
 import { ActionButtons } from '@/components/poker/ActionButtons';
+import { ActionButton } from '@/components/poker/ActionButton';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
@@ -27,7 +28,7 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, Check, ChevronsUp, Flame, X } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
@@ -1350,7 +1351,7 @@ export default function TrainPage() {
                     <HandDisplay cards={handState.heroCards} size="md" className="hidden sm:flex" />
                   </div>
                 )}
-                <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} disabled={false} showRaiseSlider={false} scenario={scenario} />
+                <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} toCall={handState.villainAction?.amount} disabled={false} showRaiseSlider={false} scenario={scenario} />
               </>
             )}
 
@@ -1435,77 +1436,75 @@ export default function TrainPage() {
                 {handState.awaitingPostflopAction && handState.villainAction ? (
                   /* Facing villain bet/raise: show Call, Raise, Fold, All-in */
                   <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                    <Button
-                      variant="outline"
+                    <ActionButton
+                      variante="fold"
+                      icone={X}
+                      rotulo="Fold"
+                      tecla="f"
                       onClick={() => handlePostflopAction('fold')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-muted hover:bg-muted/80 border-muted text-foreground font-semibold"
-                    >
-                      <span className="text-lg">✕</span>
-                      <span className="text-xs sm:text-sm">Fold</span>
-                    </Button>
-                    <Button
-                      variant="outline"
+                    />
+                    <ActionButton
+                      variante="passiva"
+                      icone={Check}
+                      rotulo="Call"
+                      detalhe={`${handState.villainAction.amount.toFixed(1)} BB`}
+                      tecla="c"
                       onClick={() => handlePostflopAction('call')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-secondary hover:bg-secondary/90 border-secondary text-secondary-foreground font-semibold"
-                    >
-                      <span className="text-lg">✓</span>
-                      <span className="text-xs sm:text-sm">Call {handState.villainAction.amount.toFixed(1)}</span>
-                    </Button>
-                    <Button
-                      variant="outline"
+                    />
+                    <ActionButton
+                      variante="agressiva"
+                      icone={ChevronsUp}
+                      rotulo="Raise"
+                      tecla="r"
                       onClick={() => handlePostflopAction('raise')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
-                    >
-                      <span className="text-lg">↑</span>
-                      <span className="text-xs sm:text-sm">Raise</span>
-                    </Button>
-                    <Button
-                      variant="outline"
+                    />
+                    <ActionButton
+                      variante="allin"
+                      icone={Flame}
+                      rotulo="All-in"
+                      detalhe={handState.heroStack > 0 ? `${handState.heroStack} BB` : undefined}
+                      tecla="a"
                       onClick={() => handlePostflopAction('allin')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground font-semibold"
-                    >
-                      <span className="text-lg">💥</span>
-                      <span className="text-xs sm:text-sm">All-in</span>
-                    </Button>
+                    />
                   </div>
                 ) : (
-                  /* No villain bet: show Check, Bet, Fold, All-in */
+                  /* Sem aposta na frente: Fold, Check, Bet, All-in — mesma ordem do
+                     conjunto acima, com o fold sempre na primeira casa, para a mão
+                     não errar o botão quando o ritmo aperta */
                   <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                    <Button
-                      variant="outline"
+                    <ActionButton
+                      variante="fold"
+                      icone={X}
+                      rotulo="Fold"
+                      tecla="f"
+                      onClick={() => handlePostflopAction('fold')}
+                    />
+                    <ActionButton
+                      variante="passiva"
+                      icone={Check}
+                      rotulo="Check"
+                      tecla="c"
                       onClick={() => handlePostflopAction('check')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-secondary hover:bg-secondary/90 border-secondary text-secondary-foreground font-semibold"
-                    >
-                      <span className="text-lg">✓</span>
-                      <span className="text-xs sm:text-sm">Check</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePostflopAction('bet')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-poker-raise hover:bg-poker-raise/90 border-poker-raise text-foreground font-semibold"
-                    >
-                      <span className="text-lg">💰</span>
-                      <span className="text-xs sm:text-sm">Bet {Math.min(
+                    />
+                    <ActionButton
+                      variante="agressiva"
+                      icone={ChevronsUp}
+                      rotulo="Bet"
+                      detalhe={`${Math.min(
                         Math.round(handState.pot * selectedBetSize * 10) / 10,
                         Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
-                      ).toFixed(1)}</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePostflopAction('fold')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-muted hover:bg-muted/80 border-muted text-foreground font-semibold"
-                    >
-                      <span className="text-lg">✕</span>
-                      <span className="text-xs sm:text-sm">Fold</span>
-                    </Button>
-                    <Button
-                      variant="outline"
+                      ).toFixed(1)} BB`}
+                      tecla="b"
+                      onClick={() => handlePostflopAction('bet')}
+                    />
+                    <ActionButton
+                      variante="allin"
+                      icone={Flame}
+                      rotulo="All-in"
+                      detalhe={handState.heroStack > 0 ? `${handState.heroStack} BB` : undefined}
+                      tecla="a"
                       onClick={() => handlePostflopAction('allin')}
-                      className="h-14 sm:h-16 flex flex-col items-center justify-center gap-1 bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground font-semibold"
-                    >
-                      <span className="text-lg">💥</span>
-                      <span className="text-xs sm:text-sm">All-in</span>
-                    </Button>
+                    />
                   </div>
                 )}
               </div>

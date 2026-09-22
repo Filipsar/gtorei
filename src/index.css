@@ -51,6 +51,9 @@
     --poker-fold: 220 10% 40%; /* Cinza/Azulado */
     --poker-call: 210 79% 46%; /* Azul */
     --poker-raise: 142 71% 45%; /* Verde */
+    /* Verde mais fundo só para o botão: no tom acima, texto branco dava 2,3:1 de
+       contraste e ficava ilegível. Este dá 5,4:1. */
+    --poker-raise-deep: 142 68% 28%;
     --poker-allin: 0 72% 51%; /* Vermelho */
     
     /* Position Colors */
