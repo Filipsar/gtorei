@@ -1,10 +1,5 @@
-import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-
-import rangeImg from '@/assets/modes/range-training.png';
-import huImg from '@/assets/modes/hu.png';
-import threeHandImg from '@/assets/modes/three-hand.png';
-import bountyImg from '@/assets/modes/bounty.png';
+import { ModeIcon } from './ModeIcon';
 
 export type TrainingMode = 'rangeTraining' | 'hu' | 'threeHand' | 'bounty';
 
@@ -12,34 +7,30 @@ interface TrainingModeSelectorProps {
   onSelect: (mode: TrainingMode) => void;
 }
 
-const modes: { id: TrainingMode; title: string; subtitle: string; description: string; image: string }[] = [
+const modes: { id: TrainingMode; title: string; subtitle: string; description: string }[] = [
   {
     id: 'rangeTraining',
     title: 'Treino de Range',
     subtitle: '8-max completo',
     description: 'Mesa completa com todas as posições e cenários. O treino clássico do GTORei.',
-    image: rangeImg,
   },
   {
     id: 'hu',
     title: 'HU',
     subtitle: '1 x 1',
     description: 'Heads-Up contra um único oponente. Treine decisões em cenários diretos.',
-    image: huImg,
   },
   {
     id: 'threeHand',
     title: 'Three Hand',
     subtitle: '1 x 1 x 1',
     description: 'Mesa com 3 jogadores. Ranges mais amplos e dinâmica multiway simplificada.',
-    image: threeHandImg,
   },
   {
     id: 'bounty',
     title: 'Modo Bounty',
     subtitle: 'ICM + Recompensas',
     description: 'Torneio PKO com bounties. O valor da recompensa em cada cabeça altera seus ranges.',
-    image: bountyImg,
   },
 ];
 
@@ -58,12 +49,8 @@ export function TrainingModeSelector({ onSelect }: TrainingModeSelectorProps) {
             onClick={() => onSelect(mode.id)}
           >
             <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-              <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-muted/50 group-hover:bg-primary/10 transition-colors overflow-hidden">
-                <img
-                  src={mode.image}
-                  alt={mode.title}
-                  className="w-10 h-10 object-contain"
-                />
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-muted/50 group-hover:bg-primary/10 transition-colors overflow-hidden text-muted-foreground group-hover:text-foreground">
+                <ModeIcon mode={mode.id} className="h-11 w-11" />
               </div>
               <div>
                 <h3 className="text-heading-sm">{mode.title}</h3>

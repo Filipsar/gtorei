@@ -4,16 +4,15 @@ import {
   Zap, Trophy, Award, Users, ChevronRight, ChevronLeft, X, Sparkles, Target, Swords,
   UsersRound, Crown
 } from 'lucide-react';
-import rangeImg from '@/assets/modes/range-training.png';
-import huImg from '@/assets/modes/hu.png';
-import threeHandImg from '@/assets/modes/three-hand.png';
-import bountyImg from '@/assets/modes/bounty.png';
+import { ModeIcon } from '@/components/poker/ModeIcon';
+import type { TrainingMode } from '@/components/poker/TrainingModeSelector';
 
 interface OnboardingStep {
   title: string;
   description: string;
   icon: React.ReactNode;
-  image?: string;
+  /** Passos de modo mostram a mesa daquele modo, igual à tela de escolha */
+  mode?: TrainingMode;
 }
 
 const steps: OnboardingStep[] = [
@@ -26,25 +25,25 @@ const steps: OnboardingStep[] = [
     title: 'Treino de Range (8-max)',
     description: 'O modo clássico! Mesa completa com todas as 8 posições. Escolha cenários como Open Raise, vs 3-Bet, e até Simulação pós-flop. Ideal para dominar os ranges de cada posição.',
     icon: <Target className="h-5 w-5 text-primary" />,
-    image: rangeImg,
+    mode: 'rangeTraining',
   },
   {
     title: 'HU — Heads-Up (1x1)',
     description: 'Treine decisões diretas contra um único oponente (SB vs BB). Ranges mais amplos e dinâmica agressiva. Perfeito para torneios finais e sit-and-gos.',
     icon: <Swords className="h-5 w-5 text-primary" />,
-    image: huImg,
+    mode: 'hu',
   },
   {
     title: 'Three Hand (3 jogadores)',
     description: 'Mesa com BTN, SB e BB. Ranges intermediários entre o full ring e o heads-up. Ótimo para praticar dinâmicas de mesa curta.',
     icon: <UsersRound className="h-5 w-5 text-primary" />,
-    image: threeHandImg,
+    mode: 'threeHand',
   },
   {
     title: 'Modo Bounty (PKO)',
     description: 'Torneio Progressive Knockout! O valor do bounty de cada jogador altera os ranges GTO. Aprenda quando vale a pena arriscar pelo prêmio na cabeça do oponente.',
     icon: <Crown className="h-5 w-5 text-primary" />,
-    image: bountyImg,
+    mode: 'bounty',
   },
   {
     title: 'Feedback GTO em tempo real',
@@ -180,12 +179,12 @@ export function OnboardingTutorial({ onComplete }: { onComplete: () => void }) {
           </p>
 
           <div className="mb-5 flex justify-center">
-            {step.image ? (
+            {step.mode ? (
               <div className="relative">
-                {/* A arte tem 64px de origem: exibi-la a 112px deixava tudo borrado.
-                    O emblema passou para a moldura, em vez de cobrir o desenho. */}
-                <div className="rounded-xl border border-border bg-muted/30 p-4">
-                  <img src={step.image} alt="" width={64} height={64} className="h-16 w-16 object-contain" />
+                {/* O desenho é a mesa do próprio modo, a mesma da tela de escolha.
+                    O emblema fica na moldura, em vez de cobrir o desenho. */}
+                <div className="rounded-xl border border-border bg-muted/30 p-4 text-muted-foreground">
+                  <ModeIcon mode={step.mode} className="h-16 w-16" />
                 </div>
                 <div className="absolute -bottom-2 -right-2 rounded-full border border-border bg-card p-1.5">
                   {step.icon}
