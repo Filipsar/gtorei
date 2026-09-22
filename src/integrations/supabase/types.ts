@@ -101,9 +101,12 @@ export type Database = {
       played_hands: {
         Row: {
           correct_action: string
+          effective_stack: number | null
           ev_loss: number
           feedback: string
+          game_mode: string | null
           hand: string
+          hand_code: string | null
           id: string
           played_at: string
           points: number
@@ -113,12 +116,16 @@ export type Database = {
           stack: number
           user_action: string
           user_id: string
+          villain_position: string | null
         }
         Insert: {
           correct_action: string
+          effective_stack?: number | null
           ev_loss?: number
           feedback: string
+          game_mode?: string | null
           hand: string
+          hand_code?: string | null
           id?: string
           played_at?: string
           points: number
@@ -128,12 +135,16 @@ export type Database = {
           stack: number
           user_action: string
           user_id: string
+          villain_position?: string | null
         }
         Update: {
           correct_action?: string
+          effective_stack?: number | null
           ev_loss?: number
           feedback?: string
+          game_mode?: string | null
           hand?: string
+          hand_code?: string | null
           id?: string
           played_at?: string
           points?: number
@@ -143,6 +154,7 @@ export type Database = {
           stack?: number
           user_action?: string
           user_id?: string
+          villain_position?: string | null
         }
         Relationships: [
           {
@@ -416,18 +428,40 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_hand: {
+        Args: { _code: string }
+        Returns: {
+          correct_action: string
+          effective_stack: number | null
+          ev_loss: number
+          feedback: string
+          game_mode: string | null
+          hand: string
+          played_at: string
+          points: number
+          position: string
+          scenario: string
+          stack: number
+          user_action: string
+          villain_position: string | null
+        }[]
+      }
       record_hand_result: {
         Args: {
           _correct_action: string
+          _effective_stack?: number | null
           _ev_loss?: number
           _feedback: string
+          _game_mode?: string | null
           _hand: string
+          _hand_code?: string | null
           _points: number
           _position: string
           _scenario: string
           _session_id: string
           _stack: number
           _user_action: string
+          _villain_position?: string | null
         }
         Returns: Json
       }

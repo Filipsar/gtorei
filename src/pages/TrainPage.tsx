@@ -348,6 +348,10 @@ export default function TrainPage() {
     feedback: string;
     points: number;
     evLoss: number;
+    handCode?: string | null;
+    gameMode?: string | null;
+    villainPosition?: string | null;
+    effectiveStack?: number | null;
   }) => {
     if (!user) return;
     let sessionId = supabaseSessionId.current;
@@ -356,7 +360,7 @@ export default function TrainPage() {
     }
     if (!sessionId) return;
 
-    const { data, error } = await supabase.rpc('record_hand_result', {
+    const base = {
       _session_id: sessionId,
       _hand: params.hand,
       _scenario: params.scenario,
@@ -367,7 +371,24 @@ export default function TrainPage() {
       _feedback: params.feedback,
       _points: Math.round(params.points),
       _ev_loss: params.evLoss ?? 0,
+    };
+
+    let { data, error } = await supabase.rpc('record_hand_result', {
+      ...base,
+      _hand_code: params.handCode ?? null,
+      _game_mode: params.gameMode ?? null,
+      _villain_position: params.villainPosition ?? null,
+      _effective_stack: params.effectiveStack ?? null,
     });
+
+    // O ID da mão e o contexto do spot só existem depois da migration
+    // 20260922190000_hand_code_7_dias. Enquanto ela não estiver aplicada o
+    // banco recusa a chamada, e aí a mão vai sem eles: ficar sem identificador
+    // é um problema pequeno; não contar o XP de quem jogou é um problema
+    // grande. Dá para tirar esta volta assim que a migration subir.
+    if (error && (error.code === 'PGRST202' || /schema cache|does not exist/i.test(error.message ?? ''))) {
+      ({ data, error } = await supabase.rpc('record_hand_result', base));
+    }
 
     if (error) {
       if (error.message?.includes('rate_limited')) {
@@ -474,6 +495,12 @@ export default function TrainPage() {
         feedback: feedback.type,
         points: pointsToAdd,
         evLoss: feedback.evLoss,
+        // Contexto do spot: é o que faz o ID da mão servir para alguma coisa
+        // quando alguém relata um problema e manda o código.
+        handCode: currentUniqueHandId,
+        gameMode: gm,
+        villainPosition: handState.villainPosition ?? null,
+        effectiveStack,
       });
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
@@ -546,7 +573,10 @@ export default function TrainPage() {
     }
 
     setPhase('feedback');
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore]);
+    // currentStackDistribution e currentUniqueHandId entram aqui porque são
+    // lidos lá dentro: sem eles a função podia ficar com os valores da mão
+    // anterior e gravar o stack efetivo — ou o ID — da mão errada.
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand]);
 
   // Calculate postflop bonus/penalty from street verdicts
   const calculatePostflopBonus = useCallback((): number => {
@@ -599,6 +629,10 @@ export default function TrainPage() {
       feedback: feedback.type,
       points: totalPoints,
       evLoss: feedback.evLoss,
+      handCode: currentUniqueHandId,
+      gameMode: getGameMode(),
+      villainPosition: handState.villainPosition ?? null,
+      effectiveStack: currentStackDistribution?.effectiveStack ?? handState.heroStack,
     });
 
     setSessionScore(prev => prev + totalPoints);
@@ -618,7 +652,7 @@ export default function TrainPage() {
     }
 
     setPendingSimulationScore(null);
-  }, [pendingSimulationScore, handState, currentHandId, scenario, checkAchievements, calculatePostflopBonus, recordHand]);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, checkAchievements, calculatePostflopBonus, recordHand, currentStackDistribution, currentUniqueHandId, trainingMode]);
 
   // Auto-apply pending simulation score when hand completes and enters review
   useEffect(() => {
