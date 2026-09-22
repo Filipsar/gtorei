@@ -87,6 +87,12 @@
     --rank-second: 0 0% 65%;
     --rank-third: 25 80% 45%;
 
+    /* Faixa de avisos do topo. Ela usava o dourado como cor de texto: no tema
+       claro isso dava 1,8:1 de contraste, muito abaixo dos 4,5:1 do WCAG AA. */
+    --banner-bg: 45 40% 12%;
+    --banner-fg: 45 90% 72%;
+    --banner-border: 45 35% 22%;
+
     /* Sidebar */
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 45 10% 85%;
@@ -120,7 +126,12 @@
     --border: 0 0% 85%;
     --input: 0 0% 85%;
     --ring: 45 100% 45%;
-    
+
+    /* Âmbar escuro sobre creme: 6,3:1 */
+    --banner-bg: 45 90% 94%;
+    --banner-fg: 40 95% 25%;
+    --banner-border: 45 60% 82%;
+
     --sidebar-background: 0 0% 96%;
     --sidebar-foreground: 0 0% 25%;
     --sidebar-primary: 45 100% 45%;
@@ -152,6 +163,10 @@
     --border: 0 0% 22%;
     --input: 0 0% 22%;
     --ring: 45 100% 50%;
+
+    --banner-bg: 45 40% 12%;
+    --banner-fg: 45 90% 72%;
+    --banner-border: 45 35% 22%;
   }
 }
 
@@ -303,8 +318,7 @@
     animation: none;
   }
 
-  .animate-marquee,
-  .animate-marquee-single {
+  .animate-marquee {
     animation: none !important;
     transform: none !important;
   }
