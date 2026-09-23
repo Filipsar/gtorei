@@ -16,7 +16,8 @@ const VARIANTES: Record<AcaoVariante, string> = {
 
 interface ActionButtonProps {
   variante: AcaoVariante;
-  icone: LucideIcon;
+  /** Opcional: a barra de ação principal não usa ícone, como nas salas de verdade */
+  icone?: LucideIcon;
   rotulo: string;
   /** Valor em BB, quando faz diferença saber quanto custa a ação */
   detalhe?: string;
@@ -71,7 +72,10 @@ export function ActionButton({
       aria-keyshortcuts={tecla}
       aria-label={detalhe ? `${rotulo} ${detalhe}` : rotulo}
       className={cn(
-        'relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-xl border border-white/10 text-white shadow-lg sm:h-[4.5rem]',
+        // Botão largo, nome grande e valor logo abaixo: é assim que a ação é
+        // lida numa sala de verdade, de relance e sem procurar.
+        'group relative flex h-16 w-full flex-col items-center justify-center gap-1 overflow-hidden',
+        'rounded-xl border border-white/10 text-white shadow-lg sm:h-[4.5rem]',
         'transition-[filter,transform,box-shadow] duration-150 hover:brightness-110 active:translate-y-px',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         'disabled:pointer-events-none disabled:opacity-50',
@@ -80,10 +84,19 @@ export function ActionButton({
         className
       )}
     >
-      <Icone className="h-5 w-5 shrink-0" aria-hidden="true" />
-      <span className="text-xs font-bold leading-none sm:text-sm">{rotulo}</span>
+      {/* Brilho no topo, para o botão ter relevo como o das salas */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/15 to-transparent"
+      />
+      <span className="relative flex items-center gap-1.5 leading-none">
+        {Icone && <Icone className="h-4 w-4 shrink-0" aria-hidden="true" />}
+        <span className="text-sm font-bold tracking-wide sm:text-base">{rotulo}</span>
+      </span>
       {detalhe && (
-        <span className="text-[10px] font-semibold leading-none tabular-nums text-white/75">{detalhe}</span>
+        <span className="relative text-[11px] font-semibold leading-none tabular-nums text-white/80 sm:text-xs">
+          {detalhe}
+        </span>
       )}
       {tecla && (
         <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden rounded bg-black/30 px-1 text-[9px] font-semibold uppercase leading-relaxed text-white/60 sm:block">

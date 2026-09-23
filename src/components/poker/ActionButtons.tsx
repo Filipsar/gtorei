@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Check, ChevronsUp, Flame, X } from 'lucide-react';
 import { ActionType, Scenario } from '@/data/gtoRanges';
 import { ActionButton } from './ActionButton';
 
@@ -87,7 +86,6 @@ export function ActionButtons({
       <div className="grid grid-cols-4 gap-2 pb-4 sm:gap-3">
         <ActionButton
           variante="fold"
-          icone={X}
           rotulo="Fold"
           tecla="f"
           disabled={disabled}
@@ -95,7 +93,6 @@ export function ActionButtons({
         />
         <ActionButton
           variante="passiva"
-          icone={Check}
           rotulo={ehLimp ? 'Limp' : 'Call'}
           detalhe={!ehLimp && toCall ? `${toCall.toFixed(1)} BB` : undefined}
           tecla="c"
@@ -104,7 +101,6 @@ export function ActionButtons({
         />
         <ActionButton
           variante="agressiva"
-          icone={ChevronsUp}
           rotulo="Raise"
           tecla="r"
           ativo={showSlider}
@@ -113,7 +109,6 @@ export function ActionButtons({
         />
         <ActionButton
           variante="allin"
-          icone={Flame}
           rotulo="All-in"
           detalhe={stack > 0 ? `${stack} BB` : undefined}
           tecla="a"

@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { PokerTable } from '@/components/poker/PokerTable';
 import { ActionButtons } from '@/components/poker/ActionButtons';
-import { ActionButton } from '@/components/poker/ActionButton';
+import { PostflopActions } from '@/components/poker/PostflopActions';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
-import { TrainingModeSelector, TrainingMode } from '@/components/poker/TrainingModeSelector';
+import { TrainingModeSelector, TrainingMode, ModeChoice, sortearModo } from '@/components/poker/TrainingModeSelector';
 import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '@/components/poker/BountyConfig';
 import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -28,7 +28,7 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, Check, ChevronsUp, Flame, X } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
@@ -65,6 +65,8 @@ export default function TrainPage() {
 
   // Mode state
   const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
+  // No modo aleatório, trainingMode guarda o que saiu na mão atual
+  const [modoAleatorio, setModoAleatorio] = useState(false);
   const [heroBounty, setHeroBounty] = useState<BountyTier>(5);
   const [currentBounties, setCurrentBounties] = useState<Record<string, number>>({});
 
@@ -128,7 +130,12 @@ export default function TrainPage() {
   }, []);
 
   // When mode changes, reset positions to valid ones
-  const handleModeSelect = (mode: TrainingMode) => {
+  const handleModeSelect = (escolha: ModeChoice) => {
+    // No aleatório o modo é sorteado de novo a cada mão; aqui só sai o primeiro,
+    // para a tela de configuração já ter posições e cenários coerentes.
+    const aleatorio = escolha === 'random';
+    const mode = aleatorio ? sortearModo() : escolha;
+    setModoAleatorio(aleatorio);
     setTrainingMode(mode);
     const validPositions = MODE_POSITIONS[mode];
     setSelectedPositions([validPositions[0]]);
@@ -142,21 +149,21 @@ export default function TrainPage() {
   };
 
   // Get available positions for current mode
-  const getAvailablePositions = (): Position[] => {
-    return trainingMode ? MODE_POSITIONS[trainingMode] : POSITIONS;
+  const getAvailablePositions = (modo: TrainingMode | null = trainingMode): Position[] => {
+    return modo ? MODE_POSITIONS[modo] : POSITIONS;
   };
 
   // Get available scenarios for current mode
-  const getAvailableScenarios = (): Scenario[] => {
-    return trainingMode ? MODE_SCENARIOS[trainingMode] : ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+  const getAvailableScenarios = (modo: TrainingMode | null = trainingMode): Scenario[] => {
+    return modo ? MODE_SCENARIOS[modo] : ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
   };
 
   // Get current game mode
-  const getGameMode = (): GameMode => {
+  const getGameMode = (modo: TrainingMode | null = trainingMode): GameMode => {
     const map: Record<TrainingMode, GameMode> = {
       rangeTraining: '8max', hu: 'hu', threeHand: 'threehand', bounty: 'bounty',
     };
-    return trainingMode ? map[trainingMode] : '8max';
+    return modo ? map[modo] : '8max';
   };
 
   // Get current bounty multiplier
@@ -254,11 +261,19 @@ export default function TrainPage() {
 
   // Start game
   const startGame = useCallback(() => {
-    const availableScenarios = getAvailableScenarios().filter(s => !LOCKED_SCENARIOS.includes(s));
-    const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
+    // No aleatório o modo sai aqui, e é ele que vale para a mão inteira
+    const modo = modoAleatorio ? sortearModo() : trainingMode;
+    const availableScenarios = getAvailableScenarios(modo).filter(s => !LOCKED_SCENARIOS.includes(s));
+    // O cenário escolhido pode não existir no modo que saiu — o three hand não
+    // tem vs open shove. Nesse caso sorteia um que exista, em vez de travar.
+    const selectedScenario = randomScenario || !availableScenarios.includes(scenario)
+      ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)]
+      : scenario;
     const scenarioInvalid = getInvalidPositions(selectedScenario);
-    const validPositions = getAvailablePositions().filter(p => !scenarioInvalid.includes(p));
-    const validSelected = selectedPositions.filter(p => !scenarioInvalid.includes(p));
+    const validPositions = getAvailablePositions(modo).filter(p => !scenarioInvalid.includes(p));
+    // A posição escolhida também precisa existir no modo: quem pediu UTG não
+    // pode receber UTG quando o sorteio trouxer heads-up.
+    const validSelected = selectedPositions.filter(p => validPositions.includes(p));
     const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
@@ -292,26 +307,29 @@ export default function TrainPage() {
         });
     }
 
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo]);
 
     // Generate realistic stack distribution
-    const gm = getGameMode();
-    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, newHandState.villainPosition, MODE_POSITIONS[trainingMode]);
-    
+    const gm = getGameMode(modo);
+    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, newHandState.villainPosition, MODE_POSITIONS[modo]);
+
     // Re-initialize with villain's dynamic stack
-    const handStateWithStacks = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode], stackDist.villain);
+    const handStateWithStacks = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
-    
-    if (randomScenario) {
+
+    if (modoAleatorio) {
+      setTrainingMode(modo);
+    }
+    if (randomScenario || selectedScenario !== scenario) {
       setScenario(selectedScenario);
     }
 
     // Generate bounties for bounty mode
     let bounties: Record<string, number> = {};
-    if (trainingMode === 'bounty') {
+    if (modo === 'bounty') {
       bounties = generateBounties();
       // Hero bounty is always the selected one
       bounties[pos] = heroBounty;
@@ -335,7 +353,7 @@ export default function TrainPage() {
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
-  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, heroBounty]);
+  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty]);
 
   // Record a scored hand on the server (XP, level, session stats and ranking)
   const recordHand = useCallback(async (params: {
@@ -748,35 +766,42 @@ export default function TrainPage() {
 
   // Next hand
   const nextHand = useCallback(() => {
-    const availableScenarios = getAvailableScenarios().filter(s => !LOCKED_SCENARIOS.includes(s));
-    const selectedScenario = randomScenario ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)] : scenario;
-    
+    // Mesma regra do começo da sessão: no aleatório, cada mão sorteia o modo
+    const modo = modoAleatorio ? sortearModo() : trainingMode;
+    const availableScenarios = getAvailableScenarios(modo).filter(s => !LOCKED_SCENARIOS.includes(s));
+    const selectedScenario = randomScenario || !availableScenarios.includes(scenario)
+      ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)]
+      : scenario;
+
     const scenarioInvalid = getInvalidPositions(selectedScenario);
-    const validPositions = getAvailablePositions().filter(p => !scenarioInvalid.includes(p));
-    const validSelected = selectedPositions.filter(p => !scenarioInvalid.includes(p));
+    const validPositions = getAvailablePositions(modo).filter(p => !scenarioInvalid.includes(p));
+    const validSelected = selectedPositions.filter(p => validPositions.includes(p));
     const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode]);
+    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo]);
 
     // Generate realistic stack distribution
-    const gm = getGameMode();
-    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, tempState.villainPosition, MODE_POSITIONS[trainingMode]);
-    
+    const gm = getGameMode(modo);
+    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, tempState.villainPosition, MODE_POSITIONS[modo]);
+
     // Re-initialize with villain's dynamic stack
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[trainingMode], stackDist.villain);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
-    
-    if (randomScenario) {
+
+    if (modoAleatorio) {
+      setTrainingMode(modo);
+    }
+    if (randomScenario || selectedScenario !== scenario) {
       setScenario(selectedScenario);
     }
 
     // Regenerate bounties
-    if (trainingMode === 'bounty') {
+    if (modo === 'bounty') {
       const bounties = generateBounties();
       bounties[pos] = heroBounty;
       setCurrentBounties(bounties);
@@ -800,7 +825,7 @@ export default function TrainPage() {
     setPendingSimulationScore(null);
     setSimulationStreetActions([]);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, heroBounty]);
+  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty]);
 
   // Toggle favorite hand
   const toggleFavoriteHand = useCallback(() => {
@@ -977,13 +1002,18 @@ export default function TrainPage() {
 
   // Mode label helper
   const getModeLabel = (): string => {
-    switch (trainingMode) {
-      case 'rangeTraining': return 'Treino de Range';
-      case 'hu': return 'HU (1x1)';
-      case 'threeHand': return 'Three Hand (1x1x1)';
-      case 'bounty': return 'Modo Bounty';
-      default: return '';
-    }
+    const nome = (() => {
+      switch (trainingMode) {
+        case 'rangeTraining': return 'Treino de Range';
+        case 'hu': return 'HU (1x1)';
+        case 'threeHand': return 'Three Hand (1x1x1)';
+        case 'bounty': return 'Modo Bounty';
+        default: return '';
+      }
+    })();
+    // No aleatório o nome sozinho enganaria: dá a entender que a sessão inteira
+    // é daquele modo, quando ele vale só para a mão que está na tela.
+    return modoAleatorio && nome ? `Aleatório · ${nome}` : nome;
   };
 
   // Mode selection phase
@@ -1447,34 +1477,39 @@ export default function TrainPage() {
                   </div>
                 </div>
 
-                {/* Bet/Raise sizing selector */}
-                <div className="flex items-center justify-center gap-2">
+                {/* Tamanho da aposta: régua colada na barra de ação, como nas salas */}
+                <div className="flex items-center justify-center gap-1 rounded-xl border border-border bg-muted/40 p-1">
                   {[
                     { label: '33%', value: 0.33 },
                     { label: '50%', value: 0.5 },
                     { label: '75%', value: 0.75 },
-                    { label: '100%', value: 1.0 },
+                    { label: 'Pot', value: 1.0 },
                   ].map(size => {
                     const betAmount = Math.min(
                       Math.round(handState.pot * size.value * 10) / 10,
                       Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
                     );
+                    const ativo = selectedBetSize === size.value;
                     return (
-                      <Button
+                      <button
                         key={size.label}
-                        variant={selectedBetSize === size.value ? 'default' : 'outline'}
-                        size="sm"
+                        type="button"
                         onClick={() => setSelectedBetSize(size.value)}
+                        aria-pressed={ativo}
+                        aria-label={`${size.label} do pote, ${betAmount.toFixed(1)} BB`}
                         className={cn(
-                          'min-w-[3rem] text-xs',
-                          selectedBetSize === size.value && 'bg-primary text-primary-foreground'
+                          'flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                          ativo
+                            ? 'bg-primary text-primary-foreground shadow'
+                            : 'text-muted-foreground hover:bg-background hover:text-foreground'
                         )}
                       >
                         {size.label}
-                      </Button>
+                      </button>
                     );
                   })}
-                  <span className="text-xs text-muted-foreground ml-1">
+                  <span className="ml-1 min-w-[4rem] px-2 text-right text-sm font-bold tabular-nums text-primary">
                     {Math.min(
                       Math.round(handState.pot * selectedBetSize * 10) / 10,
                       Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
@@ -1483,80 +1518,15 @@ export default function TrainPage() {
                 </div>
 
                 {/* Action buttons - adapt based on whether facing a villain bet */}
-                {handState.awaitingPostflopAction && handState.villainAction ? (
-                  /* Facing villain bet/raise: show Call, Raise, Fold, All-in */
-                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                    <ActionButton
-                      variante="fold"
-                      icone={X}
-                      rotulo="Fold"
-                      tecla="f"
-                      onClick={() => handlePostflopAction('fold')}
-                    />
-                    <ActionButton
-                      variante="passiva"
-                      icone={Check}
-                      rotulo="Call"
-                      detalhe={`${handState.villainAction.amount.toFixed(1)} BB`}
-                      tecla="c"
-                      onClick={() => handlePostflopAction('call')}
-                    />
-                    <ActionButton
-                      variante="agressiva"
-                      icone={ChevronsUp}
-                      rotulo="Raise"
-                      tecla="r"
-                      onClick={() => handlePostflopAction('raise')}
-                    />
-                    <ActionButton
-                      variante="allin"
-                      icone={Flame}
-                      rotulo="All-in"
-                      detalhe={handState.heroStack > 0 ? `${handState.heroStack} BB` : undefined}
-                      tecla="a"
-                      onClick={() => handlePostflopAction('allin')}
-                    />
-                  </div>
-                ) : (
-                  /* Sem aposta na frente: Fold, Check, Bet, All-in — mesma ordem do
-                     conjunto acima, com o fold sempre na primeira casa, para a mão
-                     não errar o botão quando o ritmo aperta */
-                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                    <ActionButton
-                      variante="fold"
-                      icone={X}
-                      rotulo="Fold"
-                      tecla="f"
-                      onClick={() => handlePostflopAction('fold')}
-                    />
-                    <ActionButton
-                      variante="passiva"
-                      icone={Check}
-                      rotulo="Check"
-                      tecla="c"
-                      onClick={() => handlePostflopAction('check')}
-                    />
-                    <ActionButton
-                      variante="agressiva"
-                      icone={ChevronsUp}
-                      rotulo="Bet"
-                      detalhe={`${Math.min(
-                        Math.round(handState.pot * selectedBetSize * 10) / 10,
-                        Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
-                      ).toFixed(1)} BB`}
-                      tecla="b"
-                      onClick={() => handlePostflopAction('bet')}
-                    />
-                    <ActionButton
-                      variante="allin"
-                      icone={Flame}
-                      rotulo="All-in"
-                      detalhe={handState.heroStack > 0 ? `${handState.heroStack} BB` : undefined}
-                      tecla="a"
-                      onClick={() => handlePostflopAction('allin')}
-                    />
-                  </div>
-                )}
+                <PostflopActions
+                  toCall={handState.awaitingPostflopAction && handState.villainAction ? handState.villainAction.amount : 0}
+                  betAmount={Math.min(
+                    Math.round(handState.pot * selectedBetSize * 10) / 10,
+                    Math.min(handState.heroStack, handState.villainStack || handState.heroStack)
+                  )}
+                  heroStack={handState.heroStack}
+                  onAction={handlePostflopAction}
+                />
               </div>
             )}
 

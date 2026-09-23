@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { TrainingMode } from './TrainingModeSelector';
+import type { ModeChoice, TrainingMode } from './TrainingModeSelector';
 
 /**
  * Ícones dos modos de treino.
@@ -54,15 +54,18 @@ function assentos(quantidade: number) {
   return lugares;
 }
 
-const ASSENTOS_POR_MODO: Record<TrainingMode, number> = {
+const ASSENTOS_POR_MODO: Record<ModeChoice, number> = {
   rangeTraining: 8,
   hu: 2,
   threeHand: 3,
   bounty: 8,
+  // No aleatório a mesa é a cheia, mas os lugares ficam por definir: quem vai
+  // sentar depende do modo que sair na mão.
+  random: 8,
 };
 
 interface ModeIconProps {
-  mode: TrainingMode;
+  mode: ModeChoice;
   className?: string;
 }
 
@@ -89,6 +92,22 @@ export function ModeIcon({ mode, className }: ModeIconProps) {
       {lugares.map((lugar, i) => {
         if (mode === 'bounty' && lugar === alvo) return null;
         const ehVoce = i === 0;
+        // No aleatório só o seu lugar é certo; os outros ficam pontilhados,
+        // porque a mesa muda de tamanho a cada mão.
+        if (mode === 'random' && !ehVoce) {
+          return (
+            <circle
+              key={i}
+              cx={lugar.cx}
+              cy={lugar.cy}
+              r={raioAssento}
+              className="fill-none stroke-current"
+              strokeWidth="1"
+              strokeDasharray="1.6 1.4"
+              opacity="0.65"
+            />
+          );
+        }
         return (
           <circle
             key={i}
@@ -100,6 +119,21 @@ export function ModeIcon({ mode, className }: ModeIconProps) {
           />
         );
       })}
+
+      {mode === 'random' && (
+        <g
+          className="stroke-primary"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        >
+          <path d="M11 13.6h2.1a2.5 2.5 0 0 1 2.1 1.2l1.2 2.4a2.5 2.5 0 0 0 2.1 1.2H21" />
+          <path d="M11 18.4h2.1a2.5 2.5 0 0 0 2.1-1.2l1.2-2.4a2.5 2.5 0 0 1 2.1-1.2H21" />
+          <path d="M19.5 12.2 21 13.6l-1.5 1.4" />
+          <path d="M19.5 17 21 18.4l-1.5 1.4" />
+        </g>
+      )}
 
       {mode === 'bounty' && (
         <g className="stroke-primary" strokeWidth="1.1" strokeLinecap="round">
