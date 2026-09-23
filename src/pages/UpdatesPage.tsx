@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.17.0',
+    date: '23/09/2026',
+    type: 'feature',
+    title: 'Simulação Multiway: Jogue Contra Dois',
+    description: 'A Simulação ganhou a opção de pote multiway. Um terceiro jogador paga a abertura e vai ao flop com você e o adversário principal — ele pode desistir no meio do caminho e pode ganhar a mão no showdown, onde as cartas dele viram junto com as dos outros. É o treino que ensina a coisa mais difícil do pote de três: mão boa contra um vira mão fraca contra dois, e blefe que passa num passa pouco no outro. A opção aparece só na Simulação, que é o único cenário que joga o pós-flop, e só em mesas com três lugares ou mais. Como o resto da Simulação, é para apoiadores. Uma ressalva honesta sobre o que ele faz: o terceiro jogador paga ou desiste a cada rua, mas não abre aposta nem aumenta — quem conduz a aposta continua sendo o adversário principal.',
+  },
+  {
     version: '1.16.1',
     date: '23/09/2026',
     type: 'improvement',

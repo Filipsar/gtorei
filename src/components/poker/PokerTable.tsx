@@ -28,6 +28,8 @@ interface PokerTableProps {
     amount: number;
   };
   villainStack?: number;
+  /** Adversários além do principal, no pote multiway da simulação */
+  extraOpponents?: { position: Position; cards: CardType[]; stack: number; folded: boolean }[];
   communityCards?: CardType[];
   street?: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
   foldedPositions?: Position[];
@@ -92,6 +94,7 @@ export function PokerTable({
   villainCards,
   villainAction,
   villainStack,
+  extraOpponents,
   communityCards = [],
   street = 'preflop',
   foldedPositions = [],
@@ -359,6 +362,8 @@ export function PokerTable({
           const isVillain = pos === villainPosition;
           const hasFolded = foldedPositions.includes(pos);
 
+          const extra = extraOpponents?.find((o) => o.position === pos);
+
           let cardsToShow: CardType[] | undefined;
           let shouldShowCards = false;
           if (isHero && heroCards && heroCards.length > 0) {
@@ -367,6 +372,11 @@ export function PokerTable({
           } else if (isVillain && villainCards && villainCards.length > 0) {
             cardsToShow = villainCards;
             shouldShowCards = street === 'showdown';
+          } else if (extra && !extra.folded && extra.cards.length > 0) {
+            // No pote multiway o terceiro também abre as cartas no showdown:
+            // ele disputa o pote como qualquer um.
+            cardsToShow = extra.cards;
+            shouldShowCards = street === 'showdown';
           }
 
           let stackToShow: number | undefined;
@@ -374,6 +384,8 @@ export function PokerTable({
             stackToShow = heroStack;
           } else if (isVillain && villainStack) {
             stackToShow = villainStack;
+          } else if (extra) {
+            stackToShow = extra.stack;
           } else if (playerStacks && playerStacks[pos]) {
             stackToShow = playerStacks[pos];
           }

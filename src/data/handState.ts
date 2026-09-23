@@ -3,7 +3,7 @@
 
 import { ActionType, Position, Scenario, POSITIONS, RANKS, getHandData } from './gtoRanges';
 import { CardType } from '@/components/poker/PlayingCard';
-import { compareHands, HandEvaluation } from './handEvaluator';
+import { compareHands, evaluateHand, HandEvaluation } from './handEvaluator';
 import { makeVillainPostflopDecision, makeVillainPreflopDecision, VillainDecision, VillainMemory, createVillainMemory, updateMemory } from './villainGTO';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
@@ -37,6 +37,28 @@ export interface HandState {
   awaitingPostflopAction?: boolean;
   lastVillainAction?: string;
   villainMemory?: VillainMemory;
+  /**
+   * Adversários além do principal, só na simulação multiway.
+   *
+   * O que eles fazem e o que não fazem: eles pagam ou desistem no fim de cada
+   * rua, contra o maior valor que entrou nela, e vão ao showdown se chegarem
+   * lá. Não abrem aposta nem aumentam — quem faz isso é o adversário principal.
+   * É uma simplificação assumida: ela deixa o pote, as desistências no meio do
+   * caminho e o showdown de três reais, sem reescrever a rodada de apostas.
+   */
+  extraOpponents?: ExtraOpponent[];
+  /** Maior valor que um jogador precisa pagar para seguir na rua atual */
+  apostaDaRua?: number;
+  /** Quem levou o pote, quando não foi o herói */
+  showdownWinner?: Position;
+}
+
+export interface ExtraOpponent {
+  position: Position;
+  cards: CardType[];
+  stack: number;
+  folded: boolean;
+  eval?: HandEvaluation;
 }
 
 // Gerar um deck completo
@@ -67,14 +89,23 @@ function shuffle<T>(array: T[]): T[] {
 // IMPORTANTE: Respeita a ordem de ação pré-flop:
 // UTG -> UTG1 -> LJ -> HJ -> CO -> BTN -> SB -> BB
 // "Antes" = age antes (índice menor), "Depois" = age depois (índice maior)
+/** Posições que podem abrir deixando pelo menos um pagador entre elas e o herói */
+function aberturasComEspacoParaPagador(positionOrder: Position[], heroIndex: number): Position[] {
+  return positionOrder.filter((_, i) => {
+    if (i >= heroIndex) return false;
+    return positionOrder.some((p, j) => j > i && j < heroIndex && p !== 'SB' && p !== 'BB');
+  });
+}
+
 export function getVillainPosition(
   scenario: Scenario,
   heroPosition: Position,
-  availablePositions?: Position[]
+  availablePositions?: Position[],
+  precisaDePagador = false
 ): Position | undefined {
   const positionOrder = availablePositions || POSITIONS;
   const heroIndex = positionOrder.indexOf(heroPosition);
-  
+
   switch (scenario) {
     case 'vsOpenRaise':
     case 'simulation': {
@@ -83,6 +114,14 @@ export function getVillainPosition(
       const earlierPositions = positionOrder.filter((_, i) => i < heroIndex);
       if (earlierPositions.length === 0) {
         return undefined; // Cenário impossível para esta posição
+      }
+      // Na simulação multiway quem abre precisa deixar lugar para um pagador,
+      // senão o pote chega ao flop com dois jogadores e não com três.
+      if (precisaDePagador) {
+        const comEspaco = aberturasComEspacoParaPagador(positionOrder, heroIndex);
+        if (comEspaco.length > 0) {
+          return comEspaco[Math.floor(Math.random() * comEspaco.length)];
+        }
       }
       return earlierPositions[Math.floor(Math.random() * earlierPositions.length)];
     }
@@ -114,10 +153,7 @@ export function getVillainPosition(
       //
       // Os blinds não entram como pagadores porque ainda não agiram: no preflop
       // eles falam depois do botão.
-      const podeAbrir = positionOrder.filter((_, i) => {
-        if (i >= heroIndex) return false;
-        return positionOrder.some((p, j) => j > i && j < heroIndex && p !== 'SB' && p !== 'BB');
-      });
+      const podeAbrir = aberturasComEspacoParaPagador(positionOrder, heroIndex);
       if (podeAbrir.length === 0) {
         return undefined;
       }
@@ -148,18 +184,22 @@ export function initializeHandState(
   heroHand: string,
   heroCards: CardType[],
   availablePositions?: Position[],
-  villainStackOverride?: number
+  villainStackOverride?: number,
+  /** Simulação com um terceiro jogador no pote, do flop em diante */
+  multiway = false
 ): HandState {
   const actions: ActionEntry[] = [];
   const activeBets: { position: Position; amount: number }[] = [];
   const foldedPositions: Position[] = [];
+  const extraPositions: Position[] = [];
   let pot = 1.5; // SB (0.5) + BB (1)
-  
+
   // Adicionar blinds
   actions.push({ position: 'SB', action: 'post_sb', amount: 0.5 });
   actions.push({ position: 'BB', action: 'post_bb', amount: 1 });
-  
-  const villainPosition = getVillainPosition(scenario, heroPosition, availablePositions);
+
+  const querMultiway = multiway && scenario === 'simulation';
+  const villainPosition = getVillainPosition(scenario, heroPosition, availablePositions, querMultiway);
   let villainAction: { action: string; amount: number } | undefined;
   let villainStack = villainStackOverride ?? heroStack;
   
@@ -176,14 +216,29 @@ export function initializeHandState(
     activeBets.push({ position: villainPosition, amount: openSize });
     villainAction = { action: 'Raise', amount: openSize };
     pot += openSize;
-    
-    // Todos entre villain e hero foldam
+
+    // Na simulação multiway, um dos que estariam desistindo paga o open e vai
+    // para o flop junto. É o que faz o pote ser de três em vez de dois.
+    const candidatos = querMultiway
+      ? positionOrder.filter((pos, i) => i > villainIndex && i < heroIndex && pos !== 'SB' && pos !== 'BB')
+      : [];
+    const pagador = candidatos.length > 0
+      ? candidatos[Math.floor(Math.random() * candidatos.length)]
+      : undefined;
+
+    // Todos entre villain e hero foldam, menos o pagador do multiway
     for (let i = villainIndex + 1; i < heroIndex; i++) {
       const pos = positionOrder[i];
-      if (pos !== 'SB' && pos !== 'BB') {
-        actions.push({ position: pos, action: 'fold' });
-        foldedPositions.push(pos);
+      if (pos === 'SB' || pos === 'BB') continue;
+      if (pos === pagador) {
+        actions.push({ position: pos, action: 'call', amount: openSize });
+        activeBets.push({ position: pos, amount: openSize });
+        pot += openSize;
+        extraPositions.push(pos);
+        continue;
       }
+      actions.push({ position: pos, action: 'fold' });
+      foldedPositions.push(pos);
     }
   } else if (scenario === 'vs3bet' && villainPosition) {
     const openSize = calculateOpenSize(heroStack);
@@ -263,9 +318,18 @@ export function initializeHandState(
   );
   const shuffledDeck = shuffle(availableCards);
   const villainCards = shuffledDeck.slice(0, 2);
-  
+
+  // Cartas dos extras saem do mesmo baralho, depois das do vilão, para não
+  // existirem duas vezes na mesa
+  const extraOpponents: ExtraOpponent[] = extraPositions.map((position, i) => ({
+    position,
+    cards: shuffledDeck.slice(2 + i * 2, 4 + i * 2),
+    stack: (villainStackOverride ?? heroStack) - calculateOpenSize(heroStack),
+    folded: false,
+  }));
+
   const isSimulation = scenario === 'simulation';
-  
+
   return {
     street: 'preflop',
     pot,
@@ -284,7 +348,126 @@ export function initializeHandState(
     isSimulation,
     awaitingPostflopAction: false,
     villainMemory: createVillainMemory(),
+    extraOpponents: extraOpponents.length > 0 ? extraOpponents : undefined,
+    apostaDaRua: 0,
   };
+}
+
+/** Quem ainda está na mão além do herói e do vilão principal */
+function extrasAtivos(state: HandState): ExtraOpponent[] {
+  return (state.extraOpponents || []).filter((o) => !o.folded);
+}
+
+/**
+ * Fecha a rua para os adversários extras: cada um paga o que entrou nela ou
+ * desiste. Roda uma vez por rua, no momento em que a rua se resolve — é o ponto
+ * por onde toda a lógica de aposta já passou, então basta olhar quanto ficou.
+ */
+function resolverExtras(state: HandState): HandState {
+  const ativos = extrasAtivos(state);
+  if (ativos.length === 0) return state;
+
+  const aPagar = state.apostaDaRua ?? 0;
+  // Ninguém apostou: os extras passam junto e seguem na mão
+  if (aPagar <= 0) return state;
+
+  const novoState = { ...state };
+  const acoes = [...state.actions];
+  let pot = state.pot;
+
+  const atualizados = (state.extraOpponents || []).map((oponente) => {
+    if (oponente.folded) return oponente;
+
+    const decisao = makeVillainPostflopDecision(
+      oponente.cards,
+      state.communityCards,
+      state.street,
+      pot,
+      oponente.stack,
+      state.heroStack,
+      aPagar,
+      false,
+      [],
+      createVillainMemory(),
+    );
+
+    // Eles não aumentam: um raise vira pagar. Quem conduz a aposta é o
+    // adversário principal — está explicado no tipo ExtraOpponent.
+    if (decisao.action === 'fold') {
+      acoes.push({ position: oponente.position, action: 'fold' });
+      return { ...oponente, folded: true };
+    }
+
+    const pago = Math.min(aPagar, oponente.stack);
+    pot += pago;
+    acoes.push({ position: oponente.position, action: 'call', amount: pago });
+    return { ...oponente, stack: oponente.stack - pago };
+  });
+
+  novoState.extraOpponents = atualizados;
+  novoState.actions = acoes;
+  novoState.pot = pot;
+  novoState.foldedPositions = [
+    ...state.foldedPositions,
+    ...atualizados.filter((o, i) => o.folded && !(state.extraOpponents || [])[i].folded).map((o) => o.position),
+  ];
+  return novoState;
+}
+
+/**
+ * Showdown, de dois ou de três.
+ *
+ * Estava escrito em três lugares — no check-check do river, na virada da última
+ * rua e no runout do all-in — e cada cópia sabia comparar só duas mãos. Agora é
+ * um lugar só, e ele olha todo mundo que chegou ao fim.
+ */
+function resolverShowdown(state: HandState): HandState {
+  const novoState = { ...state };
+  novoState.street = 'showdown';
+  novoState.isHandComplete = true;
+  novoState.activeBets = [];
+
+  if (!state.heroCards || !state.villainCards) {
+    novoState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
+    return novoState;
+  }
+
+  const cartas = novoState.communityCards.slice(0, 5);
+  const principal = compareHands(state.heroCards, state.villainCards, cartas);
+  novoState.heroEval = principal.heroEval;
+  novoState.villainEval = principal.villainEval;
+
+  const ativos = extrasAtivos(state);
+  if (ativos.length === 0) {
+    novoState.result = principal.winner;
+    novoState.showdownWinner = principal.winner === 'villain_wins' ? state.villainPosition : undefined;
+    return novoState;
+  }
+
+  // Com mais de um adversário, vence a maior pontuação da mesa
+  const avaliados = ativos.map((o) => ({ oponente: o, avaliacao: evaluateHand(o.cards, cartas) }));
+  novoState.extraOpponents = (state.extraOpponents || []).map((o) => {
+    const achado = avaliados.find((a) => a.oponente.position === o.position);
+    return achado ? { ...o, eval: achado.avaliacao } : o;
+  });
+
+  const melhorAdversario = [
+    { posicao: state.villainPosition, score: principal.villainEval.score, avaliacao: principal.villainEval },
+    ...avaliados.map((a) => ({ posicao: a.oponente.position, score: a.avaliacao.score, avaliacao: a.avaliacao })),
+  ].reduce((melhor, atual) => (atual.score > melhor.score ? atual : melhor));
+
+  if (principal.heroEval.score > melhorAdversario.score) {
+    novoState.result = 'hero_wins';
+  } else if (melhorAdversario.score > principal.heroEval.score) {
+    novoState.result = 'villain_wins';
+    // Mostra a mão que ganhou, que nem sempre é a do adversário principal
+    novoState.villainEval = melhorAdversario.avaliacao;
+    novoState.showdownWinner = melhorAdversario.posicao;
+  } else {
+    novoState.result = 'tie';
+  }
+
+  return novoState;
 }
 
 // Processar ação do herói e avançar o estado
@@ -381,6 +564,7 @@ export function processPostflopAction(
     const allinAmount = Math.min(state.heroStack, state.villainStack || state.heroStack);
     newState.pot = state.pot + allinAmount;
     newState.heroStack = state.heroStack - allinAmount;
+    newState.apostaDaRua = Math.max(state.apostaDaRua ?? 0, allinAmount);
     
     // Villain decides whether to call all-in using GTO
     const villainIsIP = isVillainInPosition(state);
@@ -419,6 +603,7 @@ export function processPostflopAction(
     const betSize = Math.min(Math.round(rawBet * 10) / 10, effectiveStack);
     newState.pot = state.pot + betSize;
     newState.heroStack = state.heroStack - betSize;
+    newState.apostaDaRua = Math.max(state.apostaDaRua ?? 0, betSize);
     
     // Villain GTO response to bet
     const villainIsIP = isVillainInPosition(state);
@@ -446,6 +631,7 @@ export function processPostflopAction(
       return dealNextStreet(newState);
     } else if (decision.action === 'raise') {
       const raiseSize = Math.min((decision.betSizePct || 0.75) * newState.pot + betSize, state.villainStack || 0);
+      newState.apostaDaRua = Math.max(newState.apostaDaRua ?? 0, raiseSize);
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'raise', amount: raiseSize }];
       newState.pot += raiseSize;
       newState.villainStack = (state.villainStack || 0) - raiseSize;
@@ -494,6 +680,7 @@ export function processPostflopAction(
     const raiseSize = Math.min(Math.round(rawRaise * 10) / 10, effectiveStack);
     newState.pot = state.pot + raiseSize;
     newState.heroStack = state.heroStack - raiseSize;
+    newState.apostaDaRua = Math.max(state.apostaDaRua ?? 0, raiseSize);
     newState.activeBets = [{ position: state.heroPosition, amount: raiseSize }];
     newState.lastVillainAction = undefined;
     newState.villainAction = undefined;
@@ -534,6 +721,7 @@ export function processPostflopAction(
     } else {
       // Villain re-raises → all-in scenario, simplify to call
       const reraiseAmt = Math.min(state.villainStack || 0, newState.pot);
+      newState.apostaDaRua = Math.max(newState.apostaDaRua ?? 0, reraiseAmt);
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'allin', amount: reraiseAmt }];
       newState.pot += reraiseAmt;
       newState.villainStack = 0;
@@ -565,6 +753,7 @@ export function processPostflopAction(
   if (decision.action === 'bet') {
     const rawBetSize = (decision.betSizePct || 0.5) * state.pot;
     const villainBetSize = Math.min(Math.round(rawBetSize * 10) / 10, state.villainStack || 0, state.heroStack);
+    newState.apostaDaRua = Math.max(state.apostaDaRua ?? 0, villainBetSize);
     newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'bet', amount: villainBetSize }];
     newState.pot += villainBetSize;
     newState.villainStack = (state.villainStack || 0) - villainBetSize;
@@ -599,21 +788,8 @@ function isVillainInPosition(state: HandState): boolean {
 
 // Go directly to showdown (for river check-check)
 function goToShowdown(state: HandState): HandState {
-  const newState = { ...state };
-  newState.street = 'showdown';
-  newState.isHandComplete = true;
-  newState.activeBets = [];
-  
-  if (state.heroCards && state.villainCards) {
-    const visibleCards = newState.communityCards.slice(0, 5);
-    const result = compareHands(state.heroCards, state.villainCards, visibleCards);
-    newState.result = result.winner;
-    newState.heroEval = result.heroEval;
-    newState.villainEval = result.villainEval;
-  } else {
-    newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
-  }
-  return newState;
+  // Os extras fecham a rua antes de virar as cartas
+  return resolverShowdown(resolverExtras(state));
 }
 
 // Simular resposta do villain (GTO-based using real hand)
@@ -668,21 +844,30 @@ function simulateVillainResponse(
 
 // Lidar próxima street
 function dealNextStreet(state: HandState): HandState {
-  const newState = { ...state };
-  
+  // Antes de virar a rua, cada adversário extra paga o que entrou nela ou sai
+  const comExtras = resolverExtras(state);
+  const newState = { ...comExtras };
+
   // Gerar board se necessário
-  if (state.communityCards.length === 0) {
+  if (comExtras.communityCards.length === 0) {
     const deck = generateDeck();
-    const usedCards = [...state.heroCards, ...(state.villainCards || [])];
-    const availableCards = deck.filter(c => 
+    const usedCards = [
+      ...comExtras.heroCards,
+      ...(comExtras.villainCards || []),
+      ...(comExtras.extraOpponents || []).flatMap((o) => o.cards),
+    ];
+    const availableCards = deck.filter(c =>
       !usedCards.some(used => used.rank === c.rank && used.suit === c.suit)
     );
     const shuffledDeck = shuffle(availableCards);
     newState.communityCards = shuffledDeck.slice(0, 5);
   }
-  
+
+  // O adversário principal desistir já encerra a mão antes de chegar aqui, e a
+  // saída dos extras não encerra: ele continua no pote.
+
   // Avançar street
-  switch (state.street) {
+  switch (comExtras.street) {
     case 'preflop':
       newState.street = 'flop';
       break;
@@ -693,65 +878,47 @@ function dealNextStreet(state: HandState): HandState {
       newState.street = 'river';
       break;
     case 'river':
-      newState.street = 'showdown';
-      newState.isHandComplete = true;
-      // Avaliação real de mãos
-      if (state.heroCards && state.villainCards) {
-        const visibleCards = newState.communityCards.slice(0, 5);
-        const result = compareHands(state.heroCards, state.villainCards, visibleCards);
-        newState.result = result.winner;
-        newState.heroEval = result.heroEval;
-        newState.villainEval = result.villainEval;
-      } else {
-        newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
-      }
-      break;
+      return resolverShowdown(newState);
   }
-  
+
   // Limpar apostas ativas e ação do vilão ao mudar de street
   newState.activeBets = [];
   newState.villainAction = undefined;
   newState.lastVillainAction = undefined;
-  
+  // Rua nova, aposta zerada: o que os extras devem é só o que entrar daqui
+  newState.apostaDaRua = 0;
+
   // Em simulação, marcar que herói precisa agir no pós-flop
-  if (state.isSimulation && !newState.isHandComplete && newState.street !== 'preflop') {
+  if (comExtras.isSimulation && !newState.isHandComplete && newState.street !== 'preflop') {
     newState.awaitingPostflopAction = true;
   }
-  
+
   return newState;
 }
 
 // Runout direto para showdown (all-in preflop/postflop)
 function runoutToShowdown(state: HandState): HandState {
-  const newState = { ...state };
-  
+  const comExtras = resolverExtras(state);
+  const newState = { ...comExtras };
+
   // Gerar board completo se necessário (completar até 5 cartas)
-  if (state.communityCards.length < 5) {
+  if (comExtras.communityCards.length < 5) {
     const deck = generateDeck();
-    const usedCards = [...state.heroCards, ...(state.villainCards || []), ...state.communityCards];
-    const availableCards = deck.filter(c => 
+    const usedCards = [
+      ...comExtras.heroCards,
+      ...(comExtras.villainCards || []),
+      ...(comExtras.extraOpponents || []).flatMap((o) => o.cards),
+      ...comExtras.communityCards,
+    ];
+    const availableCards = deck.filter(c =>
       !usedCards.some(used => used.rank === c.rank && used.suit === c.suit)
     );
     const shuffledDeck = shuffle(availableCards);
-    const remaining = 5 - state.communityCards.length;
-    newState.communityCards = [...state.communityCards, ...shuffledDeck.slice(0, remaining)];
+    const remaining = 5 - comExtras.communityCards.length;
+    newState.communityCards = [...comExtras.communityCards, ...shuffledDeck.slice(0, remaining)];
   }
-  
-  newState.street = 'showdown';
-  newState.isHandComplete = true;
-  newState.activeBets = [];
-  
-  if (state.heroCards && state.villainCards) {
-    const visibleCards = newState.communityCards.slice(0, 5);
-    const result = compareHands(state.heroCards, state.villainCards, visibleCards);
-    newState.result = result.winner;
-    newState.heroEval = result.heroEval;
-    newState.villainEval = result.villainEval;
-  } else {
-    newState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
-  }
-  
-  return newState;
+
+  return resolverShowdown(newState);
 }
 
 // Função para obter descrição do cenário

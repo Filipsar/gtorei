@@ -75,6 +75,8 @@ export default function TrainPage() {
     (s: Scenario) => SUPPORTER_SCENARIOS.includes(s) && !isSupporter,
     [isSupporter]
   );
+  // Simulação com um terceiro jogador no pote (só faz sentido na simulação)
+  const [simulacaoMultiway, setSimulacaoMultiway] = useState(false);
   const [heroBounty, setHeroBounty] = useState<BountyTier>(5);
   const [currentBounties, setCurrentBounties] = useState<Record<string, number>>({});
 
@@ -315,14 +317,16 @@ export default function TrainPage() {
         });
     }
 
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo]);
+    // O heads-up nao tem lugar para um terceiro: nele a opcao nao vale, mesmo ligada
+    const multiwayAqui = selectedScenario === "simulation" && simulacaoMultiway && MODE_POSITIONS[modo].length >= 3;
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], undefined, multiwayAqui);
 
     // Generate realistic stack distribution
     const gm = getGameMode(modo);
     const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, newHandState.villainPosition, MODE_POSITIONS[modo]);
 
     // Re-initialize with villain's dynamic stack
-    const handStateWithStacks = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain);
+    const handStateWithStacks = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain, multiwayAqui);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
@@ -361,7 +365,7 @@ export default function TrainPage() {
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
-  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado]);
+  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado, simulacaoMultiway]);
 
   // Record a scored hand on the server (XP, level, session stats and ranking)
   const recordHand = useCallback(async (params: {
@@ -775,14 +779,16 @@ export default function TrainPage() {
     const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
-    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo]);
+    // O heads-up nao tem lugar para um terceiro: nele a opcao nao vale, mesmo ligada
+    const multiwayAqui = selectedScenario === "simulation" && simulacaoMultiway && MODE_POSITIONS[modo].length >= 3;
+    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], undefined, multiwayAqui);
 
     // Generate realistic stack distribution
     const gm = getGameMode(modo);
     const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, tempState.villainPosition, MODE_POSITIONS[modo]);
 
     // Re-initialize with villain's dynamic stack
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain);
+    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain, multiwayAqui);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
@@ -820,7 +826,7 @@ export default function TrainPage() {
     setPendingSimulationScore(null);
     setSimulationStreetActions([]);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado]);
+  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado, simulacaoMultiway]);
 
   // Toggle favorite hand
   const toggleFavoriteHand = useCallback(() => {
@@ -951,9 +957,13 @@ export default function TrainPage() {
           break;
         case 'vsOpenRaise':
         case 'vsOpenShove':
-        case 'simulation':
           // First position has no one before to open/shove
           if (!hasEarlier) invalid.push(pos);
+          break;
+        case 'simulation':
+          // Com o pote multiway ligado a exigência é maior: além de alguém
+          // abrindo antes, precisa sobrar um lugar no meio para quem paga.
+          if (simulacaoMultiway && available.length >= 3 ? posIndex < 2 : !hasEarlier) invalid.push(pos);
           break;
         case 'vs3bet':
           // Hero opens, then someone AFTER hero 3-bets. So hero needs someone acting after them.
@@ -1114,6 +1124,27 @@ export default function TrainPage() {
                     );
                   })}
                 </div>
+
+                {/* Multiway só existe na Simulação: é o único cenário que joga
+                    o pós-flop, e é lá que ter um terceiro muda a decisão. */}
+                {scenario === 'simulation' && !randomScenario && !cenarioBloqueado('simulation') && getAvailablePositions().length >= 3 && (
+                  <div className="mt-4 flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/40 p-3">
+                    <div>
+                      <Label htmlFor="sim-multiway" className="text-sm font-medium">
+                        Pote multiway
+                      </Label>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Um terceiro jogador paga a abertura e vai ao flop com vocês. Ele pode
+                        desistir no meio do caminho — e pode ganhar a mão no showdown.
+                      </p>
+                    </div>
+                    <Switch
+                      id="sim-multiway"
+                      checked={simulacaoMultiway}
+                      onCheckedChange={setSimulacaoMultiway}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1331,8 +1362,9 @@ export default function TrainPage() {
               villainPosition={handState.villainPosition}
               villainCards={handState.villainCards}
               villainAction={handState.villainAction} 
-              villainStack={handState.villainStack} 
-              communityCards={handState.communityCards} 
+              villainStack={handState.villainStack}
+              extraOpponents={handState.extraOpponents}
+              communityCards={handState.communityCards}
               street={handState.street} 
               foldedPositions={handState.foldedPositions} 
               activeBets={handState.activeBets}
@@ -1476,6 +1508,12 @@ export default function TrainPage() {
                   <div className="flex justify-center gap-4 text-xs text-muted-foreground pt-1">
                     <span>Seu stack: <strong className="text-foreground">{handState.heroStack.toFixed(1)} BB</strong></span>
                     <span>Vilão stack: <strong className="text-foreground">{(handState.villainStack || 0).toFixed(1)} BB</strong></span>
+                    {/* Num pote de três, saber quantos ainda estão na mão muda a decisão */}
+                    {handState.extraOpponents?.some(o => !o.folded) && (
+                      <span className="text-primary">
+                        <strong>{1 + handState.extraOpponents.filter(o => !o.folded).length} adversários</strong>
+                      </span>
+                    )}
                     <span>Pot: <strong className="text-primary">{handState.pot.toFixed(1)} BB</strong></span>
                   </div>
                 </div>
