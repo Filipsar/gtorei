@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.16.1',
+    date: '23/09/2026',
+    type: 'improvement',
+    title: 'Simulação Agora é para Apoiadores',
+    description: 'A Simulação — jogar a mão até o river, com flop, turn e river — passou a ser dos apoiadores, junto com o Multiway. O treino de ranges continua inteiro e de graça: open raise, vs open raise, vs 3-bet e vs open shove, em todas as posições e stacks, nos quatro modos de mesa. Quem apoia libera os dois cenários na hora; o cadeado na tela leva direto para a página de apoio.',
+  },
+  {
     version: '1.16.0',
     date: '23/09/2026',
     type: 'feature',

@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { fatiarPagina } from '@/lib/paginacao';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -78,6 +79,8 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [apoiadores, setApoiadores] = useState<Set<string>>(new Set());
+  const [porPagina, setPorPagina] = useState(10);
+  const [pagina, setPagina] = useState(0);
   const [apoiadoresDisponivel, setApoiadoresDisponivel] = useState(true);
   const [salvandoApoiador, setSalvandoApoiador] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +151,9 @@ export default function AdminPage() {
     u.username.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const { itens: daPagina, pagina: paginaAtual, totalPaginas, primeiro, ultimo } =
+    fatiarPagina(filtered, porPagina, pagina);
 
   const totalUsers = users.length;
   const activeToday = users.filter((u) => {
@@ -471,6 +477,9 @@ export default function AdminPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
+                    {/* Apoiador logo no começo: no fim da linha ficava atrás da
+                        rolagem horizontal, e é o controle mais usado daqui. */}
+                    {apoiadoresDisponivel && <TableHead className="w-24 text-center">Apoiador</TableHead>}
                     <TableHead>Usuário</TableHead>
                     <TableHead>E-mail</TableHead>
                     <TableHead>Nível</TableHead>
@@ -481,12 +490,21 @@ export default function AdminPage() {
                     <TableHead className="text-right">Tempo</TableHead>
                     <TableHead>Último Acesso</TableHead>
                     <TableHead>Cadastro</TableHead>
-                    {apoiadoresDisponivel && <TableHead className="text-center">Apoiador</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((u) => (
+                  {daPagina.map((u) => (
                     <TableRow key={u.user_id}>
+                      {apoiadoresDisponivel && (
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={apoiadores.has(u.user_id)}
+                            disabled={salvandoApoiador === u.user_id}
+                            onCheckedChange={(ativo) => alternarApoiador(u.user_id, ativo)}
+                            aria-label={`Acesso de apoiador para ${u.username}`}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">{u.username}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
                       <TableCell>
@@ -507,16 +525,6 @@ export default function AdminPage() {
                       <TableCell>
                         {new Date(u.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
-                      {apoiadoresDisponivel && (
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={apoiadores.has(u.user_id)}
-                            disabled={salvandoApoiador === u.user_id}
-                            onCheckedChange={(ativo) => alternarApoiador(u.user_id, ativo)}
-                            aria-label={`Acesso de apoiador para ${u.username}`}
-                          />
-                        </TableCell>
-                      )}
                     </TableRow>
                   ))}
                   {filtered.length === 0 && (
@@ -528,6 +536,52 @@ export default function AdminPage() {
                   )}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Paginação */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Mostrar</span>
+                <Select
+                  value={String(porPagina)}
+                  onValueChange={(valor) => {
+                    setPorPagina(Number(valor));
+                    setPagina(0);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 20].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span>por página</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {filtered.length === 0 ? '0 jogadores' : `${primeiro}–${ultimo} de ${filtered.length}`}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={paginaAtual === 0}
+                  onClick={() => setPagina(paginaAtual - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={paginaAtual >= totalPaginas - 1}
+                  onClick={() => setPagina(paginaAtual + 1)}
+                >
+                  Próxima
+                </Button>
+              </div>
             </div>
           </>
         ) : (

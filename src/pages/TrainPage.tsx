@@ -38,7 +38,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
 // Cenários liberados só para quem apoia o projeto
-const SUPPORTER_SCENARIOS: Scenario[] = ['multiway'];
+const SUPPORTER_SCENARIOS: Scenario[] = ['multiway', 'simulation'];
 
 // Scenarios available per mode
 const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
