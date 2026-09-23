@@ -386,7 +386,7 @@ export default function TrainPage() {
     }
     if (!sessionId) return;
 
-    const base = {
+    const { data, error } = await supabase.rpc('record_hand_result', {
       _session_id: sessionId,
       _hand: params.hand,
       _scenario: params.scenario,
@@ -397,24 +397,11 @@ export default function TrainPage() {
       _feedback: params.feedback,
       _points: Math.round(params.points),
       _ev_loss: params.evLoss ?? 0,
-    };
-
-    let { data, error } = await supabase.rpc('record_hand_result', {
-      ...base,
       _hand_code: params.handCode ?? null,
       _game_mode: params.gameMode ?? null,
       _villain_position: params.villainPosition ?? null,
       _effective_stack: params.effectiveStack ?? null,
     });
-
-    // O ID da mão e o contexto do spot só existem depois da migration
-    // 20260922190000_hand_code_7_dias. Enquanto ela não estiver aplicada o
-    // banco recusa a chamada, e aí a mão vai sem eles: ficar sem identificador
-    // é um problema pequeno; não contar o XP de quem jogou é um problema
-    // grande. Dá para tirar esta volta assim que a migration subir.
-    if (error && (error.code === 'PGRST202' || /schema cache|does not exist/i.test(error.message ?? ''))) {
-      ({ data, error } = await supabase.rpc('record_hand_result', base));
-    }
 
     if (error) {
       if (error.message?.includes('rate_limited')) {

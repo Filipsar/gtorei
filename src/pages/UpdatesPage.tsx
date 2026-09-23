@@ -21,6 +21,20 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.16.0',
+    date: '23/09/2026',
+    type: 'feature',
+    title: 'Multiway, Modo Aleatório e Botões Refeitos',
+    description: 'O treino Multiway saiu da manutenção e está liberado para quem apoia o projeto: pote aberto por alguém e pago por mais um, com você decidindo contra dois adversários. Entrou também o modo Aleatório, que sorteia entre Treino de Range, HU, Three Hand e Bounty a cada mão — e ajusta sozinho o cenário e a posição quando os que você escolheu não existem no modo que saiu. Os botões de ação ficaram como os das salas: mais largos, nome grande e o valor logo abaixo, com a régua de tamanho da aposta virando um seletor colado na barra. E uma correção que veio de um relato: no pós-flop sem ninguém ter apostado, a barra oferecia Fold — jogar a mão fora de graça, uma jogada que nunca é certa. Agora são três botões, Check, Bet e All-in. No mesmo caminho foi corrigido o sorteio do Multiway, que às vezes montava um pote heads-up achando que era multiway.',
+  },
+  {
+    version: '1.15.3',
+    date: '23/09/2026',
+    type: 'improvement',
+    title: 'ID da Mão Agora Serve para Consultar',
+    description: 'O código de 18 caracteres que aparece no resultado da mão era sorteado no seu navegador e não ia para lugar nenhum: quem relatava um problema mandava o código e não havia como achar a mão. Agora ele é guardado junto com o resultado, com o contexto que faltava para reconstruir o spot — modo de jogo, adversário e stack efetivo. O código é apagado 7 dias depois; a mão, os pontos e o XP continuam, porque apagar a linha zeraria seu histórico e sua posição no ranking.',
+  },
+  {
     version: '1.15.2',
     date: '22/09/2026',
     type: 'fix',
