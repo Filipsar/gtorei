@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -76,6 +77,9 @@ export default function AdminPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
+  const [apoiadores, setApoiadores] = useState<Set<string>>(new Set());
+  const [apoiadoresDisponivel, setApoiadoresDisponivel] = useState(true);
+  const [salvandoApoiador, setSalvandoApoiador] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedColumn, setSelectedColumn] = useState<ColumnKey>('email');
@@ -84,6 +88,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (user?.email === ADMIN_EMAIL) {
       fetchUsers();
+      fetchApoiadores();
     }
   }, [user?.email]);
 
@@ -101,6 +106,42 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Quem tem acesso de apoiador. O RLS já deixa o admin ler a lista inteira.
+  const fetchApoiadores = async () => {
+    const { data, error } = await supabase.from('supporters').select('user_id');
+    if (error) {
+      // Antes da migration 20260923120000 a tabela não existe: a coluna some
+      // da tela em vez de estourar a página.
+      setApoiadoresDisponivel(false);
+      return;
+    }
+    setApoiadoresDisponivel(true);
+    setApoiadores(new Set((data || []).map((linha) => linha.user_id)));
+  };
+
+  const alternarApoiador = async (userId: string, ativo: boolean) => {
+    setSalvandoApoiador(userId);
+    const { error } = await supabase.rpc('set_supporter', { _user_id: userId, _ativo: ativo });
+    setSalvandoApoiador(null);
+
+    if (error) {
+      toast({
+        title: 'Não deu para mudar o acesso',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setApoiadores((antes) => {
+      const depois = new Set(antes);
+      if (ativo) depois.add(userId);
+      else depois.delete(userId);
+      return depois;
+    });
+    toast({ title: ativo ? 'Acesso de apoiador liberado' : 'Acesso de apoiador removido' });
   };
 
   const filtered = users.filter((u) =>
@@ -440,6 +481,7 @@ export default function AdminPage() {
                     <TableHead className="text-right">Tempo</TableHead>
                     <TableHead>Último Acesso</TableHead>
                     <TableHead>Cadastro</TableHead>
+                    {apoiadoresDisponivel && <TableHead className="text-center">Apoiador</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -465,11 +507,21 @@ export default function AdminPage() {
                       <TableCell>
                         {new Date(u.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
+                      {apoiadoresDisponivel && (
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={apoiadores.has(u.user_id)}
+                            disabled={salvandoApoiador === u.user_id}
+                            onCheckedChange={(ativo) => alternarApoiador(u.user_id, ativo)}
+                            aria-label={`Acesso de apoiador para ${u.username}`}
+                          />
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={apoiadoresDisponivel ? 11 : 10} className="text-center text-muted-foreground py-8">
                         Nenhum usuário encontrado
                       </TableCell>
                     </TableRow>

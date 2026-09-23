@@ -107,12 +107,21 @@ export function getVillainPosition(
     }
     
     case 'multiway': {
-      // Multiway - villain abre de posição anterior
-      const multiPositions = positionOrder.filter((_, i) => i < heroIndex);
-      if (multiPositions.length === 0) {
+      // Pote multiway precisa de quem abriu E de quem pagou. Sortear qualquer
+      // posição anterior não basta: se quem abre está logo na frente do herói,
+      // não sobra ninguém para pagar e a mão vira um heads-up com outro nome —
+      // era o que acontecia com o herói no LJ e a abertura no UTG1.
+      //
+      // Os blinds não entram como pagadores porque ainda não agiram: no preflop
+      // eles falam depois do botão.
+      const podeAbrir = positionOrder.filter((_, i) => {
+        if (i >= heroIndex) return false;
+        return positionOrder.some((p, j) => j > i && j < heroIndex && p !== 'SB' && p !== 'BB');
+      });
+      if (podeAbrir.length === 0) {
         return undefined;
       }
-      return multiPositions[Math.floor(Math.random() * multiPositions.length)];
+      return podeAbrir[Math.floor(Math.random() * podeAbrir.length)];
     }
       
     default:

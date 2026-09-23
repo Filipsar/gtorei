@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { PokerTable } from '@/components/poker/PokerTable';
 import { ActionButtons } from '@/components/poker/ActionButtons';
 import { PostflopActions } from '@/components/poker/PostflopActions';
+import { useSupporter } from '@/hooks/useSupporter';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
@@ -36,15 +37,17 @@ import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
-// Locked scenarios (under maintenance)
-const LOCKED_SCENARIOS: Scenario[] = ['multiway'];
+// Cenários liberados só para quem apoia o projeto
+const SUPPORTER_SCENARIOS: Scenario[] = ['multiway'];
 
 // Scenarios available per mode
 const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
-  rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
+  // Multiway precisa de gente sobrando na mesa: não existe no heads-up, e no
+  // three hand a mesa já é a menor possível.
+  rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'],
   hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
   threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet', 'simulation'],
-  bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
+  bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'],
 };
 
 // Positions available per mode
@@ -67,6 +70,11 @@ export default function TrainPage() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
   // No modo aleatório, trainingMode guarda o que saiu na mão atual
   const [modoAleatorio, setModoAleatorio] = useState(false);
+  const { isSupporter } = useSupporter();
+  const cenarioBloqueado = useCallback(
+    (s: Scenario) => SUPPORTER_SCENARIOS.includes(s) && !isSupporter,
+    [isSupporter]
+  );
   const [heroBounty, setHeroBounty] = useState<BountyTier>(5);
   const [currentBounties, setCurrentBounties] = useState<Record<string, number>>({});
 
@@ -263,7 +271,7 @@ export default function TrainPage() {
   const startGame = useCallback(() => {
     // No aleatório o modo sai aqui, e é ele que vale para a mão inteira
     const modo = modoAleatorio ? sortearModo() : trainingMode;
-    const availableScenarios = getAvailableScenarios(modo).filter(s => !LOCKED_SCENARIOS.includes(s));
+    const availableScenarios = getAvailableScenarios(modo).filter(s => !cenarioBloqueado(s));
     // O cenário escolhido pode não existir no modo que saiu — o three hand não
     // tem vs open shove. Nesse caso sorteia um que exista, em vez de travar.
     const selectedScenario = randomScenario || !availableScenarios.includes(scenario)
@@ -353,7 +361,7 @@ export default function TrainPage() {
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
-  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty]);
+  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado]);
 
   // Record a scored hand on the server (XP, level, session stats and ranking)
   const recordHand = useCallback(async (params: {
@@ -768,7 +776,7 @@ export default function TrainPage() {
   const nextHand = useCallback(() => {
     // Mesma regra do começo da sessão: no aleatório, cada mão sorteia o modo
     const modo = modoAleatorio ? sortearModo() : trainingMode;
-    const availableScenarios = getAvailableScenarios(modo).filter(s => !LOCKED_SCENARIOS.includes(s));
+    const availableScenarios = getAvailableScenarios(modo).filter(s => !cenarioBloqueado(s));
     const selectedScenario = randomScenario || !availableScenarios.includes(scenario)
       ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)]
       : scenario;
@@ -825,7 +833,7 @@ export default function TrainPage() {
     setPendingSimulationScore(null);
     setSimulationStreetActions([]);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty]);
+  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado]);
 
   // Toggle favorite hand
   const toggleFavoriteHand = useCallback(() => {
@@ -968,6 +976,11 @@ export default function TrainPage() {
             invalid.push(pos);
           }
           break;
+        case 'multiway':
+          // Pote multiway precisa de quem abriu e de pelo menos um pagador antes
+          // do herói. Com um só na frente a mão seria heads-up com outro nome.
+          if (posIndex < 2) invalid.push(pos);
+          break;
       }
     }
     
@@ -1085,27 +1098,30 @@ export default function TrainPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {SCENARIOS.map(s => {
-                    const isLocked = LOCKED_SCENARIOS.includes(s.id);
+                    const isLocked = cenarioBloqueado(s.id);
                     const isAvailable = availableScenarios.includes(s.id);
                     const isDisabled = isLocked || !isAvailable;
                     return (
-                      <Button 
-                        key={s.id} 
-                        variant={scenario === s.id && !randomScenario && !isDisabled ? 'default' : 'outline'} 
-                        onClick={() => !isDisabled && handleScenarioChange(s.id)} 
-                        disabled={randomScenario || isDisabled} 
+                      <Button
+                        key={s.id}
+                        variant={scenario === s.id && !randomScenario && !isDisabled ? 'default' : 'outline'}
+                        // Cadeado leva para o apoio em vez de só não responder:
+                        // um botão morto não diz como destravar.
+                        onClick={() => isLocked ? navigate('/apoiar') : (!isDisabled && handleScenarioChange(s.id))}
+                        disabled={randomScenario || (isDisabled && !isLocked)}
                         className={cn(
                           'h-auto py-3 flex flex-col items-center gap-1 relative',
                           scenario === s.id && !randomScenario && !isDisabled && 'bg-primary text-primary-foreground',
-                          isDisabled && 'opacity-50 cursor-not-allowed'
+                          isDisabled && !isLocked && 'opacity-50 cursor-not-allowed',
+                          isLocked && 'border-primary/40 text-muted-foreground hover:border-primary hover:text-foreground'
                         )}
                       >
                         {isLocked && (
-                          <Lock className="absolute top-2 right-2 h-3 w-3 text-muted-foreground" />
+                          <Lock className="absolute top-2 right-2 h-3 w-3 text-primary" />
                         )}
                         <span className="font-medium">{s.label}</span>
                         {isLocked && (
-                          <span className="text-[10px] text-muted-foreground">Em manutenção</span>
+                          <span className="text-[10px] text-primary">Para apoiadores</span>
                         )}
                       </Button>
                     );
