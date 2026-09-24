@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.18.0',
+    date: '24/09/2026',
+    type: 'feature',
+    title: 'Aleatório Começa na Hora (e Bounty Entra para os Apoiadores)',
+    description: 'O modo Aleatório fazia o contrário do que promete: mandava você configurar cenário, posição e fichas antes de começar. Agora um clique senta na mesa direto, e a cada mão tudo é sorteado de novo — o modo, o cenário, a posição, o stack e, quando cai Simulação, até o pote multiway. Em 24 mãos seguidas de teste saíram os quatro modos, seis posições e onze tamanhos de stack diferentes. Junto veio uma correção que ninguém via mas quebrava a mesa: o sorteio combinava cenário e modo de forma independente, e uma hora saía "vs 3-bet no heads-up" — uma situação que não existe, porque o herói precisaria de alguém antes e alguém depois, e no 1x1 não há os dois. Quando saía, a mão nascia sem posição. Agora combinação impossível não é sorteada. O Modo Bounty e o Aleatório passaram a ser dos apoiadores, junto com a Simulação e o Multiway. O treino de ranges continua inteiro e de graça: os quatro cenários pré-flop, todas as posições e stacks, nos modos Treino de Range, HU e Three Hand.',
+  },
+  {
     version: '1.17.0',
     date: '23/09/2026',
     type: 'feature',

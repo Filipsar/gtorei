@@ -13,7 +13,19 @@ import { useSupporter } from '@/hooks/useSupporter';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
-import { TrainingModeSelector, TrainingMode, ModeChoice, sortearModo } from '@/components/poker/TrainingModeSelector';
+import { TrainingModeSelector } from '@/components/poker/TrainingModeSelector';
+import {
+  CENARIOS_APOIADOR,
+  MODE_POSITIONS,
+  MODOS_APOIADOR,
+  ModeChoice,
+  TrainingMode,
+  cenariosDoModo,
+  posicoesDoModo,
+  posicoesInvalidas,
+  sortearConfiguracaoDaMao,
+  sortearModo,
+} from '@/lib/sorteioDeMao';
 import { BountyConfig, BountyTier, BOUNTY_TIERS, generateOpponentBounty } from '@/components/poker/BountyConfig';
 import { calculateBountyMultiplier } from '@/data/gtoRanges';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -37,27 +49,6 @@ import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
-// Cenários liberados só para quem apoia o projeto
-const SUPPORTER_SCENARIOS: Scenario[] = ['multiway', 'simulation'];
-
-// Scenarios available per mode
-const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
-  // Multiway precisa de gente sobrando na mesa: não existe no heads-up, e no
-  // three hand a mesa já é a menor possível.
-  rangeTraining: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'],
-  hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
-  threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet', 'simulation'],
-  bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'],
-};
-
-// Positions available per mode
-const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
-  rangeTraining: POSITIONS, // Full 8-max
-  hu: ['SB', 'BB'],
-  threeHand: ['BTN', 'SB', 'BB'],
-  bounty: POSITIONS,
-};
-
 type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning';
 
 export default function TrainPage() {
@@ -70,9 +61,13 @@ export default function TrainPage() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode | null>(null);
   // No modo aleatório, trainingMode guarda o que saiu na mão atual
   const [modoAleatorio, setModoAleatorio] = useState(false);
-  const { isSupporter } = useSupporter();
+  const { isSupporter, loading: carregandoApoio } = useSupporter();
   const cenarioBloqueado = useCallback(
-    (s: Scenario) => SUPPORTER_SCENARIOS.includes(s) && !isSupporter,
+    (s: Scenario) => CENARIOS_APOIADOR.includes(s) && !isSupporter,
+    [isSupporter]
+  );
+  const modoBloqueado = useCallback(
+    (m: ModeChoice) => MODOS_APOIADOR.includes(m) && !isSupporter,
     [isSupporter]
   );
   // Simulação com um terceiro jogador no pote (só faz sentido na simulação)
@@ -141,31 +136,41 @@ export default function TrainPage() {
 
   // When mode changes, reset positions to valid ones
   const handleModeSelect = (escolha: ModeChoice) => {
-    // No aleatório o modo é sorteado de novo a cada mão; aqui só sai o primeiro,
-    // para a tela de configuração já ter posições e cenários coerentes.
+    if (modoBloqueado(escolha)) {
+      // Enquanto a consulta de apoiador não volta, todo modo pago parece
+      // trancado. Mandar para o apoio nesse instante jogaria um apoiador
+      // fora da tela por causa da espera.
+      if (!carregandoApoio) navigate('/apoiar');
+      return;
+    }
+
+    // No aleatório o modo é sorteado de novo a cada mão; este é só o primeiro.
     const aleatorio = escolha === 'random';
     const mode = aleatorio ? sortearModo() : escolha;
     setModoAleatorio(aleatorio);
     setTrainingMode(mode);
-    const validPositions = MODE_POSITIONS[mode];
-    setSelectedPositions([validPositions[0]]);
+    setSelectedPositions([MODE_POSITIONS[mode][0]]);
     // Bounty mode always has ICM
-    if (mode === 'bounty') {
-      setFinalTable(true);
-    } else {
-      setFinalTable(false);
+    setFinalTable(mode === 'bounty');
+
+    // O aleatório não tem o que configurar: cenário, posição e fichas são
+    // sorteados a cada mão. Então a mesa começa aqui mesmo.
+    if (aleatorio) {
+      startGame({ aleatorio: true, modo: mode });
+      return;
     }
+
     setPhase('config');
   };
 
   // Get available positions for current mode
   const getAvailablePositions = (modo: TrainingMode | null = trainingMode): Position[] => {
-    return modo ? MODE_POSITIONS[modo] : POSITIONS;
+    return posicoesDoModo(modo);
   };
 
   // Get available scenarios for current mode
   const getAvailableScenarios = (modo: TrainingMode | null = trainingMode): Scenario[] => {
-    return modo ? MODE_SCENARIOS[modo] : ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove'];
+    return cenariosDoModo(modo);
   };
 
   // Get current game mode
@@ -191,9 +196,11 @@ export default function TrainPage() {
   };
 
   // Generate bounties for all positions
-  const generateBounties = (): Record<string, number> => {
+  const generateBounties = (modo: TrainingMode | null = trainingMode): Record<string, number> => {
     const bounties: Record<string, number> = {};
-    const positions = getAvailablePositions();
+    // No aleatório o modo da mão não é o que está no estado ainda, então ele
+    // vem por parâmetro — senão as recompensas sairiam para a mesa errada.
+    const positions = getAvailablePositions(modo);
     for (const pos of positions) {
       bounties[pos] = generateOpponentBounty(heroBounty);
     }
@@ -270,28 +277,51 @@ export default function TrainPage() {
   };
 
   // Start game
-  const startGame = useCallback(() => {
-    // No aleatório o modo sai aqui, e é ele que vale para a mão inteira
-    const modo = modoAleatorio ? sortearModo() : trainingMode;
-    const availableScenarios = getAvailableScenarios(modo).filter(s => !cenarioBloqueado(s));
-    // O cenário escolhido pode não existir no modo que saiu — o three hand não
-    // tem vs open shove. Nesse caso sorteia um que exista, em vez de travar.
-    const selectedScenario = randomScenario || !availableScenarios.includes(scenario)
-      ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)]
-      : scenario;
-    const scenarioInvalid = getInvalidPositions(selectedScenario);
-    const validPositions = getAvailablePositions(modo).filter(p => !scenarioInvalid.includes(p));
-    // A posição escolhida também precisa existir no modo: quem pediu UTG não
-    // pode receber UTG quando o sorteio trouxer heads-up.
-    const validSelected = selectedPositions.filter(p => validPositions.includes(p));
-    const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
-    const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
+  /**
+   * Sorteia a configuração de uma mão e já monta o estado dela.
+   *
+   * O início da sessão e a mão seguinte faziam isto em cópias separadas — e foi
+   * assim que uma das duas ficou para trás. Agora é um caminho só.
+   */
+  const montarMao = useCallback((aleatorio: boolean, modo: TrainingMode) => {
+    const { cenario, posicao, stack, multiway } = sortearConfiguracaoDaMao({
+      modo,
+      aleatorio,
+      cenarioEscolhido: scenario,
+      cenarioAleatorio: randomScenario,
+      posicoesEscolhidas: selectedPositions,
+      posicaoAleatoria: randomPosition,
+      stacksEscolhidos: selectedStacks,
+      stackAleatorio: randomStack,
+      multiwayLigado: simulacaoMultiway,
+      bloqueado: cenarioBloqueado,
+    });
+
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
+    const assentos = MODE_POSITIONS[modo];
+
+    const parcial = initializeHandState(cenario, posicao, stack, hand, cards, assentos, undefined, multiway);
+    // Com o vilão conhecido, dá para distribuir os stacks da mesa
+    const stackDist = getStackDistribution(stack, posicao, getGameMode(modo), cenario, parcial.villainPosition, assentos);
+    // Remontada com o stack do vilão já valendo
+    const estado = initializeHandState(cenario, posicao, stack, hand, cards, assentos, stackDist.villain, multiway);
+
+    return { cenario, posicao, stack, hand, cards, stackDist, estado };
+  }, [scenario, randomScenario, selectedPositions, randomPosition, selectedStacks, randomStack, simulacaoMultiway, cenarioBloqueado, generateRandomHand]);
+
+  const startGame = useCallback((opcoes?: { aleatorio?: boolean; modo?: TrainingMode }) => {
+    // No aleatório o modo sai aqui, e é ele que vale para a mão inteira. Quando
+    // a chamada vem da escolha de modo, o primeiro sorteio já foi feito lá.
+    const aleatorio = opcoes?.aleatorio ?? modoAleatorio;
+    const modo = aleatorio ? (opcoes?.modo ?? sortearModo()) : (trainingMode ?? 'rangeTraining');
+    const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado } =
+      montarMao(aleatorio, modo);
+
     createSession({
       scenario: selectedScenario,
-      position: randomPosition ? 'random' : pos,
-      stack: randomStack ? 'random' : stk
+      position: aleatorio || randomPosition ? 'random' : pos,
+      stack: aleatorio || randomStack ? 'random' : stk
     });
 
     // Persist session to Supabase (awaited before the first hand is recorded)
@@ -317,40 +347,31 @@ export default function TrainPage() {
         });
     }
 
-    // O heads-up nao tem lugar para um terceiro: nele a opcao nao vale, mesmo ligada
-    const multiwayAqui = selectedScenario === "simulation" && simulacaoMultiway && MODE_POSITIONS[modo].length >= 3;
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], undefined, multiwayAqui);
-
-    // Generate realistic stack distribution
-    const gm = getGameMode(modo);
-    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, newHandState.villainPosition, MODE_POSITIONS[modo]);
-
-    // Re-initialize with villain's dynamic stack
-    const handStateWithStacks = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain, multiwayAqui);
-
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
     const previousResult = alreadyPlayed ? getPlayedHandData(handId) : null;
 
-    if (modoAleatorio) {
+    if (aleatorio) {
       setTrainingMode(modo);
+      // Bounty é sempre ICM: no aleatório a mesa alterna, então a regra
+      // acompanha o modo que saiu em vez de ficar presa na primeira mão.
+      setFinalTable(modo === 'bounty');
     }
-    if (randomScenario || selectedScenario !== scenario) {
+    if (selectedScenario !== scenario) {
       setScenario(selectedScenario);
     }
 
     // Generate bounties for bounty mode
-    let bounties: Record<string, number> = {};
     if (modo === 'bounty') {
-      bounties = generateBounties();
+      const bounties = generateBounties(modo);
       // Hero bounty is always the selected one
       bounties[pos] = heroBounty;
       setCurrentBounties(bounties);
     }
-    
+
     setCurrentStackDistribution(stackDist);
     setHandState({
-      ...handStateWithStacks,
+      ...estado,
       heroStack: stk
     });
     setCurrentHandId(handId);
@@ -365,7 +386,7 @@ export default function TrainPage() {
     setSessionScore(0);
     setHandsPlayed(0);
     setPhase('playing');
-  }, [scenario, selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado, simulacaoMultiway]);
+  }, [montarMao, scenario, randomPosition, randomStack, trainingMode, modoAleatorio, heroBounty, user]);
 
   // Record a scored hand on the server (XP, level, session stats and ranking)
   const recordHand = useCallback(async (params: {
@@ -766,29 +787,9 @@ export default function TrainPage() {
   // Next hand
   const nextHand = useCallback(() => {
     // Mesma regra do começo da sessão: no aleatório, cada mão sorteia o modo
-    const modo = modoAleatorio ? sortearModo() : trainingMode;
-    const availableScenarios = getAvailableScenarios(modo).filter(s => !cenarioBloqueado(s));
-    const selectedScenario = randomScenario || !availableScenarios.includes(scenario)
-      ? availableScenarios[Math.floor(Math.random() * availableScenarios.length)]
-      : scenario;
-
-    const scenarioInvalid = getInvalidPositions(selectedScenario);
-    const validPositions = getAvailablePositions(modo).filter(p => !scenarioInvalid.includes(p));
-    const validSelected = selectedPositions.filter(p => validPositions.includes(p));
-    const pos = randomPosition ? validPositions[Math.floor(Math.random() * validPositions.length)] : (validSelected.length > 0 ? validSelected[Math.floor(Math.random() * validSelected.length)] : validPositions[0]);
-    const stk = randomStack ? STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] : selectedStacks[Math.floor(Math.random() * selectedStacks.length)];
-    const hand = generateRandomHand();
-    const cards = generateCardsFromHand(hand);
-    // O heads-up nao tem lugar para um terceiro: nele a opcao nao vale, mesmo ligada
-    const multiwayAqui = selectedScenario === "simulation" && simulacaoMultiway && MODE_POSITIONS[modo].length >= 3;
-    const tempState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], undefined, multiwayAqui);
-
-    // Generate realistic stack distribution
-    const gm = getGameMode(modo);
-    const stackDist = getStackDistribution(stk, pos, gm, selectedScenario, tempState.villainPosition, MODE_POSITIONS[modo]);
-
-    // Re-initialize with villain's dynamic stack
-    const newHandState = initializeHandState(selectedScenario, pos, stk, hand, cards, MODE_POSITIONS[modo], stackDist.villain, multiwayAqui);
+    const modo = modoAleatorio ? sortearModo() : (trainingMode ?? 'rangeTraining');
+    const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado } =
+      montarMao(modoAleatorio, modo);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
     const alreadyPlayed = isHandAlreadyPlayed(handId);
@@ -796,21 +797,23 @@ export default function TrainPage() {
 
     if (modoAleatorio) {
       setTrainingMode(modo);
+      // Bounty é sempre ICM, e no aleatório o modo muda a cada mão
+      setFinalTable(modo === 'bounty');
     }
-    if (randomScenario || selectedScenario !== scenario) {
+    if (selectedScenario !== scenario) {
       setScenario(selectedScenario);
     }
 
     // Regenerate bounties
     if (modo === 'bounty') {
-      const bounties = generateBounties();
+      const bounties = generateBounties(modo);
       bounties[pos] = heroBounty;
       setCurrentBounties(bounties);
     }
-    
+
     setCurrentStackDistribution(stackDist);
     setHandState({
-      ...newHandState,
+      ...estado,
       heroStack: stk
     });
     setCurrentHandId(handId);
@@ -826,7 +829,7 @@ export default function TrainPage() {
     setPendingSimulationScore(null);
     setSimulationStreetActions([]);
     setPhase('playing');
-  }, [selectedPositions, selectedStacks, randomPosition, randomStack, randomScenario, scenario, generateRandomHand, trainingMode, modoAleatorio, heroBounty, cenarioBloqueado, simulacaoMultiway]);
+  }, [montarMao, scenario, trainingMode, modoAleatorio, heroBounty]);
 
   // Toggle favorite hand
   const toggleFavoriteHand = useCallback(() => {
@@ -919,7 +922,9 @@ export default function TrainPage() {
       sessionPromise.current = null;
     }
 
-    setPhase('config');
+    // O aleatório não passa pela configuração, então não há para onde voltar
+    // a não ser a escolha de modo.
+    setPhase(modoAleatorio ? 'modeSelect' : 'config');
     setHandState(null);
     setLastFeedback(null);
     setCurrentHandId(null);
@@ -928,7 +933,7 @@ export default function TrainPage() {
     setPreviousHandResult(null);
     setCurrentStreak(0);
     setSessionBestCount(0);
-  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements]);
+  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements, modoAleatorio]);
 
   // Clear played hands session
   const handleClearSession = useCallback(() => {
@@ -940,50 +945,8 @@ export default function TrainPage() {
   }, []);
 
   // Get invalid positions for current scenario
-  const getInvalidPositions = (sc: Scenario): Position[] => {
-    const available = getAvailablePositions();
-    const invalid: Position[] = [];
-    
-    for (const pos of available) {
-      const posIndex = available.indexOf(pos);
-      const hasEarlier = posIndex > 0; // someone acts before this position
-      const hasLater = posIndex < available.length - 1; // someone acts after
-      const isFirst = posIndex === 0;
-      
-      switch (sc) {
-        case 'openRaise':
-          // Last position (BB) can't open raise
-          if (!hasLater) invalid.push(pos);
-          break;
-        case 'vsOpenRaise':
-        case 'vsOpenShove':
-          // First position has no one before to open/shove
-          if (!hasEarlier) invalid.push(pos);
-          break;
-        case 'simulation':
-          // Com o pote multiway ligado a exigência é maior: além de alguém
-          // abrindo antes, precisa sobrar um lugar no meio para quem paga.
-          if (simulacaoMultiway && available.length >= 3 ? posIndex < 2 : !hasEarlier) invalid.push(pos);
-          break;
-        case 'vs3bet':
-          // Hero opens, then someone AFTER hero 3-bets. So hero needs someone acting after them.
-          // First position can't face 3-bet (no one opened before them to re-raise)
-          // Last position can't face 3-bet (no one acts after them to 3-bet)
-          if (isFirst || !hasLater) {
-            invalid.push(pos);
-          }
-          break;
-        case 'multiway':
-          // Pote multiway precisa de quem abriu e de pelo menos um pagador antes
-          // do herói. Com um só na frente a mão seria heads-up com outro nome.
-          if (posIndex < 2) invalid.push(pos);
-          break;
-      }
-    }
-    
-    // Also mark positions not available in current mode as invalid
-    return [...invalid, ...POSITIONS.filter(p => !available.includes(p))];
-  };
+  const getInvalidPositions = (sc: Scenario): Position[] =>
+    posicoesInvalidas(sc, trainingMode, simulacaoMultiway);
 
   const invalidPositions = getInvalidPositions(scenario);
 
@@ -1040,7 +1003,7 @@ export default function TrainPage() {
               Configure seu treino e pratique decisões GTO
             </p>
           </div>
-          <TrainingModeSelector onSelect={handleModeSelect} />
+          <TrainingModeSelector onSelect={handleModeSelect} bloqueado={modoBloqueado} />
         </div>
         {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
         {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
@@ -1270,7 +1233,7 @@ export default function TrainPage() {
             </Card>
 
             {/* Start button */}
-            <Button onClick={startGame} size="lg" className="w-full h-16 text-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold">
+            <Button onClick={() => startGame()} size="lg" className="w-full h-16 text-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold">
               <Play className="h-6 w-6 mr-2" />
               JOGAR
             </Button>
