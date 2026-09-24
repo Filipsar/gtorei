@@ -236,7 +236,12 @@ function getScenarioConfig(
   bountyMultiplier: number,
   multiwayPlayers: number = 3
 ): { raisePercent: number; callPercent: number; allinPercent: number } {
-  const posConfig = MODE_CONFIGS[gameMode]?.[position]?.[scenario];
+  const posScenarios = MODE_CONFIGS[gameMode]?.[position];
+  // No pré-flop a simulação é o mesmo spot do vsOpenRaise: alguém abriu e o
+  // herói responde. Onde o modo não declara simulation — hu e threehand nunca
+  // declararam — a busca voltava vazia e a range saía 100% fold, marcando
+  // qualquer raise ou call como erro. Agora a simulação herda o vsOpenRaise.
+  const posConfig = posScenarios?.[scenario] ?? (scenario === 'simulation' ? posScenarios?.vsOpenRaise : undefined);
   let raisePercent = posConfig?.raise || 0;
   let callPercent = posConfig?.call || 0;
   let allinPercent = posConfig?.allin || 0;

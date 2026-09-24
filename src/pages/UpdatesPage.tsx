@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.18.1',
+    date: '24/09/2026',
+    type: 'fix',
+    title: 'A Simulação Mandava Passar Ases no HU e no Three Hand',
+    description: 'Um relato de que o gráfico de range não mostrava nada na Simulação levou a um problema muito maior. A tabela que diz quanto cada posição abre, paga e vai de all-in tinha a Simulação escrita só para o 8-max: nos modos HU e Three Hand ela simplesmente não existia. A busca voltava vazia, e vazio ali significa 0% raise, 0% call, 0% all-in — ou seja, 100% fold para as 169 mãos. O efeito era este: no HU e no Three Hand, passar AA valia +15 pontos e jogar AA valia -8. O mesmo para AKs, QQ e qualquer outra mão. Só quem desistia era premiado, e quem jogava certo perdia pontos e precisão. Eram 45 combinações de modo, posição e stack — todos os stacks do HU no BB e do Three Hand no SB e no BB. E era também a razão de o gráfico "não aparecer": ele abria, mas com as 169 casas cinzas de fold, sem nada para ler. Agora a Simulação herda o vs Open Raise em todos os modos, que é o mesmo spot pré-flop: alguém abriu e você responde. Os pontos já registrados não foram alterados. Também nesta correção: a janela do range abria com dois X de fechar colados, um deles sobrando.',
+  },
+  {
     version: '1.18.0',
     date: '24/09/2026',
     type: 'feature',

@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Crown, X } from 'lucide-react';
+import { Crown } from 'lucide-react';
 
 interface RangeViewerModalProps {
   open: boolean;
@@ -110,24 +110,16 @@ export function RangeViewerModal({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-hidden bg-card border-border p-0">
-        <DialogHeader className="p-4 pb-0 flex flex-row items-center justify-between">
-          <div>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              📊 Range GTO Completo
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground mt-1">
-              {scenarioLabels[scenario]} • {position} • {stack} BB
-              {finalTable && ' • Mesa Final'}
-            </DialogDescription>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-8 w-8"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        {/* O X de fechar vem do próprio DialogContent. Havia um segundo botão
+            aqui dentro, e a janela aparecia com dois X colados um no outro. */}
+        <DialogHeader className="p-4 pb-0 pr-12">
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            📊 Range GTO Completo
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
+            {scenarioLabels[scenario]} • {position} • {stack} BB
+            {finalTable && ' • Mesa Final'}
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-4 pt-2">
