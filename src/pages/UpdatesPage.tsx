@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.18.2',
+    date: '24/09/2026',
+    type: 'improvement',
+    title: 'Ranking Refeito por Fora',
+    description: 'O pódio do Top 3 estava com os degraus trocados: o segundo lugar ficava com o bloco mais alto que o do campeão, e os três degraus nem apoiavam no mesmo chão — cada um terminava numa altura, o que fazia o pódio parecer quebrado. Agora o campeão tem o degrau mais alto, no centro, e os três se apoiam na mesma linha. Cada colocação ganhou sua cor de medalha de verdade (ouro, prata e bronze), com o ícone junto do avatar e o emblema de rank ao lado do nome. Na lista, cada linha virou uma grade fixa: no celular o nome corta em vez de empurrar o XP para a terceira linha, como acontecia. Os três primeiros ganharam uma faixa colorida na lateral, os números de XP saíram com ponto de milhar e a setinha que aparecia em toda linha — e não indicava nada — saiu. O seletor de mês, que ocupava um cartão inteiro sozinho, subiu para o lado do título. O cartão "Como funciona a pontuação?" tinha só o título e um ícone, parecendo um cartão vazio: agora mostra a tabela de pontos à vista, e o texto longo continua no ícone de informação. Enquanto o ranking carrega, aparecem linhas cinzas no lugar de "Carregando...".',
+  },
+  {
     version: '1.18.1',
     date: '24/09/2026',
     type: 'fix',
