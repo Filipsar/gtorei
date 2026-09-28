@@ -265,6 +265,51 @@ export interface VillainDecision {
   action: 'check' | 'bet' | 'call' | 'fold' | 'raise';
   betSizePct?: number;
   description: string;
+  /** A jogada saiu do desvio, não da estratégia. Serve para o resumo da mão. */
+  erroProposital?: boolean;
+}
+
+/**
+ * De quantas em quantas decisões o vilão sai da linha certa.
+ *
+ * Por que existe: contra um adversário que nunca erra, o treino vira decorar a
+ * resposta do solver. Mesa de verdade tem gente pagando demais, desistindo do
+ * melhor par e blefando na hora errada — e é contra esse jogador que se ganha
+ * dinheiro. O desvio é sempre para uma jogada plausível: ele paga quando devia
+ * passar, passa quando devia pagar, aposta quando devia controlar o pote. Nunca
+ * vira jogada aleatória, senão o treino deixa de ensinar.
+ *
+ * A nota do herói não muda por causa disso: ela vem da range, não do que o
+ * vilão fez.
+ */
+export const CHANCE_DE_ERRO = 0.15;
+
+/** Troca a decisão por uma vizinha plausível, na frequência de CHANCE_DE_ERRO. */
+export function desviarDaLinha(
+  decisao: VillainDecision,
+  sorteio: () => number = Math.random,
+): VillainDecision {
+  if (sorteio() >= CHANCE_DE_ERRO) return decisao;
+
+  const erro = (
+    action: VillainDecision['action'],
+    description: string,
+    betSizePct?: number,
+  ): VillainDecision => ({ action, description, betSizePct, erroProposital: true });
+
+  switch (decisao.action) {
+    // Paga o que devia passar: o call leve, o erro mais comum da mesa
+    case 'fold':  return erro('call', 'Call (leve)');
+    // Passa o que devia pagar
+    case 'call':  return erro('fold', 'Fold (apertado)');
+    // Blefa onde a linha era controlar o pote
+    case 'check': return erro('bet', 'Bet (blefe)', 0.5);
+    // Só paga em vez de aumentar: perde valor, não perde ficha
+    case 'raise': return erro('call', 'Call (perdeu valor)');
+    // Aposta virando check: dá carta de graça
+    case 'bet':   return erro('check', 'Check (deu carta grátis)');
+    default:      return decisao;
+  }
 }
 
 export function makeVillainPostflopDecision(
@@ -296,10 +341,14 @@ export function makeVillainPostflopDecision(
   const villainShownStrength = memory?.villainHasShownStrength ?? false;
   
   if (heroBetAmount > 0) {
-    return respondToBet(handStrength, heroBetAmount, pot, effectiveStack, spr, board, villainIsIP, street, draws, heroAggr, villainShownStrength);
+    return desviarDaLinha(
+      respondToBet(handStrength, heroBetAmount, pot, effectiveStack, spr, board, villainIsIP, street, draws, heroAggr, villainShownStrength),
+    );
   }
-  
-  return decideWhenCheckedTo(handStrength, pot, effectiveStack, spr, board, villainIsIP, street, draws, heroAggr);
+
+  return desviarDaLinha(
+    decideWhenCheckedTo(handStrength, pot, effectiveStack, spr, board, villainIsIP, street, draws, heroAggr),
+  );
 }
 
 // ============================================================

@@ -133,9 +133,10 @@ export function PlayerSeat({
         )}
       </div>
 
-      {/* Cartas do vilão, viradas para baixo até o showdown */}
+      {/* Cartas do vilão, viradas para baixo até o showdown. O data-cartas é o
+          que a mesa procura para jogá-las ao centro quando ele desiste. */}
       {cards && cards.length > 0 && !isHero && (
-        <div className="mt-1">
+        <div className="mt-1" data-cartas>
           <HandDisplay cards={cards} size="xs" faceDown={!showCards} />
         </div>
       )}

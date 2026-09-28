@@ -21,6 +21,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.19.0',
+    date: '28/09/2026',
+    type: 'fix',
+    title: 'O Adversário Estava Invisível na Metade das Jogadas',
+    description: 'Um relato dizia que o adversário parecia sempre fazer a mesma coisa que você. Medindo 400 mãos, o motivo apareceu: quando ele pagava ou dava check, a carta seguinte virava no mesmo instante e a jogada dele era apagada antes de chegar à tela. Só sobravam visíveis as jogadas que exigiam resposta — aposta, aumento e desistência. Em números: 45% das suas apostas e 61% dos seus checks não mostravam reação nenhuma, e o resumo da mão também vinha com a linha do adversário vazia no flop e no turn. Agora a mão para, mostra o que ele fez e só então vira a carta. Nos mesmos 400 testes, a fatia invisível caiu de 45% e 61% para zero. Junto vieram quatro coisas: as fichas dele ficam na frente dele e você vê a varredura até o pote (o pote também parou de contar o valor antes das fichas saírem da mesa); as cartas dele abrem no fim de toda mão, mesmo quando ele desiste antes do showdown; quando desiste, as cartas são jogadas na mesa; e ele passou a errar de propósito em 15% das decisões, sempre para uma jogada plausível — paga o que devia passar, passa o que devia pagar, blefa onde devia controlar o pote. Sua nota não muda por causa disso: ela vem da range, não do que o adversário fez. Também foi corrigida a conta de quem está em posição no pós-flop: ela usava a ordem do pré-flop, então quem estava no small ou no big blind era tratado como se falasse por último, quando na verdade fala primeiro — e blefava com a frequência errada.',
+  },
+  {
     version: '1.18.2',
     date: '24/09/2026',
     type: 'improvement',

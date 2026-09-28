@@ -51,6 +51,29 @@ export interface HandState {
   apostaDaRua?: number;
   /** Quem levou o pote, quando não foi o herói */
   showdownWinner?: Position;
+  /**
+   * O vilão fechou a rua (pagou ou deu check) e a mão está parada para você ver.
+   *
+   * Antes, ele pagar e a carta seguinte virar aconteciam no mesmo instante: a
+   * ação dele e as fichas dele eram apagadas antes de chegarem à tela. De fora,
+   * o vilão parecia não fazer nada — ou fazer sempre o mesmo que você, porque
+   * só sobravam visíveis as jogadas que exigiam resposta (bet, raise, fold).
+   * Agora a rua só vira quando a tela chama `avancarRua`.
+   */
+  aguardandoAvanco?: boolean;
+  /**
+   * Fichas que o vilão pôs na rua e que ainda não entraram no pote.
+   *
+   * Ficam na frente dele durante a pausa e só somam ao pote quando a rua vira —
+   * é o que faz a varredura de fichas até o pote ter o que carregar. Sem isso o
+   * pote já contava o valor enquanto as fichas ainda estavam na mesa, e parecia
+   * dobrado.
+   */
+  fichasDoVilao?: number;
+  /** Cartas do vilão abertas no fim da mão, mesmo sem showdown */
+  villainCardsRevealed?: boolean;
+  /** O vilão desistiu: a tela joga as cartas dele na mesa */
+  villainMucked?: boolean;
 }
 
 export interface ExtraOpponent {
@@ -426,6 +449,7 @@ function resolverShowdown(state: HandState): HandState {
   novoState.street = 'showdown';
   novoState.isHandComplete = true;
   novoState.activeBets = [];
+  novoState.villainCardsRevealed = true;
 
   if (!state.heroCards || !state.villainCards) {
     novoState.result = Math.random() > 0.5 ? 'hero_wins' : 'villain_wins';
@@ -586,6 +610,9 @@ export function processPostflopAction(
       newState.isHandComplete = true;
       newState.result = 'hero_wins';
       newState.lastVillainAction = 'Fold';
+      // Desistiu: as cartas dele viram e são jogadas na mesa
+      newState.villainMucked = true;
+      newState.villainCardsRevealed = true;
       return newState;
     }
     
@@ -623,12 +650,12 @@ export function processPostflopAction(
     if (decision.action === 'call') {
       const callAmount = Math.min(betSize, state.villainStack || 0);
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call', amount: callAmount }];
-      newState.pot += callAmount;
       newState.villainStack = (state.villainStack || 0) - callAmount;
-      newState.activeBets = [];
+      // As fichas ficam na frente dele; o pote só cresce quando a rua vira
+      newState.activeBets = [{ position: state.villainPosition!, amount: callAmount }];
       newState.lastVillainAction = `Call ${callAmount.toFixed(1)}BB`;
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'call', true, callAmount);
-      return dealNextStreet(newState);
+      return pausarParaMostrar(newState, callAmount);
     } else if (decision.action === 'raise') {
       const raiseSize = Math.min((decision.betSizePct || 0.75) * newState.pot + betSize, state.villainStack || 0);
       newState.apostaDaRua = Math.max(newState.apostaDaRua ?? 0, raiseSize);
@@ -650,6 +677,9 @@ export function processPostflopAction(
       newState.result = 'hero_wins';
       newState.activeBets = [];
       newState.lastVillainAction = 'Fold';
+      // Desistiu: as cartas dele viram e são jogadas na mesa
+      newState.villainMucked = true;
+      newState.villainCardsRevealed = true;
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
       return newState;
     }
@@ -703,19 +733,19 @@ export function processPostflopAction(
     if (decision.action === 'call') {
       const callAmt = Math.min(raiseSize, state.villainStack || 0);
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call', amount: callAmt }];
-      newState.pot += callAmt;
       newState.villainStack = (state.villainStack || 0) - callAmt;
-      newState.activeBets = [];
+      newState.activeBets = [{ position: state.villainPosition!, amount: callAmt }];
       newState.lastVillainAction = `Call ${callAmt.toFixed(1)}BB`;
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'call', true, callAmt);
-      const isRiver = state.street === 'river';
-      if (isRiver) return goToShowdown(newState);
-      return dealNextStreet(newState);
+      return pausarParaMostrar(newState, callAmt);
     } else if (decision.action === 'fold') {
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'fold' }];
       newState.isHandComplete = true;
       newState.result = 'hero_wins';
       newState.lastVillainAction = 'Fold';
+      // Desistiu: as cartas dele viram e são jogadas na mesa
+      newState.villainMucked = true;
+      newState.villainCardsRevealed = true;
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
       return newState;
     } else {
@@ -770,20 +800,26 @@ export function processPostflopAction(
     newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'check' }];
     newState.lastVillainAction = 'Check';
     newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'check', true);
-    
-    if (isRiver) {
-      return goToShowdown(newState);
-    }
-    return dealNextStreet(newState);
+    return pausarParaMostrar(newState);
   }
 }
 
 // Helper: is villain in position relative to hero
+/**
+ * Ordem de quem fala no pós-flop. Não é a mesma do pré-flop: os blinds pagam
+ * por último antes do flop e falam primeiro depois dele.
+ *
+ * Usar a ordem do pré-flop punha SB e BB no fim do vetor, então o vilão num
+ * blind era lido como "em posição" — e blefava na frequência de quem fala por
+ * último, justamente do assento onde ele fala primeiro.
+ */
+const ORDEM_POSFLOP: Position[] = ['SB', 'BB', 'UTG', 'UTG1', 'LJ', 'HJ', 'CO', 'BTN'];
+
 function isVillainInPosition(state: HandState): boolean {
-  const villainIdx = POSITIONS.indexOf(state.villainPosition || 'UTG');
-  const heroIdx = POSITIONS.indexOf(state.heroPosition);
-  // Higher index = later position = in position postflop (except blinds act first)
-  return villainIdx > heroIdx;
+  const vilao = ORDEM_POSFLOP.indexOf(state.villainPosition || 'UTG');
+  const heroi = ORDEM_POSFLOP.indexOf(state.heroPosition);
+  // Quem fala depois está em posição
+  return vilao > heroi;
 }
 
 // Go directly to showdown (for river check-check)
@@ -824,12 +860,14 @@ function simulateVillainResponse(
       { position: state.villainPosition!, action: 'call' }
     ];
     newState.lastVillainAction = 'Call';
-    
+
     // Update villain stack for the call
     const callAmount = Math.max(...state.activeBets.map(b => b.amount), 0);
     newState.villainStack = (state.villainStack || effectiveStack) - callAmount;
-    
-    return dealNextStreet(newState);
+
+    // O pote pré-flop já conta a aposta dele, então aqui não há ficha a mover:
+    // a pausa é só para a tela mostrar que ele pagou antes de vir o flop.
+    return pausarParaMostrar(newState);
   } else {
     newState.actions = [
       ...state.actions,
@@ -838,8 +876,42 @@ function simulateVillainResponse(
     newState.isHandComplete = true;
     newState.result = 'hero_wins';
     newState.lastVillainAction = 'Fold';
+    // Desistiu: as cartas dele viram e são jogadas na mesa
+    newState.villainMucked = true;
+    newState.villainCardsRevealed = true;
     return newState;
   }
+}
+
+/**
+ * O vilão fechou a rua pagando ou dando check: para a mão aqui, com a ação e as
+ * fichas dele ainda na mesa, para a tela mostrar. Quem vira a carta seguinte é
+ * `avancarRua`, chamada depois da pausa.
+ *
+ * No river não há próxima carta, então o showdown acontece direto.
+ */
+function pausarParaMostrar(state: HandState, fichas = 0): HandState {
+  // No river não há carta seguinte: o showdown já é o que se tem para mostrar.
+  if (state.street === 'river') {
+    return goToShowdown({ ...state, pot: state.pot + fichas, activeBets: [] });
+  }
+  return {
+    ...state,
+    aguardandoAvanco: true,
+    awaitingPostflopAction: false,
+    fichasDoVilao: fichas || undefined,
+  };
+}
+
+/** Vira a carta seguinte depois que a tela mostrou o que o vilão fez. */
+export function avancarRua(state: HandState): HandState {
+  const comFichas: HandState = {
+    ...state,
+    pot: state.pot + (state.fichasDoVilao ?? 0),
+    fichasDoVilao: undefined,
+    aguardandoAvanco: false,
+  };
+  return dealNextStreet(comFichas);
 }
 
 // Lidar próxima street

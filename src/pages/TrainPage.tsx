@@ -32,7 +32,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { toast } from '@/hooks/use-toast';
 import { POSITIONS, SCENARIOS, STACK_SIZES, Position, Scenario, ActionType, RANKS, RangeData, getRange, getHandData, calculateFeedback, GameMode } from '@/data/gtoRanges';
 import { getStackDistribution, StackDistribution } from '@/data/stackDistribution';
-import { initializeHandState, getVillainPosition, getScenarioDescription, processHeroAction, processPostflopAction, HandState, Street } from '@/data/handState';
+import { initializeHandState, getVillainPosition, getScenarioDescription, processHeroAction, processPostflopAction, avancarRua, HandState, Street } from '@/data/handState';
 import { HAND_RANK_NAMES, HandEvaluation } from '@/data/handEvaluator';
 import { createSession, getCurrentSession, updateCurrentSession, addHandToSession, endCurrentSession, getUserProfile, createUserProfile, addFavoriteHand, isHandFavorited, removeFavoriteHand, getFavoriteHands, calculateLevel } from '@/data/localStorage';
 import { generateHandId, isHandAlreadyPlayed, getPlayedHandData, markHandAsPlayed, clearPlayedHandsSession } from '@/data/playedHandsTracker';
@@ -601,6 +601,13 @@ export default function TrainPage() {
         setTimeout(() => {
           setPhase('review');
         }, 1200);
+      } else if (newState.aguardandoAvanco) {
+        // Ele pagou o pré-flop: mostra o call antes de o flop vir
+        setPhase('transitioning');
+        setTimeout(() => {
+          setHandState(avancarRua(newState));
+          setTimeout(() => setPhase('postflop'), 500);
+        }, 1100);
       } else {
         setPhase('transitioning');
         setTimeout(() => {
@@ -714,6 +721,12 @@ export default function TrainPage() {
       if (newState.isHandComplete) {
         applyPendingScore();
         setPhase('review');
+      } else if (newState.aguardandoAvanco) {
+        setPhase('transitioning');
+        setTimeout(() => {
+          setHandState(avancarRua(newState));
+          setTimeout(() => setPhase('postflop'), 500);
+        }, 1100);
       } else {
         // Show transitioning state with delay before showing postflop actions
         setPhase('transitioning');
@@ -770,6 +783,13 @@ export default function TrainPage() {
           applyPendingScore();
           setPhase('review');
         }, 1200);
+      } else if (newState.aguardandoAvanco) {
+        // O vilão fechou a rua pagando ou dando check. A mão fica parada com a
+        // ação e as fichas dele na mesa; só depois a carta seguinte vira.
+        setTimeout(() => {
+          setHandState(avancarRua(newState));
+          setTimeout(() => setPhase('postflop'), 500);
+        }, 1100);
       } else if (newState.awaitingPostflopAction) {
         // Villain bet, hero must respond — add another delay
         setTimeout(() => {
@@ -1326,6 +1346,9 @@ export default function TrainPage() {
               villainCards={handState.villainCards}
               villainAction={handState.villainAction} 
               villainStack={handState.villainStack}
+              lastVillainAction={handState.lastVillainAction}
+              villainCardsRevealed={handState.villainCardsRevealed}
+              villainMucked={handState.villainMucked}
               extraOpponents={handState.extraOpponents}
               communityCards={handState.communityCards}
               street={handState.street} 

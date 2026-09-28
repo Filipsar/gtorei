@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initializeHandState, processHeroAction, processPostflopAction, HandState } from '@/data/handState';
+import { initializeHandState, processHeroAction, processPostflopAction, avancarRua, HandState } from '@/data/handState';
 import { generateCardsFromHand } from '@/components/poker/PlayingCard';
 import { evaluateHand } from '@/data/handEvaluator';
 import { POSITIONS } from '@/data/gtoRanges';
@@ -29,12 +29,22 @@ function montar(heroi: (typeof POSITIONS)[number], multiway: boolean): HandState
   );
 }
 
-/** Joga a mão até o fim passando sempre (check/call), que é o caminho mais longo */
+/**
+ * Joga a mão até o fim passando sempre (check/call), que é o caminho mais longo.
+ *
+ * O `avancarRua` aqui não é detalhe de teste: é o mesmo passo que a tela dá. A
+ * mão para quando o vilão fecha a rua, para as fichas e a ação dele aparecerem,
+ * e só então a carta seguinte vira.
+ */
 function jogarPassivo(inicial: HandState): HandState {
   let estado = processHeroAction(inicial, 'call', 'simulation');
   let voltas = 0;
-  while (!estado.isHandComplete && voltas < 40) {
+  while (!estado.isHandComplete && voltas < 60) {
     voltas++;
+    if (estado.aguardandoAvanco) {
+      estado = avancarRua(estado);
+      continue;
+    }
     const temAposta = !!estado.villainAction;
     estado = processPostflopAction(estado, temAposta ? 'call' : 'check');
   }

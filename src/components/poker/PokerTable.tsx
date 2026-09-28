@@ -28,6 +28,12 @@ interface PokerTableProps {
     amount: number;
   };
   villainStack?: number;
+  /** Última jogada dele, inclusive call e check (o villainAction só cobre aposta) */
+  lastVillainAction?: string;
+  /** Cartas do vilão abertas no fim da mão, mesmo sem showdown */
+  villainCardsRevealed?: boolean;
+  /** O vilão desistiu: as cartas dele são jogadas na mesa */
+  villainMucked?: boolean;
   /** Adversários além do principal, no pote multiway da simulação */
   extraOpponents?: { position: Position; cards: CardType[]; stack: number; folded: boolean }[];
   communityCards?: CardType[];
@@ -94,6 +100,9 @@ export function PokerTable({
   villainCards,
   villainAction,
   villainStack,
+  lastVillainAction,
+  villainCardsRevealed,
+  villainMucked,
   extraOpponents,
   communityCards = [],
   street = 'preflop',
@@ -121,6 +130,7 @@ export function PokerTable({
   const valorDoPoteRef = useRef<HTMLSpanElement>(null);
   const apostaRefs = useRef(new Map<Position, HTMLDivElement | null>());
   const varreduraRefs = useRef<HTMLDivElement[]>([]);
+  const assentoRefs = useRef(new Map<Position, HTMLDivElement | null>());
   const gsapRef = useRef<Gsap | null>(null);
   const angulosRef = useRef(angulos);
   angulosRef.current = angulos;
@@ -155,6 +165,47 @@ export function PokerTable({
       y: Math.sin(angulo) * ((doRaio - paraRaio) / 100) * caixa.height
     };
   };
+
+  // Vilão desistiu: as cartas dele saem do assento e caem no centro da mesa,
+  // como quem joga a mão fora.
+  useEffect(() => {
+    const gsap = gsapRef.current;
+    if (!gsap || !villainPosition) return;
+
+    const assento = assentoRefs.current.get(villainPosition);
+    const cartas = assento?.querySelector<HTMLElement>('[data-cartas]');
+    if (!cartas) return;
+
+    // Mão nova: devolve as cartas ao lugar
+    if (!villainMucked) {
+      if (cartas.dataset.mucado) {
+        delete cartas.dataset.mucado;
+        gsap.set(cartas, { clearProps: 'all' });
+      }
+      return;
+    }
+
+    // A marca fica no próprio elemento, não num ref: o StrictMode chama este
+    // efeito duas vezes em desenvolvimento, e o ref ainda guardava o valor da
+    // mão anterior — com isso a animação nunca chegava a rodar.
+    if (cartas.dataset.mucado) return;
+
+    const angulo = angulosRef.current.get(villainPosition);
+    if (angulo === undefined) return;
+
+    // Marcar só depois de ter tudo o que a animação precisa: marcando antes,
+    // uma saída antecipada gravava "já animei" numa carta que ficou parada.
+    cartas.dataset.mucado = '1';
+    const { x, y } = deslocamento(angulo, RAIO_ASSENTO, 0);
+    gsap.to(cartas, {
+      x: -x, y: -y,
+      rotate: gsap.utils.random(-28, 28),
+      scale: 0.72,
+      opacity: 0.3,
+      duration: 0.55,
+      ease: 'power2.in',
+    });
+  }, [villainMucked, villainPosition]);
 
   // O pote cresce contando, em vez de pular de um número para outro
   useEffect(() => {
@@ -371,7 +422,9 @@ export function PokerTable({
             shouldShowCards = true;
           } else if (isVillain && villainCards && villainCards.length > 0) {
             cardsToShow = villainCards;
-            shouldShowCards = street === 'showdown';
+            // No fim da mão as cartas dele abrem mesmo sem showdown: saber o que
+            // ele tinha quando desistiu é metade do aprendizado do pós-flop.
+            shouldShowCards = street === 'showdown' || !!villainCardsRevealed;
           } else if (extra && !extra.folded && extra.cards.length > 0) {
             // No pote multiway o terceiro também abre as cartas no showdown:
             // ele disputa o pote como qualquer um.
@@ -393,6 +446,7 @@ export function PokerTable({
           return (
             <div
               key={pos}
+              ref={(no) => assentoRefs.current.set(pos, no)}
               className={cn(
                 'absolute z-[15] -translate-x-1/2 -translate-y-1/2',
                 mesaCheia && 'scale-[0.82] sm:scale-100'
@@ -416,7 +470,13 @@ export function PokerTable({
                 stack={stackToShow}
                 showCards={shouldShowCards}
                 half={Math.sin(angulo) < 0 ? 'top' : 'bottom'}
-                lastAction={isVillain && villainAction ? villainAction : undefined}
+                // O villainAction só existe quando ele aposta ou aumenta. Sem o
+                // segundo caso, pagar e dar check não apareciam na mesa.
+                lastAction={
+                  isVillain
+                    ? villainAction ?? (lastVillainAction ? { action: lastVillainAction } : undefined)
+                    : undefined
+                }
               />
             </div>
           );
