@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="GTORei">
+  <!--
+    Versão reduzida da coroa, para 16 a 20px (favicon). Irmã de gtorei-coroa.svg.
+
+    Por que ela existe: a 16px, 1 unidade do viewBox vale 0,16 pixel. Os vãos da
+    marca principal têm 4,9 unidades — 0,78px — então os dentes se fundem e a
+    joia vira um pixel escuro solto, que lê como sujeira.
+
+    O que muda: três dentes em vez de cinco (vãos de 9 unidades = 1,44px) e sem
+    a joia. Medido rasterizando de verdade a 16px: o vão fica 12% preenchido
+    aqui, contra 30% na marca principal sem joia.
+
+    Mesma faixa, mesma altura e mesmos cantos da principal — é a mesma família,
+    não outra marca. Acima de 24px use gtorei-coroa.svg.
+  -->
+  <g fill="currentColor">
+    <rect x="14" y="40" width="18" height="30" rx="4.2"/>
+    <rect x="41" y="28" width="18" height="42" rx="4.2"/>
+    <rect x="68" y="40" width="18" height="30" rx="4.2"/>
+    <rect x="14" y="62" width="72" height="20" rx="7.5"/>
+  </g>
+</svg>

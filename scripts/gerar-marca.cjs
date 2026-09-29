@@ -17,9 +17,13 @@ const RAIZ = path.resolve(__dirname, '..');
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const OURO = '#FFB800';
 
-const coroa = fs.readFileSync(path.join(RAIZ, 'src/assets/gtorei-coroa.svg'), 'utf8')
+const limpar = (arquivo) => fs.readFileSync(path.join(RAIZ, arquivo), 'utf8')
   .replace(/<!--[\s\S]*?-->/g, '')
   .replace(/^<\?xml[^>]*\?>\s*/, '');
+
+const coroa = limpar('src/assets/gtorei-coroa.svg');
+// Três dentes, sem joia: só para 16 e 20px, onde a principal empasta
+const coroaReduzida = limpar('src/assets/gtorei-coroa-reduzida.svg');
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'marca-'));
 const url = (p) => 'file:///' + p.split(path.sep).join('/');
@@ -40,12 +44,12 @@ function tirar(html, largura, altura, destino) {
 }
 
 /** Só a marca, sangrando até a borda com uma folga proporcional */
-const soAMarca = (px, folga = 0.09) => `<!doctype html><html><head><meta charset="utf-8"><style>
+const soAMarca = (px, folga = 0.09, marca = coroa) => `<!doctype html><html><head><meta charset="utf-8"><style>
   *{margin:0;padding:0}
   html,body{width:${px}px;height:${px}px;background:transparent}
   body{display:flex;align-items:center;justify-content:center;color:${OURO}}
   svg{width:${Math.round(px * (1 - folga * 2))}px;height:${Math.round(px * (1 - folga * 2))}px}
-</style></head><body>${coroa}</body></html>`;
+</style></head><body>${marca}</body></html>`;
 
 /** Cartão social: marca + nome + linha de apoio */
 const cartaoSocial = `<!doctype html><html><head><meta charset="utf-8">
@@ -72,6 +76,10 @@ const cartaoSocial = `<!doctype html><html><head><meta charset="utf-8">
 </body></html>`;
 
 console.log('Gerando a partir de src/assets/gtorei-coroa.svg\n');
+
+// A 16px a marca principal empasta: os vãos ficam em 0,78px e os dentes se
+// fundem. Nesse tamanho vale a reduzida, com folga menor para ganhar massa.
+tirar(soAMarca(16, 0.03, coroaReduzida), 16, 16, path.join(RAIZ, 'public/icon-16.png'));
 
 // Ícones e favicons — os nomes são os que o index.html já referencia
 for (const [nome, px] of [['icon-32.png', 32], ['icon-192.png', 192], ['logo-128.png', 128]]) {
