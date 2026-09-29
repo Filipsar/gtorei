@@ -2,6 +2,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/seo/SEO';
+import { cn } from '@/lib/utils';
 import { Bell, Sparkles, Bug, Wrench, Rocket } from 'lucide-react';
 
 interface UpdateNote {
@@ -20,6 +21,13 @@ const UPCOMING: string[] = [
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.19.1',
+    date: '29/09/2026',
+    type: 'improvement',
+    title: 'Atualizações Viraram Linha do Tempo',
+    description: 'A página de atualizações mostrava o texto inteiro de cada versão, e com 48 versões virou uma parede. Agora é uma linha do tempo com o título de cada uma, agrupada por mês, com a cor do ponto dizendo se foi novidade, melhoria ou correção.',
+  },
   {
     version: '1.19.0',
     date: '28/09/2026',
@@ -360,10 +368,52 @@ const UPDATES: UpdateNote[] = [
 ];
 
 const typeConfig = {
-  feature: { label: 'Nova Funcionalidade', icon: Sparkles, color: 'bg-primary/20 text-primary' },
-  improvement: { label: 'Melhoria', icon: Wrench, color: 'bg-secondary/20 text-secondary' },
-  fix: { label: 'Correção', icon: Bug, color: 'bg-muted text-muted-foreground' },
+  feature: {
+    label: 'Novidade',
+    icon: Sparkles,
+    color: 'bg-primary/20 text-primary',
+    ponto: 'bg-primary',
+    borda: 'border-primary/40',
+  },
+  improvement: {
+    label: 'Melhoria',
+    icon: Wrench,
+    color: 'bg-secondary/20 text-secondary',
+    ponto: 'bg-secondary',
+    borda: 'border-secondary/40',
+  },
+  fix: {
+    label: 'Correção',
+    icon: Bug,
+    color: 'bg-muted text-muted-foreground',
+    ponto: 'bg-muted-foreground',
+    borda: 'border-border',
+  },
 };
+
+const MESES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+
+/** "28/09/2026" → "setembro de 2026". Agrupar por mês dá o ritmo que as
+ *  descrições davam antes: sem elas, uma lista corrida perde a noção de tempo. */
+function mesDe(data: string): string {
+  const [, mes, ano] = data.split('/');
+  const nome = MESES[Number(mes) - 1] ?? '';
+  return `${nome} de ${ano}`;
+}
+
+function agruparPorMes(notas: UpdateNote[]): { mes: string; itens: UpdateNote[] }[] {
+  const grupos: { mes: string; itens: UpdateNote[] }[] = [];
+  for (const nota of notas) {
+    const mes = mesDe(nota.date);
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.mes === mes) ultimo.itens.push(nota);
+    else grupos.push({ mes, itens: [nota] });
+  }
+  return grupos;
+}
 
 export default function UpdatesPage() {
   return (
@@ -373,16 +423,24 @@ export default function UpdatesPage() {
         description="Acompanhe as últimas novidades, melhorias e correções da plataforma GTORei, organizadas por versão."
         path="/atualizacoes"
       />
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
-            <Bell className="h-8 w-8 text-primary" />
-            Atualizações
-          </h1>
-          <p className="text-body-sm text-muted-foreground mt-1">
-            Novidades e melhorias do GTORei
-          </p>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
+              <Bell className="h-8 w-8 text-primary" />
+              Atualizações
+            </h1>
+            <p className="text-body-sm text-muted-foreground mt-1">
+              {UPDATES.length} versões publicadas · a última em {UPDATES[0]?.date}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className="w-fit border-primary/40 bg-primary/10 font-mono text-primary"
+          >
+            v{UPDATES[0]?.version}
+          </Badge>
         </div>
 
         {/* Upcoming */}
@@ -407,45 +465,62 @@ export default function UpdatesPage() {
           </CardContent>
         </Card>
 
-        {/* Updates list */}
-        <div className="space-y-4">
-          {UPDATES.map((update, index) => {
-            const config = typeConfig[update.type];
-            const Icon = config.icon;
+        {/* Linha do tempo. Sem as descrições, cartão por item ficava vazio e
+            alto demais; a lista corrida vira uma trilha só. */}
+        <div className="space-y-8">
+          {agruparPorMes(UPDATES).map(({ mes, itens }) => (
+            <section key={mes}>
+              <h2 className="mb-3 text-body-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {mes}
+              </h2>
 
-            return (
-              <Card key={index} className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${config.color}`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-heading-xs">{update.title}</CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-body-xs">
-                            v{update.version}
-                          </Badge>
-                          <span className="text-body-xs text-muted-foreground">
-                            {update.date}
+              {/* O trilho é a borda esquerda; cada nó se apoia nela */}
+              <ol className="relative space-y-1 border-l border-border pl-6">
+                {itens.map((update) => {
+                  const config = typeConfig[update.type];
+                  const Icon = config.icon;
+
+                  return (
+                    <li
+                      key={update.version}
+                      className="group relative rounded-lg px-3 py-3 transition-colors hover:bg-muted/40"
+                    >
+                      {/* Nó sobre o trilho: -1.5rem do padding, menos meio ponto */}
+                      <span
+                        className={cn(
+                          'absolute -left-[1.9rem] top-[1.45rem] h-2.5 w-2.5 rounded-full ring-4 ring-background',
+                          config.ponto,
+                        )}
+                      />
+
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span className={cn('mt-0.5 shrink-0 rounded-md p-1.5', config.color)}>
+                            <Icon className="h-3.5 w-3.5" />
                           </span>
+                          <div className="min-w-0">
+                            <p className="font-medium leading-snug">{update.title}</p>
+                            <p className="mt-1 flex items-center gap-2 text-body-xs text-muted-foreground">
+                              <span className="font-mono tabular-nums">v{update.version}</span>
+                              <span className="h-1 w-1 rounded-full bg-border" />
+                              <span className="tabular-nums">{update.date}</span>
+                            </p>
+                          </div>
                         </div>
+
+                        <Badge
+                          variant="outline"
+                          className={cn('hidden shrink-0 sm:inline-flex', config.borda, config.color)}
+                        >
+                          {config.label}
+                        </Badge>
                       </div>
-                    </div>
-                    <Badge className={config.color}>
-                      {config.label}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-body-sm text-muted-foreground">
-                    {update.description}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
         </div>
       </div>
     </MainLayout>
