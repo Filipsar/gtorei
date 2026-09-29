@@ -20,9 +20,7 @@ import { cn } from '@/lib/utils';
 import { SettingsModal } from './SettingsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-// Marca única do app. O SVG é a fonte; os PNG de favicon e OG saem dele
-// pelo scripts/gerar-marca.cjs.
-import gtoreiCoroa from '@/assets/gtorei-coroa.svg';
+import gtoreiLogo from '@/assets/gtorei-logo.png';
 
 const ADMIN_EMAIL = 'farubini2@gmail.com';
 
@@ -206,7 +204,7 @@ export function AppSidebar() {
           <div className="flex items-center justify-between w-full">
             {!collapsed &&
             <div className="flex items-center gap-3">
-                <img alt="GTORei" className="h-8 w-8 object-contain" src={gtoreiCoroa} />
+                <img alt="GTORei" className="h-8 w-8 object-contain" src="/lovable-uploads/9c0d8326-a96e-47a8-9e95-40f28d54d109.png" />
                 <span className="text-heading-sm">
                   <span className="text-primary">GTO</span>
                   <span className="text-sidebar-foreground">Rei</span>
@@ -215,7 +213,7 @@ export function AppSidebar() {
             }
             {collapsed &&
             <div className="w-full flex justify-center px-1">
-                <img src={gtoreiCoroa} alt="GTORei" className="h-7 w-7 object-contain" />
+                <img src={gtoreiLogo} alt="GTORei" className="h-7 w-7 object-contain" />
               </div>
             }
           </div>

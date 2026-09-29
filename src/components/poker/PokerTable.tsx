@@ -7,7 +7,7 @@ import { PlayerSeat, getPositionColor } from './PlayerSeat';
 import { PlayerBet } from './ChipStack';
 import { CommunityCards } from './CommunityCards';
 import { CardType } from './PlayingCard';
-import gtoreiCoroa from '@/assets/gtorei-coroa.svg';
+import gtoreiCrown from '@/assets/gtorei-crown.png';
 
 // Tipos de ação para o histórico
 export interface ActionEntry {
@@ -327,7 +327,7 @@ export function PokerTable({
             title="Voltar ao início"
             className="absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 opacity-[0.13] transition-opacity hover:opacity-[0.22]"
           >
-            <img src={gtoreiCoroa} alt="" className="h-8 w-8 object-contain sm:h-12 sm:w-12" />
+            <img src={gtoreiCrown} alt="" className="h-8 w-8 object-contain sm:h-12 sm:w-12" />
             <span className="text-lg font-bold uppercase tracking-[0.2em] sm:text-2xl">
               <span className="text-primary">GTO</span>
               <span className="text-white">REI</span>

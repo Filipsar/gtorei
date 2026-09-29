@@ -1,4 +1,10 @@
 /**
+ * PARADO em 29/09/2026. O app voltou ao logo anterior (o hexágono), porque é o
+ * que o @gtorei já usa no Instagram. Este gerador e os dois SVG da coroa ficam
+ * aqui para os ajustes que virão depois.
+ *
+ * ATENÇÃO: rodar isto agora SOBRESCREVE os PNG do logo atual pelos da coroa.
+ *
  * Gera os arquivos da marca a partir de um SVG só.
  *
  * Fonte da verdade: src/assets/gtorei-coroa.svg. Tudo o mais nesta pasta é

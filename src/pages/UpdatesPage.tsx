@@ -22,13 +22,6 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
-    version: '1.20.0',
-    date: '29/09/2026',
-    type: 'improvement',
-    title: 'Marca Nova: a Coroa',
-    description: 'O GTORei tinha duas marcas ao mesmo tempo: um personagem 3D com coroa na barra lateral e um monograma hexagonal na página inicial. O personagem não sobrevivia a 24px e o hexágono não se lia como letra nenhuma. Agora é uma coroa só, em todos os lugares: cinco dentes de alturas diferentes apoiados numa faixa contínua, com uma joia vazada no meio. Tudo — favicon, ícone do celular, imagem de compartilhamento, coroa do centro da mesa — sai de um único SVG, então mudar a marca no futuro é mudar um arquivo.',
-  },
-  {
     version: '1.19.1',
     date: '29/09/2026',
     type: 'improvement',
