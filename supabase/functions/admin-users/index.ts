@@ -59,28 +59,49 @@ Deno.serve(async (req) => {
     // Use service role to bypass RLS
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
+    // O PostgREST devolve no máximo 1.000 linhas por consulta, sem erro: passado
+    // disso a lista vinha cortada e os totais do admin paravam de crescer
+    // (eram 994 sessões em 02/10/2026). Lê de 1.000 em 1.000 até acabar, com
+    // ordem fixa para nenhuma linha pular ou repetir entre as páginas.
+    const PAGINA = 1000;
+    const lerTodas = async (tabela: string, colunas: string, ordem: string) => {
+      const linhas: any[] = [];
+      for (let de = 0; ; de += PAGINA) {
+        const { data, error } = await supabaseAdmin
+          .from(tabela)
+          .select(colunas)
+          .order(ordem, { ascending: true })
+          .range(de, de + PAGINA - 1);
+        if (error) throw error;
+        linhas.push(...(data || []));
+        if (!data || data.length < PAGINA) return linhas;
+      }
+    };
+
+    // Mesmo limite no Auth: perPage acima de 1.000 é ignorado
+    const lerTodosUsuarios = async () => {
+      const usuarios: { id: string; email?: string }[] = [];
+      for (let page = 1; ; page++) {
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: PAGINA });
+        if (error) throw error;
+        usuarios.push(...(data?.users || []));
+        if (!data?.users || data.users.length < PAGINA) return usuarios;
+      }
+    };
+
     // Run the three heavy queries in parallel
-    const [authRes, profilesRes, sessionsRes] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
-      supabaseAdmin
-        .from("profiles")
-        .select("*")
-        .order("total_xp", { ascending: false }),
-      supabaseAdmin
-        .from("training_sessions")
-        .select("user_id, hands_played, score, accuracy, started_at, ended_at"),
+    const [authUsers, profilesAll, sessions] = await Promise.all([
+      lerTodosUsuarios(),
+      lerTodas("profiles", "*", "id"),
+      lerTodas("training_sessions", "id, user_id, hands_played, score, accuracy, started_at, ended_at", "id"),
     ]);
 
-    if (authRes.error) throw authRes.error;
-    if (profilesRes.error) throw profilesRes.error;
-    if (sessionsRes.error) throw sessionsRes.error;
-
     const emailMap: Record<string, string> = {};
-    for (const u of authRes.data?.users || []) {
+    for (const u of authUsers) {
       emailMap[u.id] = u.email || '';
     }
-    const profiles = profilesRes.data;
-    const sessions = sessionsRes.data;
+    // A tela espera os perfis do maior para o menor XP
+    const profiles = profilesAll.sort((a, b) => (b.total_xp ?? 0) - (a.total_xp ?? 0));
 
 
     // Aggregate session stats per user
