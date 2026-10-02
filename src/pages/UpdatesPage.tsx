@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.19.2',
+    date: '02/10/2026',
+    type: 'fix',
+    title: 'No vs 3-Bet, Mãos Fortes Foldavam e Mais Fracas Pagavam',
+    description: 'No vs 3-bet do CO com 25bb, a range mandava ir de all-in com AQs, pagar com 99, ATs e AJo — e foldar TT, AJs e AQo, que ficam entre as duas na escala de força. O buraco estava na transição do all-in: as últimas mãos dessa faixa misturam all-in com a ação seguinte, e quando não havia raise na range a mistura ia direto para fold, pulando o call. O vs 3-bet é o único cenário só com all-in e call, então acontecia em todos os modos, posições e stacks, sempre com duas ou três mãos (na mesa final, AKo e AQs). Agora essas mãos misturam all-in com call, e a escala ficou contínua: nenhuma mão folda acima de uma que continua. Os pontos já registrados não foram alterados.',
+  },
+  {
     version: '1.19.1',
     date: '29/09/2026',
     type: 'improvement',

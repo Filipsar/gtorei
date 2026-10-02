@@ -354,10 +354,15 @@ function assignHandActions(
     if (percentileRank < allinEnd - mix) {
       allinF = 100;
     } else {
+      // Na borda do all-in, o resto vai para a faixa seguinte da escala:
+      // raise se existir, senão call. Antes ia direto para fold quando não
+      // havia raise, e no vs3bet (só all-in e call) as mãos da zona de mistura
+      // — TT, AJs, AQo no CO 25bb — foldavam enquanto 99 e mais fracas pagavam.
       const t = Math.max(0, (allinEnd - percentileRank) / mix);
       allinF = Math.round(t * 100);
-      raiseF = raisePercent > 0 ? 100 - allinF : 0;
-      if (raiseF === 0) foldF = 100 - allinF;
+      if (raisePercent > 0) raiseF = 100 - allinF;
+      else if (callPercent > 0) callF = 100 - allinF;
+      else foldF = 100 - allinF;
     }
   } else if (raiseEnd > 0 && percentileRank < raiseEnd) {
     if (percentileRank < raiseEnd - mix) {
