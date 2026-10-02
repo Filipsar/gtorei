@@ -435,6 +435,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_monthly_metrics: {
+        Args: { _meses?: number; _ate_dia?: number | null }
+        Returns: {
+          mes: string
+          novos: number
+          total_usuarios: number
+          ativos: number
+          sessoes: number
+          maos: number
+          minutos: number
+          precisao: number | null
+        }[]
+      }
       apply_ranking_delta: {
         Args: { _correct: number; _hands: number; _uid: string; _xp: number }
         Returns: undefined

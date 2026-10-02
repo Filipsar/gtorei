@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { fatiarPagina } from '@/lib/paginacao';
+import { MonthlyComparison } from '@/components/admin/MonthlyComparison';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -236,6 +237,9 @@ export default function AdminPage() {
       });
     }
   };
+
+  // Datas de cadastro para a comparação mês a mês (referência estável entre renders)
+  const createdAtList = useMemo(() => users.map((u) => u.created_at), [users]);
 
   // ============ Dashboard metrics ============
   const dashboard = useMemo(() => {
@@ -656,6 +660,8 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <MonthlyComparison createdAt={createdAtList} />
 
             {/* Top rankings + level distribution */}
             <div className="grid md:grid-cols-2 gap-4">
