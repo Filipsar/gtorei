@@ -14,13 +14,20 @@ interface UpdateNote {
 }
 
 const UPCOMING: string[] = [
-  'Ranges de stack profundo recalculadas pelo mesmo método do push/fold',
-  'Ante do BB no cálculo das ranges curtas',
+  'Respostas a uma abertura (pagar e 3-bet) calculadas pelo mesmo método da abertura',
+  'Ante também no pagamento de all-in',
   'Análise de straight draw (OESD, gutshot) no board',
   'Aulas gratuitas de poker GTO',
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.20.0',
+    date: '02/10/2026',
+    type: 'improvement',
+    title: 'Ranges de Abertura Recalculadas, com Ante',
+    description: 'Um jogador comparou: com 100 BB, o UTG do GTORei abria 11% das mãos, e um solver de torneio abre perto de 16%. Ele estava certo. A abertura com stack fundo não vinha de cálculo: era um corte fixo por posição, sem ante, ajustado para 30 BB e que ainda apertava acima disso. Agora toda abertura — do UTG ao small blind, de 8 a 100 BB — sai de um cálculo de EV até o equilíbrio, o mesmo método do push/fold, com o ante do big blind e com a escolha entre foldar, abrir pequeno ou ir de all-in. Com 100 BB o UTG passou a abrir 15%, o cutoff 34% e o botão 48%. Até 20 BB, que antes só tinha all-in, a range mistura as duas jogadas, como na prática. O cálculo tem limites, e eles ficam registrados: o jogo depois do flop não é resolvido, entra como estimativa de quanto cada mão aproveita da própria equity; e entre 20 e 35 BB o cutoff e o botão saem um pouco mais apertados do que num solver completo. As respostas a uma abertura (pagar e 3-bet), o vs 3-bet, a mesa final e o bounty continuam como estavam e são os próximos da fila. Os pontos já registrados não foram alterados.',
+  },
   {
     version: '1.19.2',
     date: '02/10/2026',

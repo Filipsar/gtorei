@@ -7,6 +7,7 @@ import {
 } from './types';
 import { HAND_ORDER } from './handorder.generated';
 import { PF_HANDS, PF_SHOVE, PF_CALL, PF_STACKS, decodePF } from './pushfold.generated';
+import { OE_HANDS, OE_STACKS, OE_ABERTURA } from './openev.generated';
 
 // ============================================================
 // HAND STRENGTH CALCULATION
@@ -414,8 +415,7 @@ const MODE_KEY: Record<GameMode, string> = {
 };
 
 // Tabela tem stacks discretos; entre dois valores, interpola
-function vizinhosDeStack(stack: number): { baixo: number; alto: number; peso: number } {
-  const s = PF_STACKS;
+function vizinhosDeStack(stack: number, s: number[] = PF_STACKS): { baixo: number; alto: number; peso: number } {
   if (stack <= s[0]) return { baixo: s[0], alto: s[0], peso: 0 };
   if (stack >= s[s.length - 1]) return { baixo: s[s.length - 1], alto: s[s.length - 1], peso: 0 };
   for (let i = 0; i < s.length - 1; i++) {
@@ -445,6 +445,54 @@ function lerTabela(
   return { freq, ev };
 }
 
+// Abertura (primeiro a entrar no pote) calculada por EV, com ante e com a
+// opção de abrir pequeno, em todas as stacks — scripts/build-open-ev.mjs.
+// Substituiu, em 02/10/2026, o corte fixo por posição (sem ante, calibrado em
+// 30 BB) que fazia o UTG abrir 11,2% em 100 BB, e o push/fold puro até 20 BB,
+// que não tinha a opção de abrir pequeno.
+function getOpenEvRange(gameMode: GameMode, position: Position, stack: number): RangeData | null {
+  const modo = MODE_KEY[gameMode];
+  const { baixo, alto, peso } = vizinhosDeStack(stack, OE_STACKS);
+  const a = OE_ABERTURA[`${modo}|${position}|${baixo}`];
+  const b = OE_ABERTURA[`${modo}|${position}|${alto}`];
+  if (!a || !b) return null;
+
+  const decodifica = (e: { r: string; j: string; er: string; ej: string }) => ({
+    r: decodePF(e.r), j: decodePF(e.j), er: decodePF(e.er, true), ej: decodePF(e.ej, true),
+  });
+  const A = decodifica(a), B = decodifica(b);
+  const mistura = (x: number[], y: number[], i: number) => x[i] * (1 - peso) + y[i] * peso;
+  const porMao = new Map<string, { r: number; j: number; er: number; ej: number }>();
+  OE_HANDS.forEach((h, i) => porMao.set(h, {
+    r: mistura(A.r, B.r, i), j: mistura(A.j, B.j, i),
+    er: mistura(A.er, B.er, i) / 10, ej: mistura(A.ej, B.ej, i) / 10,
+  }));
+
+  const hands: HandData[] = getSortedHands(gameMode).map((entry) => {
+    const d = porMao.get(entry.hand) ?? { r: 0, j: 0, er: 0, ej: 0 };
+    let raise = Math.max(0, Math.min(100, Math.round(d.r)));
+    let allin = Math.max(0, Math.min(100, Math.round(d.j)));
+    // O arredondamento pode somar 101; tira da ação menor
+    if (raise + allin > 100) { if (raise >= allin) raise = 100 - allin; else allin = 100 - raise; }
+    const actions: ActionFrequency[] = [
+      { action: 'allin', frequency: allin, ev: Number(d.ej.toFixed(2)) },
+      { action: 'raise', frequency: raise, ev: Number(d.er.toFixed(2)) },
+      { action: 'fold', frequency: 100 - raise - allin, ev: 0 },
+    ];
+    // Ação principal: a mais frequente; no empate, a de EV maior
+    const principal = [...actions].sort((x, y) => y.frequency - x.frequency || y.ev - x.ev)[0];
+    return {
+      hand: entry.hand,
+      actions,
+      primaryAction: principal.action,
+      suited: entry.suited,
+      pair: entry.pair,
+    };
+  });
+
+  return { scenario: 'openRaise', position, stack, finalTable: false, hands };
+}
+
 // Devolve a range calculada por EV, ou null quando o caso sai do modelo
 // (mesa final usa ICM, bounty muda os incentivos, stack alto não é push/fold)
 function getSolvedRange(
@@ -457,6 +505,10 @@ function getSolvedRange(
   villainPosition?: Position
 ): RangeData | null {
   if (finalTable || bountyMultiplier > 0) return null;
+  if (scenario === 'openRaise') {
+    const aberta = getOpenEvRange(gameMode, position, stack);
+    if (aberta) return aberta;
+  }
   if (stack > PF_STACKS[PF_STACKS.length - 1]) return null;
   if (scenario !== 'openRaise' && scenario !== 'vsOpenShove') return null;
 

@@ -9,7 +9,7 @@ import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.13.0';
+const CURRENT_VERSION = '1.20.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
 const DONATE_URL = '/apoiar';
 const UPDATES_URL = '/atualizacoes';
@@ -87,10 +87,10 @@ export function UpdatesPopup() {
     {
       icon: <Sparkles className="h-10 w-10" />,
       iconBg: 'bg-primary/20 text-primary',
-      title: 'As melhorias chegaram',
+      title: 'Ranges de abertura recalculadas',
       titleClass: 'text-primary',
       description:
-        'As ranges de stack curto agora são calculadas por EV, e não copiadas de tabela. A mesa foi refeita: você senta sempre embaixo e a mesa gira em volta. Os botões de ação ganharam atalho de teclado e mostram quanto custa cada jogada. A lista completa fica em Atualizações, na barra lateral.',
+        'Toda abertura, do UTG ao small blind e de 8 a 100 BB, agora sai de um cálculo de EV com ante, com a escolha entre foldar, abrir pequeno ou ir de all-in. Com 100 BB o UTG passou de 11% para 15% das mãos, mais perto do que um solver de torneio faz. A explicação completa, com os limites do cálculo, fica em Atualizações, na barra lateral.',
       badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
       cta: (
         <div className="mt-4 w-full flex justify-center">

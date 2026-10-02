@@ -30,13 +30,19 @@ function analisar(scenario: Scenario, position: Position, stack: number, mode: G
 }
 
 describe('largura das ranges', () => {
-  // O corte era por classe de mão (169) em vez de combos (1326), e toda range
-  // saía ~30% mais estreita do que o configurado.
-  it('abertura de 30bb fica perto do configurado', () => {
+  // Desde 02/10/2026 a abertura sai do cálculo por EV com ante
+  // (scripts/build-open-ev.mjs). Com 30 BB o modelo dá UTG ~15%, CO ~27% e
+  // BTN ~37%. O BTN fica abaixo de um solver completo (~45%): entre 20 e 35 BB
+  // os blinds respondem com 3-bet all-in e o modelo não dá ao SB todas as
+  // opções que ele tem na prática — limitação documentada no script. O limite
+  // de baixo pega regressão; o de cima pega os erros que já houve (o botão
+  // chegou a abrir 98% e o UTG 67% durante o desenvolvimento).
+  it('abertura de 30bb fica na faixa de torneio', () => {
     expect(analisar('openRaise', 'UTG', 30).pctAgressivo).toBeGreaterThan(12);
-    expect(analisar('openRaise', 'UTG', 30).pctAgressivo).toBeLessThan(17);
+    expect(analisar('openRaise', 'UTG', 30).pctAgressivo).toBeLessThan(18);
     expect(analisar('openRaise', 'CO', 30).pctAgressivo).toBeGreaterThan(24);
-    expect(analisar('openRaise', 'BTN', 30).pctAgressivo).toBeGreaterThan(40);
+    expect(analisar('openRaise', 'BTN', 30).pctAgressivo).toBeGreaterThan(32);
+    expect(analisar('openRaise', 'BTN', 30).pctAgressivo).toBeLessThan(55);
   });
 
   it('abre mais quanto mais perto do botão', () => {
@@ -71,11 +77,15 @@ describe('composição da range de abertura', () => {
 });
 
 describe('push/fold calculado por EV', () => {
-  // Conferidos contra tabelas Nash publicadas (chipEV, sem ante)
-  it('heads-up 10bb: SB dá all-in em torno de 55%', () => {
+  // A abertura curta tinha sido conferida contra tabelas Nash publicadas
+  // (chipEV, SEM ante): SB heads-up 10bb ~55%, UTG 10bb abaixo de 15%. Desde
+  // 02/10/2026 ela sai do cálculo com ante de 1 BB — o pote inicial vai de 1,5
+  // para 2,5 BB e todo mundo empurra mais largo. As faixas abaixo são as do
+  // modelo com ante. O pagamento de all-in (vsOpenShove) continua sem ante.
+  it('heads-up 10bb: SB dá all-in em ~70% com ante', () => {
     const r = analisar('openRaise', 'SB', 10, 'hu');
-    expect(r.pctAgressivo).toBeGreaterThan(48);
-    expect(r.pctAgressivo).toBeLessThan(65);
+    expect(r.pctAgressivo).toBeGreaterThan(60);
+    expect(r.pctAgressivo).toBeLessThan(80);
   });
 
   it('mesmo spot dá o mesmo resultado em 8max e heads-up', () => {
@@ -90,8 +100,8 @@ describe('push/fold calculado por EV', () => {
     const utg = analisar('openRaise', 'UTG', 10).pctAgressivo;
     const co = analisar('openRaise', 'CO', 10).pctAgressivo;
     const btn = analisar('openRaise', 'BTN', 10).pctAgressivo;
-    expect(utg).toBeGreaterThan(6);
-    expect(utg).toBeLessThan(15);
+    expect(utg).toBeGreaterThan(10);
+    expect(utg).toBeLessThan(20);
     expect(btn).toBeGreaterThan(co);
     expect(co).toBeGreaterThan(utg);
   });

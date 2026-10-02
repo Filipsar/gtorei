@@ -97,6 +97,15 @@ As ranges de push/fold saem de `scripts/build-pushfold.mjs`, a partir de uma mat
 equity 169x169 gerada por Monte Carlo, com iteração de melhor-resposta até o equilíbrio.
 Nunca copiar tabela proprietária (GTO Wizard e afins) para dentro do projeto.
 
+Desde 02/10/2026 a **abertura** (`openRaise`) de todas as stacks sai de
+`scripts/build-open-ev.mjs` (fold / abrir pequeno / all-in, com ante de 1 BB), emitida em
+`openev.generated.ts` por `scripts/emit-open-ev-ts.mjs`. Para refazer: `node
+scripts/build-open-ev.mjs && node scripts/emit-open-ev-ts.mjs` (~2 min). O pós-flop é
+estimado por realização de equity, não resolvido; as simplificações e a limitação
+conhecida (CO/BTN apertados entre 20 e 35 BB) estão no cabeçalho do script. Mesa final,
+bounty, `vsOpenRaise` e `vs3bet` continuam no corte por percentual de `engine.ts`; o
+pagamento de all-in (`vsOpenShove`) continua no push/fold sem ante.
+
 ### Tailwind
 
 `grid-cols-13` não existe no padrão — a matriz 13x13 usa
