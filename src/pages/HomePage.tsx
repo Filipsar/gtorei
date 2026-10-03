@@ -161,10 +161,18 @@ export default function HomePage() {
           rel="noopener noreferrer"
           className="animate-marquee whitespace-nowrap flex items-center gap-6 hover:opacity-80 transition-opacity"
         >
+          {/* O texto existe uma vez só na página. As cópias que fazem a faixa
+              correr vêm do CSS (::after com attr), que o Google e o leitor de
+              tela não leem: antes a home começava com a frase repetida 8 vezes. */}
           {Array.from({ length: 8 }).map((_, i) => (
-            <span key={i} className="inline-flex items-center gap-2 text-sm font-medium">
-              <Instagram className="h-4 w-4" />
-              {t.home.instagramBanner}
+            <span
+              key={i}
+              className={`inline-flex items-center gap-2 text-sm font-medium${i > 0 ? ' marquee-copia' : ''}`}
+              aria-hidden={i > 0 ? true : undefined}
+              data-texto={i > 0 ? t.home.instagramBanner : undefined}
+            >
+              <Instagram className="h-4 w-4" aria-hidden="true" />
+              {i === 0 && t.home.instagramBanner}
             </span>
           ))}
         </a>
@@ -635,6 +643,7 @@ export default function HomePage() {
         /* Deixa ler a mensagem inteira: pausa ao passar o mouse ou ao focar pelo teclado */
         .animate-marquee:hover,
         .animate-marquee:focus-visible { animation-play-state: paused; }
+        .marquee-copia::after { content: attr(data-texto); }
       `}</style>
     </div>
   );

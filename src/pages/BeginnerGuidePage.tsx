@@ -1,8 +1,29 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { BookOpen, Target, Brain, Trophy, Zap, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Target, Brain, Trophy, Zap, Shield, ArrowRight } from 'lucide-react';
 import { SEO } from '@/components/seo/SEO';
+
+// Links para o resto do site. Antes a página só tinha o /apoiar da faixa do
+// topo: o Google chegava aqui e não tinha para onde seguir.
+const nextSteps = [
+  {
+    to: '/treinar',
+    title: 'Treinar decisões pré-flop',
+    text: 'Pratique posição por posição, com feedback em cada mão. É grátis; só pede uma conta.',
+  },
+  {
+    to: '/',
+    title: 'Conhecer o GTORei',
+    text: 'Os modos de treino, as tabelas de ranges e a análise de torneio por IA.',
+  },
+  {
+    to: '/atualizacoes',
+    title: 'Ver o que mudou',
+    text: 'Cada melhoria e correção da plataforma, versão por versão.',
+  },
+];
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -168,6 +189,32 @@ export default function BeginnerGuidePage() {
                 <p className="text-body-sm text-muted-foreground">Acesso completo sem precisar pagar. Feito pela comunidade, para a comunidade.</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <h2 className="text-heading-xs flex items-center gap-2">
+              <ArrowRight className="h-5 w-5 text-primary" />
+              Próximos passos
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3 sm:grid-cols-3">
+              {nextSteps.map((step) => (
+                <li key={step.to}>
+                  <Link
+                    to={step.to}
+                    className="block h-full p-4 rounded-lg border border-border hover:border-primary/60 hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="font-medium text-foreground underline underline-offset-4 decoration-primary/60">
+                      {step.title}
+                    </span>
+                    <span className="block mt-1 text-body-sm text-muted-foreground">{step.text}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       </div>
