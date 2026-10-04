@@ -31,6 +31,12 @@ const PASSO = 0.07;
 const MAXIMO_DE_PASSOS = 5;
 
 function abaixoDaDobra(elemento: Element): boolean {
+  // Seção com content-visibility (.cv-auto) que ainda está fora da tela não
+  // tem layout dos filhos; medir um card lá dentro obrigaria o navegador a
+  // calcular a seção inteira na hora. Se a própria seção começa abaixo da
+  // dobra, tudo dentro dela também começa.
+  const secao = elemento.closest('.cv-auto');
+  if (secao && secao.getBoundingClientRect().top >= window.innerHeight) return true;
   return elemento.getBoundingClientRect().top >= window.innerHeight;
 }
 

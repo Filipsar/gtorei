@@ -28,16 +28,11 @@ import {
   Shield,
   FileText,
   Cookie,
+  ChevronDown,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { RangePreview, VerdictPreview } from '@/components/home/HomePreviews';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 
 // Conferidos no banco em 21/09/2026: 152 contas, 126 jogadores com mãos registradas,
 // 39.552 mãos. Arredondados para baixo — só ficam mais verdadeiros com o tempo.
@@ -56,7 +51,7 @@ const FAQ = [
   },
   {
     q: 'As ranges são calculadas ou copiadas de alguma tabela?',
-    a: 'Os spots de stack curto, de 8bb a 20bb, são calculados aqui: uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta amortecida até o equilíbrio de push/fold. Os resultados batem com as tabelas de Nash publicadas. Os spots de stack profundo ainda usam ranges de referência e estão sendo reconstruídos do mesmo jeito.',
+    a: 'Calculadas aqui. O push/fold de 8bb a 20bb sai de uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta até o equilíbrio; os resultados batem com as tabelas de Nash publicadas. Desde outubro de 2026, a abertura de todas as stacks também é calculada por EV, com ante e com a escolha entre abrir pequeno ou ir de all-in. As respostas a uma abertura (pagar e 3-bet) ainda usam um corte por força de mão e estão sendo recalculadas do mesmo jeito.',
   },
   {
     q: 'Serve para torneio ou para cash game?',
@@ -310,7 +305,7 @@ export default function HomePage() {
       </section>
 
       {/* FEATURES — card presentation */}
-      <section id="recursos" className="relative py-24 px-6 bg-card/30 border-y border-border">
+      <section id="recursos" className="cv-auto relative py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
           <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Recursos</p>
@@ -354,7 +349,7 @@ export default function HomePage() {
       </section>
 
       {/* MODES — split presentation cards */}
-      <section id="modos" className="py-24 px-6">
+      <section id="modos" className="cv-auto py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Modos de jogo</p>
@@ -383,7 +378,7 @@ export default function HomePage() {
       </section>
 
       {/* HOW IT WORKS — numbered cards */}
-      <section id="como-funciona" className="py-24 px-6 bg-card/30 border-y border-border">
+      <section id="como-funciona" className="cv-auto py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
           <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Como funciona</p>
@@ -412,7 +407,7 @@ export default function HomePage() {
       </section>
 
       {/* AI HIGHLIGHT */}
-      <section className="py-24 px-6">
+      <section className="cv-auto py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <Card data-reveal className="overflow-hidden bg-gradient-to-br from-primary/15 via-card to-card border-primary/30 p-10 md:p-14">
             <div className="grid md:grid-cols-2 gap-10 items-center">
@@ -448,7 +443,7 @@ export default function HomePage() {
       </section>
 
       {/* COMMUNITY / RANKING */}
-      <section id="comunidade" className="py-24 px-6 bg-card/30 border-y border-border">
+      <section id="comunidade" className="cv-auto py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
           <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Comunidade</p>
@@ -480,7 +475,7 @@ export default function HomePage() {
 
 
       {/* PERGUNTAS — o mesmo texto vai no FAQPage lá em cima; se mudar aqui, mudar lá */}
-      <section id="perguntas" className="py-24 px-6">
+      <section id="perguntas" className="cv-auto py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <div data-reveal className="text-center mb-12">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Perguntas</p>
@@ -490,18 +485,22 @@ export default function HomePage() {
             </p>
           </div>
 
-          <Accordion data-reveal type="single" collapsible className="w-full">
-            {FAQ.map((item, i) => (
-              <AccordionItem key={item.q} value={`p-${i}`} className="border-border">
-                <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
+          {/* <details> nativo no lugar do Accordion do Radix. O Radix monta as
+              respostas fechadas e mede cada uma ao carregar; cada medida
+              obrigava o navegador a calcular o layout da página inteira no
+              meio da renderização, e era a maior parte do travamento da home.
+              O name igual faz um abrir fechar o outro, como antes. */}
+          <div data-reveal className="w-full">
+            {FAQ.map((item) => (
+              <details key={item.q} name="faq" className="group border-b border-border">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left text-base font-semibold [&::-webkit-details-marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
                   {item.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground leading-relaxed">
-                  {item.a}
-                </AccordionContent>
-              </AccordionItem>
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <p className="pb-4 text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+              </details>
             ))}
-          </Accordion>
+          </div>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Ficou faltando alguma?{' '}
@@ -519,7 +518,7 @@ export default function HomePage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="py-28 px-6 relative overflow-hidden border-t border-border">
+      <section className="cv-auto py-28 px-6 relative overflow-hidden border-t border-border">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
         <div data-reveal className="relative max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-6xl font-bold mb-6 leading-tight">
@@ -560,7 +559,7 @@ export default function HomePage() {
       </section>
 
       {/* PRIVACY / TERMS / LGPD */}
-      <section className="py-16 px-6 bg-card/30 border-y border-border">
+      <section className="cv-auto py-16 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
           <div data-reveal className="text-center mb-12 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Transparência</p>
@@ -608,7 +607,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-10 px-6">
+      <footer className="cv-auto border-t border-border py-10 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src="/logo-128.png" alt="GTORei" width={128} height={128} loading="lazy" className="h-7 w-7 object-contain" />

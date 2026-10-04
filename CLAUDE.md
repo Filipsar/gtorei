@@ -14,7 +14,7 @@ português claro, sem jargão de solver não explicado.
 
 ```bash
 npm run dev            # servidor local na porta 8080
-npx tsc --noEmit       # checagem de tipos
+npx tsc --noEmit -p tsconfig.app.json   # checagem de tipos (sem o -p não checa nada: o tsconfig da raiz não lista arquivos)
 npm run test           # vitest (roda uma vez)
 npm run build          # build de produção
 npx vercel ls gtorei --yes   # estado dos deploys

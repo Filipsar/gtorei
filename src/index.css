@@ -203,6 +203,16 @@
 
 /* Utility classes for poker actions */
 @layer utilities {
+  /* Seção abaixo da dobra: o navegador só calcula o layout dela quando ela
+     chega perto da tela. Na home, o primeiro layout pagava os 1.291 elementos
+     da página de uma vez e travava o celular ~1,5 s logo depois de aparecer.
+     O "auto" do intrinsic-size guarda a altura real depois da primeira vez,
+     para a barra de rolagem não pular. */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 900px;
+  }
+
   .action-fold {
     @apply bg-poker-fold text-foreground;
   }
