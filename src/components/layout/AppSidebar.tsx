@@ -15,7 +15,6 @@ import {
   SidebarTrigger,
   useSidebar } from
 '@/components/ui/sidebar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { SettingsModal } from './SettingsModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -263,22 +262,42 @@ export function AppSidebar() {
             secoes.map((secao) => {
               const aberta = estaAberta(secao);
               return (
-                <Collapsible key={secao.id} open={aberta} onOpenChange={() => alternarSecao(secao.id)}>
-                  <SidebarGroup className="p-0">
-                    <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
-                      {secao.label}
-                      <ChevronDown
-                        aria-hidden="true"
-                        className={cn('h-4 w-4 transition-transform duration-200', !aberta && '-rotate-90')}
-                      />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                // Sem o Collapsible do Radix: ele mede a altura do conteúdo ao
+                // montar, e essa medida obrigava o navegador a calcular o layout
+                // da página inteira no meio da renderização (~190 ms no celular,
+                // em toda tela com a barra). A animação agora é só CSS, com a
+                // grade indo de 0fr a 1fr, e nada precisa ser medido.
+                <SidebarGroup key={secao.id} className="p-0">
+                  <button
+                    type="button"
+                    onClick={() => alternarSecao(secao.id)}
+                    aria-expanded={aberta}
+                    aria-controls={`secao-menu-${secao.id}`}
+                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                  >
+                    {secao.label}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cn('h-4 w-4 transition-transform duration-200', !aberta && '-rotate-90')}
+                    />
+                  </button>
+                  <div
+                    id={`secao-menu-${secao.id}`}
+                    className={cn(
+                      'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+                      aberta ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                    )}
+                    // Fechada, a seção continua no DOM para a animação de saída,
+                    // mas sai do Tab e do leitor de tela
+                    {...(aberta ? {} : { inert: '' })}
+                  >
+                    <div className="min-h-0 overflow-hidden">
                       <SidebarGroupContent>
                         <SidebarMenu>{secao.itens.map(renderItem)}</SidebarMenu>
                       </SidebarGroupContent>
-                    </CollapsibleContent>
-                  </SidebarGroup>
-                </Collapsible>
+                    </div>
+                  </div>
+                </SidebarGroup>
               );
             })
           )}

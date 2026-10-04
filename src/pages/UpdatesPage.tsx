@@ -26,7 +26,7 @@ const UPDATES: UpdateNote[] = [
     date: '04/10/2026',
     type: 'feature',
     title: 'Guia do Iniciante Interativo',
-    description: 'O guia do iniciante era um texto curto com uma lista que abria e fechava. Agora são seis passos para mexer: uma mão inteira rua por rua, com as cartas saindo na mesa; uma mesa de oito lugares em que cada posição mostra quando fala, o que ela significa e quanto abre com 100 BB; a matriz das 169 mãos iniciais, que troca de posição, destaca pares, mãos de mesmo naipe ou de naipes diferentes e diz de onde cada mão abre; um teste de cinco mãos; um glossário; e as perguntas mais comuns. As ranges da matriz e as respostas do teste são as mesmas que o GTORei calcula para o treino, conferidas por teste automático a cada mudança. Junto, a página inicial ficou mais leve no celular: ela parou de travar por um instante logo depois de aparecer.',
+    description: 'O guia do iniciante era um texto curto com uma lista que abria e fechava. Agora são seis passos para mexer: uma mão inteira rua por rua, com as cartas saindo na mesa; uma mesa de oito lugares em que cada posição mostra quando fala, o que ela significa e quanto abre com 100 BB; a matriz das 169 mãos iniciais, que troca de posição, destaca pares, mãos de mesmo naipe ou de naipes diferentes e diz de onde cada mão abre; um teste de cinco mãos; um glossário; e as perguntas mais comuns. As ranges da matriz e as respostas do teste são as mesmas que o GTORei calcula para o treino, conferidas por teste automático a cada mudança. Junto, a página inicial e todas as telas com a barra lateral ficaram mais leves no celular: pararam de travar por um instante logo depois de aparecer.',
   },
   {
     version: '1.20.0',
