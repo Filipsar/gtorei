@@ -1,222 +1,250 @@
-import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Target, Brain, Trophy, Zap, Shield, ArrowRight } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, ChevronDown, Grid3x3, HelpCircle, Layers, MapPin, Sparkles, Target } from 'lucide-react';
+import { MainLayout } from '@/components/layout/MainLayout';
 import { SEO } from '@/components/seo/SEO';
+import { HandWalkthrough } from '@/components/guide/HandWalkthrough';
+import { PositionTable, type PosicaoId } from '@/components/guide/PositionTable';
+import { StartingHandsMatrix } from '@/components/guide/StartingHandsMatrix';
+import { QuickQuiz } from '@/components/guide/QuickQuiz';
+import { ABERTURA_100BB, POSICOES_GUIA } from '@/data/guiaIniciante';
 
-// Links para o resto do site. Antes a página só tinha o /apoiar da faixa do
-// topo: o Google chegava aqui e não tinha para onde seguir.
-const nextSteps = [
+const pct = (p: string) => ABERTURA_100BB[p].pct.toLocaleString('pt-BR');
+
+const SECOES = [
+  { id: 'mao', rotulo: 'A mão', icone: Layers },
+  { id: 'posicoes', rotulo: 'Posições', icone: MapPin },
+  { id: 'maos-iniciais', rotulo: 'Mãos iniciais', icone: Grid3x3 },
+  { id: 'gto', rotulo: 'GTO', icone: Brain },
+  { id: 'quiz', rotulo: 'Quiz', icone: Target },
+  { id: 'glossario', rotulo: 'Glossário', icone: BookOpen },
+];
+
+const GLOSSARIO = [
+  { termo: 'Big blind (BB)', definicao: 'A maior aposta obrigatória da mesa e a unidade de medida do jogo. "Stack de 100 BB" quer dizer fichas equivalentes a 100 big blinds.' },
+  { termo: 'Ante', definicao: 'Aposta obrigatória extra que aumenta o pote antes das cartas. Na maioria dos torneios atuais, o big blind paga um ante de 1 BB pela mesa inteira.' },
+  { termo: 'Range', definicao: 'O conjunto de mãos que um jogador pode ter numa situação. Pensar em range, e não numa mão só, é a base do jogo moderno.' },
+  { termo: 'Abrir (open)', definicao: 'Ser o primeiro a aumentar no pré-flop, depois que todos antes desistiram.' },
+  { termo: '3-bet', definicao: 'Aumentar de novo em cima de quem abriu. A abertura conta como a segunda aposta (o big blind é a primeira), por isso o nome.' },
+  { termo: 'Push/fold', definicao: 'Com stack curto, até uns 15 a 20 BB, abrir pequeno deixa de fazer sentido e a decisão vira ir de all-in ou desistir.' },
+  { termo: 'Stack efetivo', definicao: 'O menor stack entre os jogadores na mão. É o máximo que qualquer um deles pode ganhar ou perder ali.' },
+  { termo: 'Em posição (IP) / fora de posição (OOP)', definicao: 'Em posição é falar depois do adversário nas ruas seguintes. Fora de posição é falar antes, sem saber o que ele vai fazer.' },
+  { termo: 'Suited / offsuit', definicao: 'Suited são duas cartas do mesmo naipe (AKs); offsuit, de naipes diferentes (AKo). Suited vale mais pela chance de flush.' },
+  { termo: 'EV (valor esperado)', definicao: 'Quanto uma decisão ganha ou perde, em média, se fosse repetida muitas vezes. Uma jogada pode perder na mão e ainda ser a de maior EV.' },
+  { termo: 'ICM', definicao: 'Modelo que traduz fichas em dinheiro do prêmio. Perto da premiação, perder fichas custa mais do que ganhar a mesma quantidade.' },
+];
+
+// O mesmo conteúdo vai para a tela e para os dados estruturados: o Google só
+// aceita FAQPage quando as perguntas estão visíveis na página.
+const FAQ = [
   {
-    to: '/treinar',
-    title: 'Treinar decisões pré-flop',
-    text: 'Pratique posição por posição, com feedback em cada mão. É grátis; só pede uma conta.',
+    q: 'O que é poker GTO?',
+    a: 'GTO (Game Theory Optimal) é uma estratégia equilibrada que não pode ser explorada: mesmo que o adversário conheça a sua estratégia, ele não consegue lucrar contra ela no longo prazo. Na prática ninguém joga GTO perfeito; os solvers servem de referência para escolher mãos, frequências e tamanhos de aposta.',
   },
   {
-    to: '/',
-    title: 'Conhecer o GTORei',
-    text: 'Os modos de treino, as tabelas de ranges e a análise de torneio por IA.',
+    q: "Como funciona uma mão de Texas Hold'em?",
+    a: 'Cada jogador recebe 2 cartas fechadas e há quatro rodadas de apostas: pré-flop, flop (3 cartas comunitárias), turn (a 4ª) e river (a 5ª). Quem chega ao final monta a melhor combinação de 5 cartas entre as 7 que enxerga.',
   },
   {
-    to: '/atualizacoes',
-    title: 'Ver o que mudou',
-    text: 'Cada melhoria e correção da plataforma, versão por versão.',
+    q: 'Qual a importância da posição no poker?',
+    a: `A posição define a ordem em que cada um fala. Quem fala por último vê o que os outros fizeram antes de decidir, por isso o cutoff e o botão jogam mais mãos. No GTORei, com 100 BB, o UTG abre ${pct('UTG')}% das mãos e o botão ${pct('BTN')}%.`,
+  },
+  {
+    q: 'Quais mãos um iniciante deve jogar?',
+    a: `Depende da posição e do stack. Do UTG, com 100 BB, só ${pct('UTG')}% das mãos: pares médios e altos, ases fortes e as melhores mãos de mesmo naipe. No botão, quase metade. Com stack curto a lista muda, e a decisão vira all-in ou fold.`,
+  },
+  {
+    q: 'O GTORei é gratuito?',
+    a: 'É. Não existe plano pago nem anúncio; o projeto se mantém com doações de quem usa. O treino inteiro fica liberado com uma conta grátis.',
   },
 ];
 
 const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "O que é poker GTO?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "GTO (Game Theory Optimal) é uma estratégia matematicamente equilibrada que não pode ser explorada pelos adversários. Define ranges e frequências ótimas para cada decisão.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Como funciona uma mão de Texas Hold'em?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Cada jogador recebe 2 cartas privadas. Há quatro rodadas de apostas: pré-flop, flop, turn e river. As 5 cartas comunitárias formam a melhor mão de 5 cartas junto às privadas.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Qual a importância da posição no poker?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Posição define a ordem de ação. Posições tardias (BTN, CO) jogam mais mãos pois agem por último, enquanto blinds e UTG jogam ranges mais apertados.",
-      },
-    },
-  ],
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
 };
 
+const nextSteps = [
+  { to: '/treinar', title: 'Treinar decisões pré-flop', text: 'Pratique posição por posição, com feedback em cada mão. É grátis; só pede uma conta.' },
+  { to: '/', title: 'Conhecer o GTORei', text: 'Os modos de treino, as tabelas de ranges e a análise de torneio por IA.' },
+  { to: '/atualizacoes', title: 'Ver o que mudou', text: 'Cada melhoria e correção da plataforma, versão por versão.' },
+];
+
+function Secao({
+  id,
+  numero,
+  titulo,
+  subtitulo,
+  children,
+}: {
+  id: string;
+  numero?: number;
+  titulo: string;
+  subtitulo?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-24 rounded-2xl border border-border bg-card/60 p-5 sm:p-7">
+      <header className="mb-5">
+        {numero !== undefined && (
+          <span className="mb-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            {numero}
+          </span>
+        )}
+        <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">{titulo}</h2>
+        {subtitulo && <p className="mt-1 text-body-sm text-muted-foreground">{subtitulo}</p>}
+      </header>
+      {children}
+    </section>
+  );
+}
+
 export default function BeginnerGuidePage() {
+  const [posicaoMesa, setPosicaoMesa] = useState<PosicaoId>('UTG');
+  const [posicaoMatriz, setPosicaoMatriz] = useState<(typeof POSICOES_GUIA)[number]>('UTG');
+
+  const verMaos = (p: PosicaoId) => {
+    if (p !== 'BB') setPosicaoMatriz(p);
+    document.getElementById('maos-iniciais')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <MainLayout>
       <SEO
-        title="Guia de Poker GTO para Iniciantes — GTORei"
-        description="Aprenda fundamentos do poker e GTO: posições, ranges, fases da mão e tomada de decisão. Guia completo em português para iniciantes."
+        title="Poker para Iniciantes: Guia com Posições e Mãos — GTORei"
+        description="Aprenda poker do zero: como funciona uma mão, por que a posição importa e quais mãos abrir de cada lugar, com matriz interativa e um quiz rápido."
         path="/iniciante"
         jsonLd={faqJsonLd}
       />
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-primary" />
-            Guia do Iniciante
+      <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
+        {/* Abertura */}
+        <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--primary)/0.18),transparent_60%)] p-6 sm:p-10">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Guia do iniciante
+          </span>
+          <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
+            Poker para iniciantes: do zero à primeira decisão certa
           </h1>
-          <p className="text-body-sm text-muted-foreground mt-1">
-            Aprenda os fundamentos do poker e do GTO para tomar decisões melhores
+          <p className="mt-4 max-w-2xl text-body-md text-muted-foreground">
+            Seis passos curtos e interativos: como uma mão acontece, por que o lugar na mesa muda tudo, quais mãos abrir de
+            cada posição e o que é jogar GTO. As ranges são as que o próprio GTORei calcula.
           </p>
+          <nav aria-label="Seções do guia" className="mt-6 flex flex-wrap gap-2">
+            {SECOES.map(({ id, rotulo, icone: Icone }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Icone className="h-4 w-4 text-primary" aria-hidden="true" /> {rotulo}
+              </a>
+            ))}
+          </nav>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-heading-xs flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              O que é Poker?
-            </h2>
-          </CardHeader>
-          <CardContent className="space-y-3 text-body-sm text-muted-foreground">
-            <p>O poker é um jogo de cartas onde os jogadores fazem apostas com base na força da sua mão. No <strong className="text-foreground">Texas Hold'em</strong>, cada jogador recebe 2 cartas privadas e compartilha 5 cartas comunitárias na mesa.</p>
-            <p>O objetivo é tomar as melhores decisões possíveis em cada situação, maximizando seus ganhos a longo prazo.</p>
-          </CardContent>
-        </Card>
+        <Secao id="mao" numero={1} titulo="Como funciona uma mão" subtitulo="Avance rua por rua e veja as cartas saindo.">
+          <HandWalkthrough />
+        </Secao>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-heading-xs flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              Passo a passo de uma mão
-            </h2>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="preflop">
-                <AccordionTrigger>1. Pré-Flop</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground space-y-2">
-                  <p>Cada jogador recebe 2 cartas fechadas. A ação começa pelo jogador à esquerda do big blind.</p>
-                  <p>Suas opções: <strong className="text-foreground">Fold</strong> (desistir), <strong className="text-foreground">Call</strong> (pagar) ou <strong className="text-foreground">Raise</strong> (aumentar).</p>
-                  <p>A decisão pré-flop é a mais importante — jogar as mãos certas nas posições certas é a base do poker lucrativo.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="flop">
-                <AccordionTrigger>2. Flop</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  <p>3 cartas comunitárias são reveladas. Uma nova rodada de apostas começa, agora com opção de <strong className="text-foreground">Check</strong> (passar) ou <strong className="text-foreground">Bet</strong> (apostar).</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="turn">
-                <AccordionTrigger>3. Turn</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  <p>A 4ª carta comunitária é revelada. Outra rodada de apostas acontece.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="river">
-                <AccordionTrigger>4. River</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  <p>A 5ª e última carta comunitária é revelada. Última rodada de apostas. Quem tiver a melhor combinação de 5 cartas vence.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="positions">
-                <AccordionTrigger>5. Posições na Mesa</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground space-y-2">
-                  <p><strong className="text-foreground">UTG (Under the Gun):</strong> Primeira posição, range mais apertado.</p>
-                  <p><strong className="text-foreground">CO (Cutoff):</strong> Penúltima posição, range mais solto.</p>
-                  <p><strong className="text-foreground">BTN (Button):</strong> Melhor posição — age por último no pós-flop.</p>
-                  <p><strong className="text-foreground">SB/BB (Small/Big Blind):</strong> Blinds obrigatórios, agem primeiro no pós-flop.</p>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </CardContent>
-        </Card>
+        <Secao
+          id="posicoes"
+          numero={2}
+          titulo="Por que a posição muda tudo"
+          subtitulo="Quem fala por último decide com mais informação. Clique em cada lugar da mesa."
+        >
+          <PositionTable selecionada={posicaoMesa} onSelecionar={setPosicaoMesa} onVerMaos={verMaos} />
+        </Secao>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-heading-xs flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              O que é GTO (Game Theory Optimal)?
-            </h2>
-          </CardHeader>
-          <CardContent className="space-y-3 text-body-sm text-muted-foreground">
-            <p><strong className="text-foreground">GTO</strong> é a estratégia matematicamente perfeita no poker. É baseada na Teoria dos Jogos e define a jogada ideal em cada situação, tornando você <strong className="text-foreground">inexploitável</strong> — nenhum oponente consegue lucrar contra você a longo prazo.</p>
-            <p>Jogar GTO significa escolher a ação com maior <strong className="text-foreground">EV (Expected Value)</strong> — o valor esperado de cada decisão. Tomar a decisão de maior EV repetidamente garante lucro no longo prazo.</p>
-            <p>Envolve ranges de mãos, frequências de ação e equilíbrio entre value bets e bluffs.</p>
-          </CardContent>
-        </Card>
+        <Secao
+          id="maos-iniciais"
+          numero={3}
+          titulo="Quais mãos jogar"
+          subtitulo={`Do UTG abrem ${pct('UTG')}% das mãos; do botão, ${pct('BTN')}%. Troque a posição e clique nas casas.`}
+        >
+          <StartingHandsMatrix posicao={posicaoMatriz} onPosicao={setPosicaoMatriz} />
+        </Secao>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-heading-xs flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              Por que o GTORei?
-            </h2>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  <p className="font-medium text-foreground">Treino Prático</p>
-                </div>
-                <p className="text-body-sm text-muted-foreground">Pratique decisões pré-flop contra ranges GTO reais, com feedback instantâneo sobre cada jogada.</p>
+        <Secao id="gto" numero={4} titulo="O que é jogar GTO">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                titulo: 'Uma estratégia que não se explora',
+                texto:
+                  'GTO (Game Theory Optimal) é o equilíbrio da teoria dos jogos: mesmo que o adversário saiba exatamente como você joga, ele não consegue lucrar contra isso no longo prazo.',
+              },
+              {
+                titulo: 'Solver como referência',
+                texto:
+                  'Ninguém joga GTO perfeito. Os solvers, programas que calculam esse equilíbrio, mostram quais mãos jogar, com que frequência e de que tamanho apostar.',
+              },
+              {
+                titulo: 'Para quem começa: o pré-flop',
+                texto:
+                  'Escolher bem as mãos por posição e stack já elimina os erros mais caros. É isso que o treino do GTORei cobre, com o EV de cada decisão.',
+              },
+            ].map((c) => (
+              <div key={c.titulo} className="rounded-xl border border-border bg-background/50 p-4">
+                <h3 className="font-semibold text-foreground">{c.titulo}</h3>
+                <p className="mt-2 text-body-sm leading-relaxed text-muted-foreground">{c.texto}</p>
               </div>
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  <p className="font-medium text-foreground">Dificuldade Adaptativa</p>
-                </div>
-                <p className="text-body-sm text-muted-foreground">O sistema ajusta a complexidade das mãos conforme seu nível evolui, sempre te desafiando.</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <p className="font-medium text-foreground">Análise Detalhada</p>
-                </div>
-                <p className="text-body-sm text-muted-foreground">Veja onde você está errando com estatísticas por posição, cenário e tipo de decisão.</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <p className="font-medium text-foreground">100% Gratuito</p>
-                </div>
-                <p className="text-body-sm text-muted-foreground">Acesso completo sem precisar pagar. Feito pela comunidade, para a comunidade.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        </Secao>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-heading-xs flex items-center gap-2">
-              <ArrowRight className="h-5 w-5 text-primary" />
-              Próximos passos
-            </h2>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-3 sm:grid-cols-3">
-              {nextSteps.map((step) => (
-                <li key={step.to}>
-                  <Link
-                    to={step.to}
-                    className="block h-full p-4 rounded-lg border border-border hover:border-primary/60 hover:bg-muted/50 transition-colors"
-                  >
-                    <span className="font-medium text-foreground underline underline-offset-4 decoration-primary/60">
-                      {step.title}
-                    </span>
-                    <span className="block mt-1 text-body-sm text-muted-foreground">{step.text}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <Secao id="quiz" numero={5} titulo="Teste rápido" subtitulo="Cinco mãos. As respostas saem das mesmas ranges da matriz acima.">
+          <QuickQuiz />
+        </Secao>
+
+        <Secao id="glossario" numero={6} titulo="Glossário" subtitulo="Os termos que aparecem em toda conversa de poker.">
+          <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            {GLOSSARIO.map((g) => (
+              <div key={g.termo} className="border-l-2 border-primary/50 pl-3">
+                <dt className="font-semibold text-foreground">{g.termo}</dt>
+                <dd className="mt-1 text-body-sm leading-relaxed text-muted-foreground">{g.definicao}</dd>
+              </div>
+            ))}
+          </dl>
+        </Secao>
+
+        <Secao id="perguntas" titulo="Perguntas frequentes">
+          <div>
+            {FAQ.map((item) => (
+              <details key={item.q} name="faq-iniciante" className="group border-b border-border last:border-b-0">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-sm py-4 text-left font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" /> {item.q}
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <p className="pb-4 text-body-sm leading-relaxed text-muted-foreground">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </Secao>
+
+        <Secao id="proximos-passos" titulo="Próximos passos">
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {nextSteps.map((step) => (
+              <li key={step.to}>
+                <Link
+                  to={step.to}
+                  className="group block h-full rounded-xl border border-border p-4 transition-colors hover:border-primary/60 hover:bg-muted/50"
+                >
+                  <span className="flex items-center justify-between font-medium text-foreground">
+                    <span className="underline decoration-primary/60 underline-offset-4">{step.title}</span>
+                    <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  </span>
+                  <span className="mt-1 block text-body-sm text-muted-foreground">{step.text}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Secao>
       </div>
     </MainLayout>
   );
