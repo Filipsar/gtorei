@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/seo/SEO';
 import { AchievementIcon } from '@/components/achievements/AchievementIcon';
 import { DailyChallengesCard } from '@/components/challenges/DailyChallengesCard';
+import { PeriodChallengesCards } from '@/components/challenges/PeriodChallengesCard';
 import { useAchievements } from '@/hooks/useAchievements';
 import { ACHIEVEMENTS } from '@/data/achievements';
 import { cn } from '@/lib/utils';
@@ -16,16 +17,16 @@ export default function ChallengesPage() {
 
   return (
     <MainLayout>
-      <SEO title="Desafios diários — GTORei" description="Três desafios novos por dia no treino." path="/desafios" noindex />
+      <SEO title="Desafios — GTORei" description="Desafios do dia, da semana e do mês no treino." path="/desafios" noindex />
       <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
               <CalendarCheck className="h-8 w-8 text-primary" />
-              Desafios diários
+              Desafios
             </h1>
             <p className="text-body-sm text-muted-foreground mt-1">
-              Três metas por dia. Cumpra no treino e resgate o XP aqui.
+              Metas do dia, da semana e do mês. Cumpra no treino e resgate o XP aqui.
             </p>
           </div>
           <Button asChild>
@@ -37,6 +38,7 @@ export default function ChallengesPage() {
         </div>
 
         <DailyChallengesCard />
+        <PeriodChallengesCards />
 
         <div>
           <h2 className="text-heading-xs mb-3">Conquistas de desafio</h2>

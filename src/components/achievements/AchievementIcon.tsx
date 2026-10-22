@@ -154,6 +154,42 @@ const DESENHOS: Record<string, ReactNode> = {
     </>
   ),
 
+  /* ---------- Semana e mês: o calendário com a semana marcada, ou o mês cheio ---------- */
+  semana_1: (
+    <>
+      <Calendario />
+      <rect x="9" y="17" width="14" height="4" rx="1" className="fill-primary/30" />
+    </>
+  ),
+  semana_perfeita: (
+    <>
+      <Calendario />
+      <rect x="9" y="17" width="14" height="4" rx="1" className="fill-primary stroke-none" />
+    </>
+  ),
+  semana_10: (
+    <>
+      <Calendario w={17} />
+      <rect x="9" y="17" width="11" height="4" rx="1" className="fill-primary/30" />
+      <Selo />
+    </>
+  ),
+  mes_1: (
+    <>
+      <Calendario />
+      {[0, 1, 2].map((l) => [0, 1, 2, 3].map((c) => (
+        <circle key={l + '-' + c} cx={10 + c * 4} cy={16 + l * 3.4} r="0.9" className="fill-primary stroke-none" />
+      )))}
+    </>
+  ),
+  mes_perfeito: (
+    <>
+      <Calendario />
+      <rect x="9" y="14.5" width="14" height="9" rx="1.5" className="fill-primary stroke-none" />
+      <Coroa y={-12} escala={0.42} />
+    </>
+  ),
+
   /* ---------- Indicação: de um convite ao grupo inteiro ---------- */
   indica_1: (
     <>

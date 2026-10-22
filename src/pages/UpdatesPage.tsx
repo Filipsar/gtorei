@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.23.0',
+    date: '23/10/2026',
+    type: 'feature',
+    title: 'Desafios da Semana e do Mês',
+    description: 'Além dos três desafios do dia, agora há três desafios por semana (de segunda a domingo) e três por mês, os mesmos para todo mundo. Eles pedem volume de mãos, qualidade (acertos, jogadas "Best", precisão ou sequência) e constância (dias treinados ou desafios diários resgatados), e valem de 250 a 1.500 XP cada. O progresso anda sozinho enquanto você treina; resgate o XP na página Desafios. Cinco conquistas novas, entre elas Semana Perfeita e Mês Perfeito.',
+  },
+  {
     version: '1.22.0',
     date: '22/10/2026',
     type: 'feature',

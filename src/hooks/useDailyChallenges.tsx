@@ -28,6 +28,9 @@ export interface DesafiosDoDia {
 /** Evento que o treino dispara a cada mão gravada, para o progresso andar sozinho */
 export const EVENTO_MAO_REGISTRADA = 'gtorei:mao-registrada';
 
+/** Disparado ao resgatar um diário: o desafio semanal/mensal "resgate N diários" anda junto */
+export const EVENTO_DESAFIO_RESGATADO = 'gtorei:desafio-resgatado';
+
 /**
  * Desafios do dia, vindos do banco. Quem decide o progresso e paga o XP é o
  * servidor (get_daily_challenges / claim_daily_challenge); aqui só se mostra.
@@ -86,7 +89,10 @@ export function useDailyChallenges() {
         return;
       }
       const r = data as unknown as { xp_ganho: number; conquistas: string[] };
-      if (r.xp_ganho > 0) toast.success(`+${r.xp_ganho} XP`, { description: 'Desafio do dia resgatado.' });
+      if (r.xp_ganho > 0) {
+        window.dispatchEvent(new Event(EVENTO_DESAFIO_RESGATADO));
+        toast.success(`+${r.xp_ganho} XP`, { description: 'Desafio do dia resgatado.' });
+      }
       for (const chave of r.conquistas ?? []) {
         const conquista = getAchievement(chave);
         if (!conquista) continue;

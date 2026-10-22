@@ -23,6 +23,7 @@ const TABELAS: Array<[string, string]> = [
   ['ai_analysis_usage', 'user_id'],
   ['xp_bonus', 'user_id'],
   ['daily_challenge_claims', 'user_id'],
+  ['period_challenge_claims', 'user_id'],
   ['referrals', 'referred_id'],
   ['referral_codes', 'user_id'],
   ['play_purchases', 'user_id'],

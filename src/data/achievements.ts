@@ -54,6 +54,12 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'desafio_seq_3', name: 'Constância', description: 'Desafio resgatado em 3 dias seguidos', category: 'challenge' },
   { key: 'desafio_seq_7', name: 'Semana Cheia', description: 'Desafio resgatado em 7 dias seguidos', category: 'challenge' },
   { key: 'desafio_seq_30', name: 'Mês de Ferro', description: 'Desafio resgatado em 30 dias seguidos', category: 'challenge' },
+  // Semanais e mensais (claim_period_challenge)
+  { key: 'semana_1', name: 'Semana Vencida', description: 'Resgatar o primeiro desafio semanal', category: 'challenge' },
+  { key: 'semana_perfeita', name: 'Semana Perfeita', description: 'Resgatar os 3 desafios da mesma semana', category: 'challenge' },
+  { key: 'semana_10', name: 'Dez Semanas', description: 'Resgatar 10 desafios semanais', category: 'challenge' },
+  { key: 'mes_1', name: 'Mês Vencido', description: 'Resgatar o primeiro desafio mensal', category: 'challenge' },
+  { key: 'mes_perfeito', name: 'Mês Perfeito', description: 'Resgatar os 3 desafios do mesmo mês', category: 'challenge' },
 
   // Indicação (concedidas pelo servidor quando o indicado completa 50 mãos)
   { key: 'indica_1', name: 'Primeiro Convite', description: '1 amigo indicado treinou 50 mãos', category: 'referral' },

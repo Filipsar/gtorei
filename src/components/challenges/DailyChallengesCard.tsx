@@ -76,7 +76,7 @@ export function DailyChallengesCard({ compacto = false }: Props) {
   );
 }
 
-function LinhaDesafio({
+export function LinhaDesafio({
   desafio: d,
   compacto,
   resgatando,
@@ -88,7 +88,7 @@ function LinhaDesafio({
   onResgatar: () => void;
 }) {
   const pct = Math.round((d.progresso / d.meta) * 100);
-  const precisaoAbaixo = d.chave.startsWith('precisao') && d.progresso >= d.meta && !d.concluido;
+  const precisaoAbaixo = d.chave.includes('precisao') && d.progresso >= d.meta && !d.concluido;
 
   return (
     <li className={cn('rounded-lg border p-3', d.resgatado ? 'border-primary/30 bg-primary/5' : 'border-border')}>
@@ -98,7 +98,7 @@ function LinhaDesafio({
             <p className={cn('font-medium leading-snug', d.resgatado && 'text-muted-foreground line-through')}>
               {d.titulo}
             </p>
-            <span className="text-body-xs font-semibold text-primary shrink-0">+{d.xp} XP</span>
+            <span className="text-body-xs font-semibold text-primary shrink-0">+{d.xp.toLocaleString('pt-BR')} XP</span>
           </div>
           {!compacto && <p className="text-body-xs text-muted-foreground">{d.descricao}</p>}
           {!d.resgatado && (
@@ -106,12 +106,12 @@ function LinhaDesafio({
               <Progress value={pct} className="h-1.5 flex-1 bg-muted" aria-label={`${d.progresso} de ${d.meta}`} />
               <span className="text-body-xs text-muted-foreground tabular-nums shrink-0">
                 {d.progresso}/{d.meta}
-                {d.chave.startsWith('precisao') && ` · ${d.precisao}%`}
+                {d.chave.includes('precisao') && ` · ${d.precisao}%`}
               </span>
             </div>
           )}
           {precisaoAbaixo && (
-            <p className="text-body-xs text-muted-foreground mt-1">Falta subir o acerto do dia para 80%.</p>
+            <p className="text-body-xs text-muted-foreground mt-1">Falta subir o acerto para 80% ou mais.</p>
           )}
         </div>
         {d.resgatado ? (

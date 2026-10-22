@@ -619,6 +619,8 @@ export type Database = {
       }
       calc_level: { Args: { _xp: number }; Returns: number }
       claim_daily_challenge: { Args: { _idx: number }; Returns: Json }
+      claim_period_challenge: { Args: { _periodo: string; _idx: number }; Returns: Json }
+      get_period_challenges: { Args: never; Returns: Json }
       claim_referral: { Args: { _code: string }; Returns: string }
       complete_level_test: { Args: { _results: Json }; Returns: Json }
       get_daily_challenges: { Args: never; Returns: Json }
