@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -65,6 +65,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_challenge_claims: {
+        Row: {
+          chave: string
+          dia: string
+          idx: number
+          resgatado_em: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          chave: string
+          dia: string
+          idx: number
+          resgatado_em?: string
+          user_id: string
+          xp: number
+        }
+        Update: {
+          chave?: string
+          dia?: string
+          idx?: number
+          resgatado_em?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -98,24 +125,30 @@ export type Database = {
         }
         Relationships: []
       }
-      supporters: {
+      play_purchases: {
         Row: {
+          criado_em: string
+          estado: string
+          order_id: string | null
+          product_id: string
+          purchase_token: string
           user_id: string
-          granted_at: string
-          granted_by: string | null
-          note: string | null
         }
         Insert: {
+          criado_em?: string
+          estado: string
+          order_id?: string | null
+          product_id: string
+          purchase_token: string
           user_id: string
-          granted_at?: string
-          granted_by?: string | null
-          note?: string | null
         }
         Update: {
+          criado_em?: string
+          estado?: string
+          order_id?: string | null
+          product_id?: string
+          purchase_token?: string
           user_id?: string
-          granted_at?: string
-          granted_by?: string | null
-          note?: string | null
         }
         Relationships: []
       }
@@ -346,6 +379,66 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          criado_em: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          criado_em?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          criado_em?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          criado_em: string
+          referred_id: string
+          referrer_id: string
+          validado_em: string | null
+        }
+        Insert: {
+          criado_em?: string
+          referred_id: string
+          referrer_id: string
+          validado_em?: string | null
+        }
+        Update: {
+          criado_em?: string
+          referred_id?: string
+          referrer_id?: string
+          validado_em?: string | null
+        }
+        Relationships: []
+      }
+      supporters: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_sessions: {
         Row: {
           accuracy: number
@@ -430,22 +523,94 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_bonus: {
+        Row: {
+          criado_em: string
+          id: string
+          origem: string
+          referencia: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          origem: string
+          referencia: string
+          user_id: string
+          xp: number
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          origem?: string
+          referencia?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      admin_monthly_metrics: {
-        Args: { _meses?: number; _ate_dia?: number | null }
+      _dar_conquista: { Args: { _key: string; _uid: string }; Returns: boolean }
+      _dar_xp_bonus: {
+        Args: { _origem: string; _ref: string; _uid: string; _xp: number }
+        Returns: boolean
+      }
+      _desafios_do_dia: {
+        Args: { _dia: string }
         Returns: {
-          mes: string
-          novos: number
-          total_usuarios: number
+          chave: string
+          descricao: string
+          idx: number
+          meta: number
+          param: string
+          tipo: string
+          titulo: string
+          xp: number
+        }[]
+      }
+      _hoje_brasilia: { Args: never; Returns: string }
+      _progresso_desafios: {
+        Args: { _dia: string; _uid: string }
+        Returns: {
+          chave: string
+          concluido: boolean
+          descricao: string
+          idx: number
+          meta: number
+          precisao: number
+          progresso: number
+          titulo: string
+          xp: number
+        }[]
+      }
+      _sequencia_desafios: { Args: { _uid: string }; Returns: number }
+      _validar_indicacao: { Args: { _referred: string }; Returns: undefined }
+      admin_monthly_metrics: {
+        Args: { _ate_dia?: number; _meses?: number }
+        Returns: {
           ativos: number
-          sessoes: number
           maos: number
+          mes: string
           minutos: number
-          precisao: number | null
+          novos: number
+          precisao: number
+          sessoes: number
+          total_usuarios: number
+        }[]
+      }
+      admin_referral_level5: {
+        Args: never
+        Returns: {
+          email: string
+          nivel5_desde: string
+          user_id: string
+          username: string
+          validos: number
         }[]
       }
       apply_ranking_delta: {
@@ -453,7 +618,12 @@ export type Database = {
         Returns: undefined
       }
       calc_level: { Args: { _xp: number }; Returns: number }
+      claim_daily_challenge: { Args: { _idx: number }; Returns: Json }
+      claim_referral: { Args: { _code: string }; Returns: string }
       complete_level_test: { Args: { _results: Json }; Returns: Json }
+      get_daily_challenges: { Args: never; Returns: Json }
+      get_my_referral_code: { Args: never; Returns: string }
+      get_my_referrals: { Args: never; Returns: Json }
       get_period_start: { Args: { period_type: string }; Returns: string }
       has_role: {
         Args: {
@@ -462,22 +632,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_supporter: {
-        Args: { _uid?: string }
-        Returns: boolean
-      }
-      set_supporter: {
-        Args: { _user_id: string; _ativo: boolean; _note?: string }
-        Returns: boolean
-      }
+      is_supporter: { Args: { _uid?: string }; Returns: boolean }
       lookup_hand: {
         Args: { _code: string }
         Returns: {
           correct_action: string
-          effective_stack: number | null
+          effective_stack: number
           ev_loss: number
           feedback: string
-          game_mode: string | null
+          game_mode: string
           hand: string
           played_at: string
           points: number
@@ -485,45 +648,35 @@ export type Database = {
           scenario: string
           stack: number
           user_action: string
-          villain_position: string | null
+          villain_position: string
         }[]
       }
+      purge_old_hand_codes: { Args: never; Returns: number }
       record_hand_result: {
         Args: {
           _correct_action: string
-          _effective_stack?: number | null
+          _effective_stack?: number
           _ev_loss?: number
           _feedback: string
-          _game_mode?: string | null
+          _game_mode?: string
           _hand: string
-          _hand_code?: string | null
+          _hand_code?: string
           _points: number
           _position: string
           _scenario: string
           _session_id: string
           _stack: number
           _user_action: string
-          _villain_position?: string | null
+          _villain_position?: string
         }
         Returns: Json
       }
-      unlock_achievement: { Args: { _key: string }; Returns: boolean }
-      // Indicação e desafios diários (migration 20261021120000_indicacao_e_desafios)
-      get_my_referral_code: { Args: Record<PropertyKey, never>; Returns: string }
-      claim_referral: { Args: { _code: string }; Returns: string }
-      get_my_referrals: { Args: Record<PropertyKey, never>; Returns: Json }
-      admin_referral_level5: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          user_id: string
-          username: string | null
-          email: string
-          validos: number
-          nivel5_desde: string
-        }[]
+      referral_tier: { Args: { _n: number }; Returns: number }
+      set_supporter: {
+        Args: { _ativo: boolean; _note?: string; _user_id: string }
+        Returns: boolean
       }
-      get_daily_challenges: { Args: Record<PropertyKey, never>; Returns: Json }
-      claim_daily_challenge: { Args: { _idx: number }; Returns: Json }
+      unlock_achievement: { Args: { _key: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
