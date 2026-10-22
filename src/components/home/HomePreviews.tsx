@@ -19,7 +19,7 @@ function nomeDaMao(linha: number, coluna: number) {
 const ESTILO_CELULA: Record<string, string> = {
   '2': 'bg-primary text-black/80',
   '1': 'bg-primary/35 text-foreground/80',
-  '0': 'bg-muted/50 text-muted-foreground/60',
+  '0': 'bg-muted/50 text-muted-foreground',
 };
 
 export function RangePreview() {

@@ -10,6 +10,12 @@ import { PokerTable } from '@/components/poker/PokerTable';
 import { ActionButtons } from '@/components/poker/ActionButtons';
 import { PostflopActions } from '@/components/poker/PostflopActions';
 import { useSupporter } from '@/hooks/useSupporter';
+import { EVENTO_MAO_REGISTRADA } from '@/hooks/useDailyChallenges';
+import { DailyChallengesCard } from '@/components/challenges/DailyChallengesCard';
+import { ehApp } from '@/lib/nativo/plataforma';
+import { useDificuldade } from '@/hooks/useDificuldade';
+import { ajustarPontos, limitarPontos, sortearMao } from '@/lib/dificuldade';
+import { DificuldadeControle } from '@/components/poker/DificuldadeControle';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
@@ -122,6 +128,7 @@ export default function TrainPage() {
   const [currentStackDistribution, setCurrentStackDistribution] = useState<StackDistribution | null>(null);
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
+  const dificuldade = useDificuldade(user?.id, profile?.level || getUserProfile()?.level || 1);
   const supabaseSessionId = useRef<string | null>(null);
   // O .then() do supabase devolve PromiseLike, não Promise
   const sessionPromise = useRef<PromiseLike<string | null> | null>(null);
@@ -208,55 +215,9 @@ export default function TrainPage() {
     return bounties;
   };
 
-  // Generate random hand with difficulty scaling based on player level
-  // Higher ranks get more marginal/borderline hands (harder decisions)
-  const generateRandomHand = useCallback((): string => {
-    const playerLevel = profile?.level || getUserProfile()?.level || 1;
-    
-    // Difficulty: chance of generating a "marginal" hand (medium strength)
-    // Level 1-2: 0% bias (pure random)
-    // Level 3 (Intermediário): 25% chance of marginal hand
-    // Level 4 (Avançado): 40% chance
-    // Level 5 (Expert): 55% chance
-    // Level 6 (Mestre): 65% chance
-    // Level 7 (Lenda): 75% chance
-    const marginalChance = [0, 0, 0.25, 0.40, 0.55, 0.65, 0.75][Math.min(playerLevel - 1, 6)];
-    
-    const useMarginal = Math.random() < marginalChance;
-    
-    if (useMarginal) {
-      // Generate hands in the "marginal zone" - medium strength hands
-      // These are the hardest to decide: borderline raise/call/fold
-      const marginalHands = [
-        // Suited connectors/gappers (common marginal spots)
-        'T9s', '98s', '87s', '76s', '65s', 'J9s', 'T8s', '97s', '86s',
-        // Suited aces (marginal in many positions)
-        'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s',
-        // Off-suit broadways (tough decisions)
-        'KTo', 'QTo', 'JTo', 'KJo', 'QJo', 'K9o', 'Q9o',
-        // Medium pairs (position-dependent)
-        '77', '66', '55', '44', '33', '22',
-        // Suited kings/queens (marginal 3bet/call spots)
-        'K9s', 'K8s', 'K7s', 'Q9s', 'Q8s', 'J8s', 'J9s',
-        // Off-suit aces (classic marginal hands)
-        'A9o', 'A8o', 'A7o', 'A6o', 'A5o', 'A4o', 'A3o', 'A2o',
-      ];
-      return marginalHands[Math.floor(Math.random() * marginalHands.length)];
-    }
-    
-    // Standard random generation
-    const rank1 = RANKS[Math.floor(Math.random() * RANKS.length)];
-    const rank2 = RANKS[Math.floor(Math.random() * RANKS.length)];
-    const idx1 = RANKS.indexOf(rank1);
-    const idx2 = RANKS.indexOf(rank2);
-    if (idx1 === idx2) {
-      return `${rank1}${rank2}`;
-    } else if (idx1 < idx2) {
-      return Math.random() > 0.5 ? `${rank1}${rank2}s` : `${rank1}${rank2}o`;
-    } else {
-      return Math.random() > 0.5 ? `${rank2}${rank1}s` : `${rank2}${rank1}o`;
-    }
-  }, [profile?.level]);
+  // A mão sai pela dificuldade em vigor (src/lib/dificuldade.ts), que aparece
+  // na tela do treino. Antes o nível de XP decidia isso escondido.
+  const generateRandomHand = useCallback((): string => sortearMao(dificuldade.efetiva), [dificuldade.efetiva]);
 
   // Get cards string for hand ID
   const getCardsString = (cards: CardType[]): string => {
@@ -443,6 +404,8 @@ export default function TrainPage() {
 
     const result = data as { total_xp: number; level: number; hands_played: number } | null;
     if (result) {
+      // O cartão de desafios do dia escuta isto para o progresso andar sozinho
+      window.dispatchEvent(new Event(EVENTO_MAO_REGISTRADA));
       await refreshProfile();
       checkAchievements({
         totalHands: result.hands_played,
@@ -503,6 +466,8 @@ export default function TrainPage() {
       }
     }
 
+    // XP ganho acompanha a dificuldade (mostrado no controle); perda não muda
+    feedback.points = limitarPontos(ajustarPontos(feedback.points, dificuldade.efetiva));
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 
@@ -542,6 +507,7 @@ export default function TrainPage() {
       });
       setSessionScore(prev => prev + pointsToAdd);
       setHandsPlayed(prev => prev + 1);
+      dificuldade.registrar(isCorrect);
       if (isCorrect) {
         setCorrectHandsCount(prev => prev + 1);
         setCurrentStreak(prev => {
@@ -621,7 +587,7 @@ export default function TrainPage() {
     // currentStackDistribution e currentUniqueHandId entram aqui porque são
     // lidos lá dentro: sem eles a função podia ficar com os valores da mão
     // anterior e gravar o stack efetivo — ou o ID — da mão errada.
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar]);
 
   // Calculate postflop bonus/penalty from street verdicts
   const calculatePostflopBonus = useCallback((): number => {
@@ -649,7 +615,8 @@ export default function TrainPage() {
     
     // Add postflop bonus/penalty
     const postflopBonus = calculatePostflopBonus();
-    const totalPoints = preflopPoints + postflopBonus;
+    // Pré-flop (já com a dificuldade) + pós-flop pode passar de 30; o servidor recusa
+    const totalPoints = limitarPontos(preflopPoints + postflopBonus);
     
     markHandAsPlayed(currentHandId, action, totalPoints, feedback.type);
     addHandToSession({
@@ -682,6 +649,7 @@ export default function TrainPage() {
 
     setSessionScore(prev => prev + totalPoints);
     setHandsPlayed(prev => prev + 1);
+    dificuldade.registrar(isCorrect);
     if (isCorrect) {
       setCorrectHandsCount(prev => prev + 1);
       setCurrentStreak(prev => {
@@ -697,7 +665,7 @@ export default function TrainPage() {
     }
 
     setPendingSimulationScore(null);
-  }, [pendingSimulationScore, handState, currentHandId, scenario, checkAchievements, calculatePostflopBonus, recordHand, currentStackDistribution, currentUniqueHandId, trainingMode]);
+  }, [pendingSimulationScore, handState, currentHandId, scenario, checkAchievements, calculatePostflopBonus, recordHand, currentStackDistribution, currentUniqueHandId, trainingMode, dificuldade.registrar]);
 
   // Auto-apply pending simulation score when hand completes and enters review
   useEffect(() => {
@@ -942,6 +910,12 @@ export default function TrainPage() {
       sessionPromise.current = null;
     }
 
+    // App grátis: anúncio de tela cheia só entre treinos, nunca no meio de uma
+    // mão. A frequência (1 a cada 3 treinos, 4 min de intervalo) fica no módulo.
+    if (ehApp() && !isSupporter && handsPlayed > 0) {
+      void import('@/lib/nativo/anuncios').then(({ talvezMostrarIntersticial }) => talvezMostrarIntersticial());
+    }
+
     // O aleatório não passa pela configuração, então não há para onde voltar
     // a não ser a escolha de modo.
     setPhase(modoAleatorio ? 'modeSelect' : 'config');
@@ -953,7 +927,7 @@ export default function TrainPage() {
     setPreviousHandResult(null);
     setCurrentStreak(0);
     setSessionBestCount(0);
-  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements, modoAleatorio]);
+  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements, modoAleatorio, isSupporter]);
 
   // Clear played hands session
   const handleClearSession = useCallback(() => {
@@ -1023,6 +997,9 @@ export default function TrainPage() {
               Configure seu treino e pratique decisões GTO
             </p>
           </div>
+          <div className="mb-6">
+            <DailyChallengesCard compacto />
+          </div>
           <TrainingModeSelector onSelect={handleModeSelect} bloqueado={modoBloqueado} />
         </div>
         {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
@@ -1047,6 +1024,7 @@ export default function TrainPage() {
                 Voltar
               </Button>
               <span className="text-body-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">{getModeLabel()}</span>
+              <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} />
             </div>
              <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
               <Zap className="h-8 w-8 text-primary" />
@@ -1267,7 +1245,7 @@ export default function TrainPage() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col sm:block">
         {/* Header with session info */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-primary" />
               <span className="font-bold text-lg">{sessionScore} pts</span>
@@ -1279,6 +1257,7 @@ export default function TrainPage() {
             {trainingMode && (
               <span className="text-body-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">{getModeLabel()}</span>
             )}
+            <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} />
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -1311,7 +1290,7 @@ export default function TrainPage() {
               <p className="text-sm text-primary font-medium">
                 Mão já jogada nesta sessão
               </p>
-              <p className="text-xs text-primary/80">
+              <p className="text-xs text-primary">
                 Você pode revisar, mas não ganhará pontos.
               </p>
             </div>

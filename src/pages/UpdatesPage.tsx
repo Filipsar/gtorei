@@ -22,6 +22,34 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.22.0',
+    date: '22/10/2026',
+    type: 'feature',
+    title: 'Dificuldade do Treino Agora Aparece na Tela',
+    description: 'O treino sempre sorteou mais mãos difíceis (as da borda da range, onde a decisão é apertada) para quem tinha nível mais alto, mas a tela não dizia nada. Agora a dificuldade aparece no topo do treino — Fácil, Média, Difícil ou Elite — e você escolhe. No modo automático, que é o padrão, ela sobe quando você acerta 85% ou mais das últimas 20 mãos e desce com 60% ou menos, com um aviso explicando cada mudança. O XP ganho acompanha: de ×0,7 no Fácil a ×1,4 no Elite. A resposta certa de cada mão é a mesma em qualquer dificuldade.',
+  },
+  {
+    version: '1.21.3',
+    date: '22/10/2026',
+    type: 'improvement',
+    title: 'Navegar pelo Teclado e Ler Melhor',
+    description: 'Os cartões de modo do treino, os cartões da página inicial, a matriz do Guia do Iniciante e a busca de jogadores agora abrem com Enter e Espaço. O primeiro Tab de cada página leva a "Pular para o conteúdo". Textos que ficavam claros demais sobre o fundo ganharam contraste.',
+  },
+  {
+    version: '1.21.2',
+    date: '22/10/2026',
+    type: 'improvement',
+    title: 'Políticas de Privacidade, Termos, Cookies e Reembolso',
+    description: 'O GTORei ganhou páginas completas de Privacidade, Termos de Uso, Cookies e Reembolso, com o responsável e um e-mail de contato. O cadastro pede o aceite com uma caixa que você marca, e a conta pode ser excluída a qualquer momento em gtorei.com.br/excluir-conta. Na análise por IA, os apelidos dos adversários no hand history agora são trocados por "Vilão 1", "Vilão 2" antes do envio. O site continua sem cookies de rastreamento ou publicidade.',
+  },
+  {
+    version: '1.21.1',
+    date: '05/10/2026',
+    type: 'fix',
+    title: 'Mão Dividida Meio a Meio Não Vira Mais Fold por Sorteio',
+    description: 'Cada mão da range tem uma ação principal: é ela que pinta a matriz, aparece como a jogada certa e decide a nota. Quando nenhuma ação passava de 50%, o GTORei usava três regras diferentes conforme a range, e numa mão meio a meio entre jogar e foldar o resultado dependia de qual delas valia ali. Com stacks fora da tabela — 11, 13, 22 BB, que aparecem quando o adversário tem menos fichas que você — era pior: no vs 3-bet do heads-up com 11 BB, o K7s, que continua em 56% das vezes, saía fold, enquanto o K6s, mais fraco, saía call. Agora a regra é uma só: fold é a ação principal quando passa de 50%, ou quando a jogada mais frequente não tem EV positivo. Nos stacks da tabela, as mudanças são só nas mãos exatamente meio a meio: elas passam a mostrar a jogada, e foldar nelas continua contando como jogada correta, só que deixa de ser a perfeita. Os pontos já registrados não foram alterados.',
+  },
+  {
     version: '1.21.0',
     date: '04/10/2026',
     type: 'feature',

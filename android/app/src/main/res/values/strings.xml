@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GTORei</string>
+    <string name="title_activity_main">GTORei</string>
+    <string name="package_name">br.com.gtorei.app</string>
+    <string name="custom_url_scheme">br.com.gtorei.app</string>
+</resources>

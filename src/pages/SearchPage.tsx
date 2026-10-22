@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { clicavel } from '@/lib/acessivel';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,8 +103,8 @@ export default function SearchPage() {
 
   const PlayerCard = ({ player }: { player: PlayerResult }) => (
     <div
-      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-      onClick={() => navigate(`/perfil/${player.user_id}`)}
+      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      {...clicavel(() => navigate(`/perfil/${player.user_id}`))}
     >
       <Avatar className="h-10 w-10">
         <AvatarImage src={player.avatar_url || undefined} />

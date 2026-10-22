@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 export default function AchievementsPage() {
   const { isUnlocked, unlockedKeys } = useAchievements();
 
-  const categories = ['level', 'streak', 'volume', 'accuracy'] as const;
+  const categories = ['level', 'streak', 'volume', 'accuracy', 'challenge', 'referral'] as const;
 
   const totalUnlocked = unlockedKeys.size;
   const totalAchievements = ACHIEVEMENTS.length;

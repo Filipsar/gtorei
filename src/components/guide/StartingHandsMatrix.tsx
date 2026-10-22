@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { clicavel } from '@/lib/acessivel';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -110,9 +111,11 @@ export function StartingHandsMatrix({
               return (
                 <div
                   key={nome}
-                  onClick={() => setMao(nome)}
+                  {...clicavel(() => setMao(nome))}
+                  aria-label={nome}
+                  aria-pressed={nome === mao}
                   className={cn(
-                    'flex aspect-square cursor-pointer select-none items-center justify-center rounded-[2px] text-[7px] font-semibold leading-none transition-opacity sm:text-[9px]',
+                    'flex aspect-square cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring select-none items-center justify-center rounded-[2px] text-[7px] font-semibold leading-none transition-opacity sm:text-[9px]',
                     ACAO[estado].classe,
                     apagada && 'opacity-20',
                     nome === mao && 'ring-2 ring-foreground ring-offset-1 ring-offset-background',

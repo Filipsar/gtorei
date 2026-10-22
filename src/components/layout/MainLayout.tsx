@@ -13,6 +13,13 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background">
+        {/* Primeiro item do Tab: pula o menu lateral inteiro */}
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+        >
+          Pular para o conteúdo
+        </a>
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0">
           {/* Maintenance banner */}
@@ -30,7 +37,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
 
           {/* Page content */}
-          <div className="flex-1 overflow-auto">
+          <div id="conteudo" tabIndex={-1} className="flex-1 overflow-auto focus:outline-none">
             {children}
           </div>
           <UpdatesPopup />

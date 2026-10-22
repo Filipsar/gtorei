@@ -107,7 +107,7 @@ export function UpdatesPopup() {
       title: 'Apoie o GTORei',
       titleClass: 'text-primary',
       description:
-        'O GTORei é 100% gratuito e feito com muito carinho. Se você usa e gosta, considere apoiar o projeto e seguir no Instagram para novidades.',
+        'O treino do GTORei é grátis e feito com muito carinho. Se você usa e gosta, considere apoiar o projeto e seguir no Instagram para novidades.',
       cta: (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 w-full">
           <Button

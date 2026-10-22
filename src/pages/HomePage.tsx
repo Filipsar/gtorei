@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { clicavel } from '@/lib/acessivel';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/seo/SEO';
 import { useReveal } from '@/hooks/useReveal';
@@ -41,7 +42,7 @@ const NUMEROS = [
   { valor: '39 mil+', label: 'mãos treinadas na plataforma' },
   { valor: '120+', label: 'jogadores estudando aqui' },
   { valor: '7', label: 'stacks de push/fold resolvidos' },
-  { valor: 'R$ 0', label: 'agora e sempre' },
+  { valor: 'R$ 0', label: 'para treinar' },
 ];
 
 const FAQ = [
@@ -92,7 +93,7 @@ export default function HomePage() {
   });
 
   const features = [
-    { icon: Zap, title: 'Treinador GTO', desc: 'Pratique decisões pré-flop e pós-flop com ranges de solver para cada posição e stack.', to: '/treinar', tag: 'Treino' },
+    { icon: Zap, title: 'Treinador GTO', desc: 'Pratique decisões pré-flop e pós-flop com ranges calculadas por EV para cada posição e stack.', to: '/treinar', tag: 'Treino' },
     { icon: Brain, title: 'Análise com IA', desc: 'Faça upload do seu hand history e receba veredicto GTO + EV mão a mão por IA.', to: '/analise-ia', tag: 'Novo' },
     { icon: TableProperties, title: 'Tabelas de Range', desc: 'Matrizes 13x13 interativas com frequências de cada ação por spot.', to: '/tabelas', tag: 'Estudo' },
     { icon: BarChart3, title: 'Análise de Mãos', desc: 'Revise suas decisões street-by-street e entenda o porquê da linha ótima.', to: '/analise', tag: 'Review' },
@@ -106,13 +107,13 @@ export default function HomePage() {
     { icon: Target, title: 'Pré-flop GTO', desc: '6-Max, 8-Max, Heads-Up, Bounty e Mesa Final com ICM.' },
     { icon: Sparkles, title: 'Pós-flop completo', desc: 'Flop, turn e river com sizings e leitura de textura do board.' },
     { icon: TrendingUp, title: 'Stacks dinâmicas', desc: 'De 10bb a 200bb com interpolação automática de ranges.' },
-    { icon: ShieldCheck, title: '100% gratuito', desc: 'Sem paywall. Apoiado pela comunidade que joga.' },
+    { icon: ShieldCheck, title: 'Treino grátis', desc: 'O treino principal não custa nada. Apoiadores e o PRO liberam modos extras.' },
   ];
 
   const steps = [
     { n: '01', title: 'Crie sua conta', desc: 'Cadastro grátis em segundos, com Google ou e-mail.' },
     { n: '02', title: 'Escolha o modo', desc: 'Selecione formato, stack e dificuldade do seu treino.' },
-    { n: '03', title: 'Decida a ação', desc: 'O GTORei compara sua escolha com a linha de solver.' },
+    { n: '03', title: 'Decida a ação', desc: 'O GTORei compara sua escolha com a linha calculada por EV.' },
     { n: '04', title: 'Evolua', desc: 'Ganhe XP, suba de ranking e destrave conquistas.' },
   ];
 
@@ -149,7 +150,7 @@ export default function HomePage() {
         ]}
       />
       {/* Top Instagram banner */}
-      <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden h-9 flex items-center bg-primary/10 text-primary border-b border-primary/25">
+      <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden h-9 flex items-center bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))] text-primary border-b border-primary/25">
         <a
           href="https://www.instagram.com/gtorei/"
           target="_blank"
@@ -212,7 +213,7 @@ export default function HomePage() {
       </header>
 
       {/* HERO */}
-      <section className="relative pt-40 pb-24 px-6">
+      <section className="relative pt-36 sm:pt-40 pb-16 sm:pb-24 px-6">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
             className="absolute inset-0 opacity-[0.08]"
@@ -246,8 +247,8 @@ export default function HomePage() {
             style={entrada(160)}
             className="animate-in fade-in slide-in-from-bottom-3 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
           >
-            O GTORei é o treinador de poker GTO gratuito mais completo em português.
-            Ranges de solver, IA, ranking global e conquistas — tudo num só lugar.
+            O GTORei é um treinador de poker GTO gratuito, em português.
+            Ranges calculadas por EV, IA, ranking global e conquistas — tudo num só lugar.
           </p>
 
           <div
@@ -276,17 +277,29 @@ export default function HomePage() {
             style={entrada(320)}
             className="animate-in fade-in slide-in-from-bottom-3 mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground"
           >
-            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> 100% gratuito</span>
+            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Treino grátis</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Sem cartão</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ranges calculadas por EV</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Português & Inglês</span>
           </div>
 
-          {/* Em vez de descrever o produto, mostrar uma range que o solver calculou */}
+          {/* Em vez de descrever o produto, mostrar uma range que o motor calculou.
+              O rei (mascote, decidido em 04/10/2026) aponta para ela: no celular
+              fica em cima do cartão; de 1024px para cima, ao lado, apontando (antes disso a margem não cabe ele).
+              Decorativo: alt vazio, e não é o maior elemento da tela, então não
+              mexe no LCP (que é o título). */}
           <div
             style={entrada(400)}
-            className="animate-in fade-in slide-in-from-bottom-3 mt-14 max-w-xl mx-auto"
+            className="animate-in fade-in slide-in-from-bottom-3 mt-14 max-w-xl mx-auto relative"
           >
+            <img
+              src="/mascote/rei-explicando.webp"
+              alt=""
+              width={426}
+              height={397}
+              decoding="async"
+              className="relative z-10 mx-auto -mb-5 block h-auto w-28 sm:w-32 drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] lg:absolute lg:-left-52 lg:bottom-6 lg:mb-0 lg:w-48"
+            />
             <RangePreview />
           </div>
         </div>
@@ -305,9 +318,9 @@ export default function HomePage() {
       </section>
 
       {/* FEATURES — card presentation */}
-      <section id="recursos" className="cv-auto relative py-24 px-6 bg-card/30 border-y border-border">
+      <section id="recursos" className="cv-auto relative py-16 sm:py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Recursos</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Tudo o que você precisa para evoluir</h2>
             <p className="text-muted-foreground text-lg">
@@ -320,20 +333,27 @@ export default function HomePage() {
               <Card
                 key={f.title}
                 data-reveal-item
-                onClick={() => user ? navigate(f.to) : navigate('/auth')}
-                className="group cursor-pointer p-6 bg-card hover:bg-card/80 border-border hover:border-primary/40 transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-15px_rgba(255,184,0,0.3)]"
+                {...clicavel(() => (user ? navigate(f.to) : navigate('/auth')))}
+                className="group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring p-5 sm:p-6 bg-card hover:bg-card/80 border-border hover:border-primary/40 transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-15px_rgba(255,184,0,0.3)]"
               >
-                <div className="flex items-start justify-between mb-5">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <f.icon className="h-6 w-6 text-primary" />
+                {/* No celular o ícone fica ao lado do texto e o "Explorar" some
+                    (o cartão inteiro é clicável): eram 8 cartões altos em fila,
+                    quase 2.500 px de rolagem só nesta seção */}
+                <div className="flex items-start gap-4 sm:block">
+                  <div className="shrink-0 sm:flex sm:items-start sm:justify-between sm:mb-5">
+                    <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <f.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                    </div>
+                    <span className="hidden sm:inline text-[10px] uppercase tracking-wider font-semibold text-primary bg-primary/10 px-2 py-1 rounded">
+                      {f.tag}
+                    </span>
                   </div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-primary/80 bg-primary/10 px-2 py-1 rounded">
-                    {f.tag}
-                  </span>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed sm:mb-4">{f.desc}</p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{f.desc}</p>
-                <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary group-hover:gap-2.5 transition-all">
+                <div className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-primary group-hover:gap-2.5 transition-all">
                   Explorar <ArrowRight className="h-4 w-4" />
                 </div>
               </Card>
@@ -349,9 +369,9 @@ export default function HomePage() {
       </section>
 
       {/* MODES — split presentation cards */}
-      <section id="modos" className="cv-auto py-24 px-6">
+      <section id="modos" className="cv-auto py-16 sm:py-24 px-6">
         <div className="max-w-7xl mx-auto">
-          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Modos de jogo</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Cobertura completa de torneios</h2>
             <p className="text-muted-foreground text-lg">
@@ -361,14 +381,14 @@ export default function HomePage() {
 
           <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {modes.map((m) => (
-              <Card key={m.title} data-reveal-item className="p-8 bg-card border-border hover:border-primary/30 transition-colors">
-                <div className="flex items-start gap-5">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+              <Card key={m.title} data-reveal-item className="p-5 sm:p-8 bg-card border-border hover:border-primary/30 transition-colors">
+                <div className="flex items-start gap-4 sm:gap-5">
+                  <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary/30 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
                     <m.icon className="h-7 w-7 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">{m.title}</h3>
-                    <p className="text-muted-foreground">{m.desc}</p>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">{m.title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground">{m.desc}</p>
                   </div>
                 </div>
               </Card>
@@ -378,17 +398,18 @@ export default function HomePage() {
       </section>
 
       {/* HOW IT WORKS — numbered cards */}
-      <section id="como-funciona" className="cv-auto py-24 px-6 bg-card/30 border-y border-border">
+      <section id="como-funciona" className="cv-auto py-16 sm:py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Como funciona</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Do cadastro à evolução em 4 passos</h2>
           </div>
 
           <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {steps.map((s) => (
-              <Card key={s.n} data-reveal-item className="p-7 bg-card border-border relative overflow-hidden">
-                <span className="absolute -top-3 -right-3 text-7xl font-black text-primary/10 select-none">{s.n}</span>
+              <Card key={s.n} data-reveal-item className="p-5 sm:p-7 bg-card border-border relative overflow-hidden">
+                {/* Inteiro dentro do cartão: cortado na borda, o "01" parecia erro de layout */}
+                <span aria-hidden="true" className="absolute top-3 right-4 text-6xl leading-none font-black text-primary/10 select-none">{s.n}</span>
                 <div className="relative">
                   <p className="text-primary text-sm font-bold mb-3">{s.n}</p>
                   <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
@@ -407,7 +428,7 @@ export default function HomePage() {
       </section>
 
       {/* AI HIGHLIGHT */}
-      <section className="cv-auto py-24 px-6">
+      <section className="cv-auto py-16 sm:py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <Card data-reveal className="overflow-hidden bg-gradient-to-br from-primary/15 via-card to-card border-primary/30 p-10 md:p-14">
             <div className="grid md:grid-cols-2 gap-10 items-center">
@@ -443,9 +464,9 @@ export default function HomePage() {
       </section>
 
       {/* COMMUNITY / RANKING */}
-      <section id="comunidade" className="cv-auto py-24 px-6 bg-card/30 border-y border-border">
+      <section id="comunidade" className="cv-auto py-16 sm:py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div data-reveal className="text-center mb-14 max-w-2xl mx-auto">
+          <div data-reveal className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Comunidade</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Suba de Iniciante a GTO Rei</h2>
             <p className="text-muted-foreground text-lg">
@@ -454,19 +475,19 @@ export default function HomePage() {
           </div>
 
           <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Card data-reveal-item className="p-7 bg-card border-border">
-              <Trophy className="h-8 w-8 text-primary mb-4" />
-              <p className="text-3xl font-bold mb-1">8 ranks</p>
+            <Card data-reveal-item className="p-5 sm:p-7 bg-card border-border">
+              <Trophy className="h-8 w-8 text-primary mb-3 sm:mb-4" />
+              <p className="text-2xl sm:text-3xl font-bold mb-1">8 ranks</p>
               <p className="text-sm text-muted-foreground">de Iniciante até GTO Rei (250.000 XP)</p>
             </Card>
-            <Card data-reveal-item className="p-7 bg-card border-border">
-              <Award className="h-8 w-8 text-primary mb-4" />
-              <p className="text-3xl font-bold mb-1">Dezenas</p>
+            <Card data-reveal-item className="p-5 sm:p-7 bg-card border-border">
+              <Award className="h-8 w-8 text-primary mb-3 sm:mb-4" />
+              <p className="text-2xl sm:text-3xl font-bold mb-1">Dezenas</p>
               <p className="text-sm text-muted-foreground">de conquistas para precisão, volume e streaks</p>
             </Card>
-            <Card data-reveal-item className="p-7 bg-card border-border">
-              <Users className="h-8 w-8 text-primary mb-4" />
-              <p className="text-3xl font-bold mb-1">Ranking mensal</p>
+            <Card data-reveal-item className="p-5 sm:p-7 bg-card border-border">
+              <Users className="h-8 w-8 text-primary mb-3 sm:mb-4" />
+              <p className="text-2xl sm:text-3xl font-bold mb-1">Ranking mensal</p>
               <p className="text-sm text-muted-foreground">reset todo mês, novas chances de subir ao topo</p>
             </Card>
           </div>
@@ -475,9 +496,9 @@ export default function HomePage() {
 
 
       {/* PERGUNTAS — o mesmo texto vai no FAQPage lá em cima; se mudar aqui, mudar lá */}
-      <section id="perguntas" className="cv-auto py-24 px-6">
+      <section id="perguntas" className="cv-auto py-16 sm:py-24 px-6">
         <div className="max-w-3xl mx-auto">
-          <div data-reveal className="text-center mb-12">
+          <div data-reveal className="text-center mb-10 sm:mb-12">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Perguntas</p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Antes de criar sua conta</h2>
             <p className="text-muted-foreground text-lg">
@@ -518,14 +539,24 @@ export default function HomePage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="cv-auto py-28 px-6 relative overflow-hidden border-t border-border">
+      <section className="cv-auto py-20 sm:py-28 px-6 relative overflow-hidden border-t border-border">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
         <div data-reveal className="relative max-w-3xl mx-auto text-center">
+          {/* O segundo e último rei da página (regra da marca: no máximo dois) */}
+          <img
+            src="/mascote/rei-confiante.webp"
+            alt=""
+            width={314}
+            height={391}
+            loading="lazy"
+            decoding="async"
+            className="mx-auto mb-6 h-auto w-28 sm:w-36 drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)]"
+          />
           <h2 className="text-3xl sm:text-6xl font-bold mb-6 leading-tight">
             Pronto para jogar como um <span className="text-primary">rei</span>?
           </h2>
           <p className="text-lg text-muted-foreground mb-10">
-            Crie sua conta grátis e comece a treinar com ranges de solver em menos de um minuto.
+            Crie sua conta grátis e comece a treinar com ranges calculadas por EV em menos de um minuto.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
@@ -565,7 +596,7 @@ export default function HomePage() {
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Transparência</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Privacidade, Dados e Termos</h2>
             <p className="text-muted-foreground">
-              Ao criar sua conta no GTORei, você concorda com nossas diretrizes de uso e tratamento de dados.
+              O resumo está aqui; o texto completo, nas políticas.
             </p>
           </div>
 
@@ -574,9 +605,10 @@ export default function HomePage() {
               <Shield className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Política de Privacidade</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Seus dados pessoais são tratados com segurança e utilizados apenas para operação da plataforma,
-                análise de desempenho e comunicação direta. Não vendemos dados a terceiros.
+                Usamos seus dados para manter a conta, o treino, o ranking e a comunidade. Não vendemos dados
+                e não fazemos rastreamento para publicidade no site.
               </p>
+              <Link to="/privacidade" className="mt-3 inline-block text-sm text-primary underline">Ler a política</Link>
             </Card>
 
             <Card data-reveal-item className="p-7 bg-card border-border">
@@ -586,22 +618,23 @@ export default function HomePage() {
                 O uso do GTORei é destinado a fins de estudo e entretenimento. O usuário é responsável
                 por suas decisões em mesas reais. Conteúdo e ranges são para referência educacional.
               </p>
+              <Link to="/termos" className="mt-3 inline-block text-sm text-primary underline">Ler os termos</Link>
             </Card>
 
             <Card data-reveal-item className="p-7 bg-card border-border">
               <Cookie className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Cookies e Marketing</h3>
+              <h3 className="text-lg font-semibold mb-2">Cookies</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Utilizamos cookies para funcionalidade, análise de uso e remarketing. Ao se registrar,
-                você concorda com o uso de dados para personalização de conteúdo, campanhas de marketing
-                e comunicações por e-mail e notificações.
+                O site guarda no navegador só o necessário: login e preferências. Nada de cookies de
+                rastreamento, análise ou remarketing. No app grátis, anúncio personalizado só com sua permissão.
               </p>
+              <Link to="/cookies" className="mt-3 inline-block text-sm text-primary underline">Ler a política</Link>
             </Card>
           </div>
 
           <div className="mt-10 text-center text-xs text-muted-foreground max-w-3xl mx-auto">
-            Conforme a LGPD, você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento
-            através da página de perfil ou entrando em contato diretamente com nossa equipe.
+            Conforme a LGPD, você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento.
+            A exclusão da conta é imediata em <Link to="/excluir-conta" className="underline">gtorei.com.br/excluir-conta</Link>.
           </div>
         </div>
       </section>
@@ -623,6 +656,10 @@ export default function HomePage() {
             <Link to="/iniciante" className="hover:text-foreground transition-colors">Guia do iniciante</Link>
             <Link to="/atualizacoes" className="hover:text-foreground transition-colors">Atualizações</Link>
             <Link to="/apoiar" className="hover:text-foreground transition-colors">Apoiar</Link>
+            <Link to="/privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
+            <Link to="/termos" className="hover:text-foreground transition-colors">Termos</Link>
+            <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+            <Link to="/reembolso" className="hover:text-foreground transition-colors">Reembolso</Link>
             <Link to="/gtoreiacessibilidade" className="hover:text-foreground transition-colors inline-flex items-center gap-1">
               <Accessibility className="h-4 w-4" /> Acessibilidade
             </Link>

@@ -24,3 +24,16 @@ dist-ssr
 *.sw?
 .vercel
 .env*
+
+# Conteúdo do Instagram (@gtorei): mora nesta pasta desde 05/10/2026, mas não
+# faz parte do app e não vai para o repositório
+/midia/
+/pautas/
+/publicados/
+/rascunhos/
+/Gemini fotos/
+/CLAUDE-conteudo.md
+
+# Chave de assinatura do app Android: nunca no repositório (docs/PLAY-STORE.md)
+*.jks
+*.keystore

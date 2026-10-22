@@ -146,7 +146,7 @@ export function DecisionFeedback({
                 <p className="text-sm text-primary font-medium">
                   ⚠️ Mão já jogada nesta sessão
                 </p>
-                <p className="text-xs text-primary/80 mt-1">
+                <p className="text-xs text-primary mt-1">
                   Você pode revisar, mas não ganhará pontos.
                 </p>
                 {previousResult && (

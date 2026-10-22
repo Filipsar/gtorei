@@ -508,6 +508,22 @@ export type Database = {
         Returns: Json
       }
       unlock_achievement: { Args: { _key: string }; Returns: boolean }
+      // Indicação e desafios diários (migration 20261021120000_indicacao_e_desafios)
+      get_my_referral_code: { Args: Record<PropertyKey, never>; Returns: string }
+      claim_referral: { Args: { _code: string }; Returns: string }
+      get_my_referrals: { Args: Record<PropertyKey, never>; Returns: Json }
+      admin_referral_level5: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          username: string | null
+          email: string
+          validos: number
+          nivel5_desde: string
+        }[]
+      }
+      get_daily_challenges: { Args: Record<PropertyKey, never>; Returns: Json }
+      claim_daily_challenge: { Args: { _idx: number }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

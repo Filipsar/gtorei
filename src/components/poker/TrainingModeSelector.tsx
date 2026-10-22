@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { clicavel } from '@/lib/acessivel';
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModeIcon } from './ModeIcon';
@@ -63,12 +64,12 @@ export function TrainingModeSelector({ onSelect, bloqueado }: TrainingModeSelect
               // O cadeado leva para a página de apoio em vez de só não responder:
               // um cartão morto não diz como destravar.
               className={cn(
-                'cursor-pointer transition-all group relative',
+                'cursor-pointer transition-all group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 travado
                   ? 'border-primary/40 hover:border-primary hover:shadow-lg'
                   : 'hover:border-primary/50 hover:shadow-lg'
               )}
-              onClick={() => onSelect(mode.id)}
+              {...clicavel(() => onSelect(mode.id))}
             >
               {travado && <Lock className="absolute top-3 right-3 h-4 w-4 text-primary" />}
               <CardContent className="p-6 flex flex-col items-center text-center gap-3">
@@ -76,7 +77,7 @@ export function TrainingModeSelector({ onSelect, bloqueado }: TrainingModeSelect
                   className={cn(
                     'w-16 h-16 rounded-xl flex items-center justify-center transition-colors overflow-hidden',
                     travado
-                      ? 'bg-primary/10 text-primary/70 group-hover:text-primary'
+                      ? 'bg-primary/10 text-primary'
                       : 'bg-muted/50 group-hover:bg-primary/10 text-muted-foreground group-hover:text-foreground'
                   )}
                 >

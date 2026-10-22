@@ -128,10 +128,51 @@ passa por ele.
 
 ## Pendências conhecidas
 
-- `ADMIN_EMAIL` está escrito na mão em `AppSidebar.tsx`, `AdminPage.tsx` e
-  `supabase/functions/admin-users/index.ts`. O banco já tem a função `has_role`, que é o
-  mecanismo correto.
-- Cliente ainda escreve direto em ranking e estatísticas; a proteção por RLS está
-  planejada.
+- `ADMIN_EMAIL` ainda está escrito na mão em `AppSidebar.tsx` e `AdminPage.tsx` (só para
+  mostrar o menu; quem protege os dados é o servidor). A função `admin-users` passou a usar
+  `has_role` em 05/10/2026.
+- Cliente ainda escreve direto em ranking e estatísticas. A trava está escrita em
+  `supabase/migrations/20261005120000_travar_pontuacao.sql`, esperando o Filipe aplicar.
+- Revisão de segurança de 05/10/2026: `analyze-hand-history` passou a exigir login e a
+  limitar 5 análises por usuário por dia (`ai_analysis_usage`). Antes respondia a
+  qualquer chamada, até sem token, e cada chamada gastava crédito de IA. As duas funções
+  só valem em produção depois de publicadas pelo Lovable.
 - Duas vulnerabilidades moderadas no react-router que só a versão 7 resolve. Analisadas
   como não exploráveis neste app.
+- Indicação, desafios diários e conquistas novas (21/10/2026): telas `/indicar` e
+  `/desafios`, cartão de desafios no topo do treino. Tudo depende da migration
+  `20261021120000_indicacao_e_desafios.sql` (aplicar depois da `20261005120000`); sem
+  ela, as telas mostram "em breve". O prêmio do nível 5 (sorteio mensal de US$ 100) só
+  aparece com `PREMIO_INDICACAO_ATIVO = true` em `src/data/indicacao.ts`, depois da
+  autorização do Ministério da Fazenda. XP de indicação e desafio não entra no ranking.
+- App Android (21/10/2026): Capacitor em `android/`, guia completo em
+  `docs/PLAY-STORE.md`. Um app só, grátis com anúncios, compra única PRO (`gtorei_pro`)
+  que vira apoiador no banco. Código nativo fica em `src/lib/nativo/` e só carrega dentro
+  do app (`ehApp()`). No app somem o link da GGPoker e o Pix. O AAB nunca foi gerado:
+  sai pelo GitHub Actions depois dos segredos do passo 3 do guia.
+- Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.
+  Ao criar tabela nova com dados do usuário, incluir na lista `TABELAS` da função.
+- Políticas (22/10/2026): `/privacidade`, `/termos`, `/reembolso`, `/cookies` em
+  `src/pages/LegalPage.tsx`. Controlador e contato em `src/data/legal.ts`
+  (preenchidos em 22/10/2026: MEI 65.621.196, 3decor.suporte@gmail.com). O texto descreve o que o
+  código faz: mudou coleta de dados, SDK ou cobrança, mudar a política e
+  `docs/SDKS-E-DADOS.md` junto. O site não usa rastreador; não acrescentar sem rever a
+  política e o aviso de cookies (`src/components/legal/AvisoPrivacidade.tsx`).
+- Dificuldade do treino (22/10/2026): `src/lib/dificuldade.ts`, controle visível no
+  treino. Muda só quais mãos são sorteadas e o multiplicador de XP ganho (Fácil ×0,7 a
+  Elite ×1,4, com teto de 30 pontos por mão, o limite de `record_hand_result`). O
+  automático usa só o acerto das últimas 20 mãos. Substitui o viés escondido por nível
+  de XP que existia em `generateRandomHand`.
+- pg_cron não está instalado (conferido em 22/10/2026): a limpeza dos códigos de mão
+  nunca rodou. Correção em `supabase/migrations/20261022120000_limpeza_codigos_de_mao.sql`.
+- Não fazer: perfil de valor por usuário (receita de anúncio, aparelho, país) nem
+  dificuldade do treino que dependa disso. Recusado em 22/10/2026: o treino é medida de
+  habilidade, e mexer nele por monetização é padrão enganoso (LGPD e Play Store).
+
+## Conteúdo do Instagram (@gtorei)
+
+As pastas `midia/`, `pautas/`, `publicados/`, `rascunhos/` e `Gemini fotos/` são do
+perfil @gtorei, não do app, e ficam fora do git (ver `.gitignore`). As regras de
+conteúdo (voz, pilares, visual, mascote, decisões) estão em `CLAUDE-conteudo.md`:
+
+@CLAUDE-conteudo.md

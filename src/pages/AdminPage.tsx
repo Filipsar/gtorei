@@ -22,6 +22,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { fatiarPagina } from '@/lib/paginacao';
 import { MonthlyComparison } from '@/components/admin/MonthlyComparison';
+import { ReferralLevel5 } from '@/components/admin/ReferralLevel5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -662,6 +663,8 @@ export default function AdminPage() {
             </div>
 
             <MonthlyComparison createdAt={createdAtList} />
+
+            <ReferralLevel5 />
 
             {/* Top rankings + level distribution */}
             <div className="grid md:grid-cols-2 gap-4">

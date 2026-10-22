@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { abrirPreferenciasDePrivacidade } from '@/lib/consentimento';
 
 const PREDEFINED_AVATARS = [
   '🃏', '♠️', '♥️', '♦️', '♣️', '👑', '🎰', '🎲', 
@@ -239,6 +240,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <Button onClick={handleSaveProfile} className="w-full gap-2" disabled={saving}>
               {saving ? t.settings.saving : <><Save className="h-4 w-4" />{t.settings.saveChanges}</>}
             </Button>
+
+            {/* Políticas, escolha de privacidade e exclusão da conta (LGPD e Play Store) */}
+            <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+              <a href="/privacidade" className="hover:text-foreground hover:underline">Privacidade</a>
+              <a href="/termos" className="hover:text-foreground hover:underline">Termos</a>
+              <a href="/cookies" className="hover:text-foreground hover:underline">Cookies</a>
+              <a href="/reembolso" className="hover:text-foreground hover:underline">Reembolso</a>
+              <button type="button" onClick={abrirPreferenciasDePrivacidade} className="hover:text-foreground hover:underline">Preferências de privacidade</button>
+              {user && (
+                <a href="/excluir-conta" className="hover:text-destructive hover:underline">Excluir minha conta</a>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-4 mt-4">

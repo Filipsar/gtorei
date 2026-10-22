@@ -65,7 +65,7 @@ export default function DonatePage() {
             <ul className="space-y-2 text-body-md text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary">✓</span>
-                Manter o projeto 100% gratuito
+                Manter o treino grátis para todos
               </li>
               
 

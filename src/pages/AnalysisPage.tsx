@@ -60,7 +60,7 @@ function BarRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className={cn('w-28 sm:w-32 shrink-0 text-sm truncate', muted ? 'text-muted-foreground/70' : 'text-foreground')}>
+      <span className={cn('w-28 sm:w-32 shrink-0 text-sm truncate', muted ? 'text-muted-foreground' : 'text-foreground')}>
         {label}
       </span>
       <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">

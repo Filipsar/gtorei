@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown } from 'lucide-react';
+import { ehApp } from '@/lib/nativo/plataforma';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -69,6 +70,7 @@ export function AppSidebar() {
   const [fechadas, setFechadas] = useState<string[]>(lerSecoesFechadas);
   const [secaoAtivaFechadaNaMao, setSecaoAtivaFechadaNaMao] = useState(false);
   const { t } = useLanguage();
+  const app = ehApp();
 
   const secoes: SecaoNav[] = [
     {
@@ -77,6 +79,7 @@ export function AppSidebar() {
       itens: [
         { title: t.sidebar.train, url: '/treinar', icon: Zap },
         { title: t.sidebar.tables, url: '/tabelas', icon: TableProperties },
+        { title: t.sidebar.challenges, url: '/desafios', icon: CalendarCheck },
         { title: t.sidebar.beginner, url: '/iniciante', icon: BookOpen },
         { title: t.sidebar.classes, url: '#aulas', icon: GraduationCap, locked: true },
       ],
@@ -96,6 +99,7 @@ export function AppSidebar() {
       itens: [
         { title: t.sidebar.ranking, url: '/ranking', icon: Trophy },
         { title: t.sidebar.achievements, url: '/conquistas', icon: Award },
+        { title: t.sidebar.referral, url: '/indicar', icon: Gift },
         { title: t.sidebar.community, url: '/comunidade', icon: Users },
         { title: t.sidebar.search, url: '/buscar', icon: Search },
         { title: t.sidebar.profile, url: '/perfil', icon: User },
@@ -106,13 +110,20 @@ export function AppSidebar() {
       label: t.sidebar.sectionMore,
       itens: [
         { title: t.sidebar.updates, url: '/atualizacoes', icon: Bell },
-        { title: t.sidebar.support, url: '/apoiar', icon: HandHeart },
-        {
-          title: t.sidebar.ggpoker,
-          url: 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM',
-          icon: ExternalLink,
-          external: true,
-        },
+        // No app Android: o PRO no lugar do Pix (conteúdo digital só pelo
+        // Google Play) e sem o link de cadastro na GGPoker, porque a Play Store
+        // recusa app que leve a site de aposta com dinheiro real
+        ...(app
+          ? [{ title: 'Seja PRO', url: '/pro', icon: Crown }]
+          : [
+              { title: t.sidebar.support, url: '/apoiar', icon: HandHeart },
+              {
+                title: t.sidebar.ggpoker,
+                url: 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM',
+                icon: ExternalLink,
+                external: true,
+              },
+            ]),
         {
           title: t.sidebar.feedback,
           url: 'https://forms.gle/JJeiS3UvBint5jG16',

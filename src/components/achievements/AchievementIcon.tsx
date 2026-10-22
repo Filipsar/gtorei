@@ -60,7 +60,138 @@ const Chama = ({ escala = 1 }: { escala?: number }) => (
 
 const Escudo = () => <path d="M16 4l9 3.4v7.4c0 5.6-3.7 9.6-9 11.6-5.3-2-9-6-9-11.6V7.4z" />;
 
+// Desafios diários: a folha do calendário
+const Calendario = ({ x = 6, y = 7, w = 20, h = 19 }: { x?: number; y?: number; w?: number; h?: number }) => (
+  <>
+    <rect x={x} y={y} width={w} height={h} rx="3" />
+    <line x1={x} y1={y + 5} x2={x + w} y2={y + 5} />
+    <line x1={x + 5} y1={y - 2.5} x2={x + 5} y2={y + 2} />
+    <line x1={x + w - 5} y1={y - 2.5} x2={x + w - 5} y2={y + 2} />
+  </>
+);
+
+const Visto = ({ x = 16, y = 19, t = 1 }: { x?: number; y?: number; t?: number }) => (
+  <path d={`M${x - 4 * t} ${y} l${3 * t} ${3 * t} l${5.5 * t} ${-6 * t}`} />
+);
+
+// Indicação: gente, que vai virando grupo
+const Pessoa = ({ cx, cy, r = 1 }: { cx: number; cy: number; r?: number }) => (
+  <>
+    <circle cx={cx} cy={cy - 5 * r} r={3.2 * r} />
+    <path d={`M${cx - 6 * r} ${cy + 6 * r} a${6 * r} ${6 * r} 0 0 1 ${12 * r} 0`} />
+  </>
+);
+
+const Selo = () => (
+  <>
+    <circle cx={24} cy={10} r="5.5" className="fill-primary/20" />
+    <polygon points={estrela(24, 10, 3.6)} className="fill-primary stroke-none" />
+  </>
+);
+
 const DESENHOS: Record<string, ReactNode> = {
+  /* ---------- Desafios diários: calendário, e chama para os dias seguidos ---------- */
+  desafio_1: (
+    <>
+      <Calendario />
+      <Visto />
+    </>
+  ),
+  desafio_10: (
+    <>
+      <Calendario />
+      <Visto x={14} />
+      <polygon points={estrela(22.5, 19.5, 2.6)} className="fill-primary stroke-none" />
+    </>
+  ),
+  desafio_50: (
+    <>
+      <path d="M9 7.5V6a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-1.5" className="opacity-60" />
+      <Calendario x={4} y={10} w={19} h={18} />
+      <Visto x={13.5} y={21.5} />
+    </>
+  ),
+  desafio_100: (
+    <>
+      <Calendario w={17} />
+      <Visto x={14} />
+      <Selo />
+    </>
+  ),
+  dia_perfeito: (
+    <>
+      <Calendario />
+      <circle cx="11" cy="19" r="2" className="fill-primary stroke-none" />
+      <circle cx="16" cy="19" r="2" className="fill-primary stroke-none" />
+      <circle cx="21" cy="19" r="2" className="fill-primary stroke-none" />
+    </>
+  ),
+  desafio_seq_3: (
+    <>
+      <Calendario />
+      <g transform="translate(0 2.5)">
+        <Chama escala={0.5} />
+      </g>
+    </>
+  ),
+  desafio_seq_7: (
+    <>
+      <Calendario />
+      <g transform="translate(0 2)">
+        <Chama escala={0.62} />
+      </g>
+      <circle cx="10" cy="22" r="0.9" className="fill-primary stroke-none" />
+      <circle cx="22" cy="22" r="0.9" className="fill-primary stroke-none" />
+    </>
+  ),
+  desafio_seq_30: (
+    <>
+      <Calendario w={17} />
+      <g transform="translate(0 2)">
+        <Chama escala={0.62} />
+      </g>
+      <Selo />
+    </>
+  ),
+
+  /* ---------- Indicação: de um convite ao grupo inteiro ---------- */
+  indica_1: (
+    <>
+      <Pessoa cx={13} cy={17} />
+      <line x1="24" y1="11" x2="24" y2="19" />
+      <line x1="20" y1="15" x2="28" y2="15" />
+    </>
+  ),
+  indica_5: (
+    <>
+      <Pessoa cx={11} cy={17} r={0.9} />
+      <Pessoa cx={21} cy={17} r={0.9} />
+    </>
+  ),
+  indica_15: (
+    <>
+      <Pessoa cx={8} cy={19} r={0.75} />
+      <Pessoa cx={24} cy={19} r={0.75} />
+      <Pessoa cx={16} cy={16} r={0.9} />
+    </>
+  ),
+  indica_40: (
+    <>
+      <Pessoa cx={8} cy={21} r={0.72} />
+      <Pessoa cx={24} cy={21} r={0.72} />
+      <Pessoa cx={16} cy={18} r={0.85} />
+      <polygon points={estrela(16, 5, 2.6)} className="fill-primary stroke-none" />
+    </>
+  ),
+  indica_100: (
+    <>
+      <Pessoa cx={8} cy={22} r={0.7} />
+      <Pessoa cx={24} cy={22} r={0.7} />
+      <Pessoa cx={16} cy={20} r={0.8} />
+      <Coroa y={-10} escala={0.5} />
+    </>
+  ),
+
   /* ---------- Nível: da primeira carta à coroa ---------- */
   level_2: (
     <>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Brain, Heart, Instagram, LayoutGrid, Spade, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ehApp } from '@/lib/nativo/plataforma';
 
 interface BannerMessage {
   /** Texto usado a partir de 640px */
@@ -79,9 +80,19 @@ function wasDismissed(): boolean {
   }
 }
 
+// No app Android o pedido de Pix vira o PRO: lá, conteúdo digital só se vende
+// pelo Google Play (regra da loja)
+const MENSAGENS: BannerMessage[] = ehApp()
+  ? BANNER_MESSAGES.map((m) =>
+      m.link === '/apoiar'
+        ? { ...m, text: 'Seja PRO: sem anúncios e com tudo liberado.', shortText: 'Seja PRO, sem anúncios', link: '/pro', cta: 'Seja PRO', ctaShort: 'PRO' }
+        : m,
+    )
+  : BANNER_MESSAGES;
+
 export function MaintenanceBanner() {
   const navigate = useNavigate();
-  const [currentIndex, setCurrentIndex] = useState(() => lastIndex % BANNER_MESSAGES.length);
+  const [currentIndex, setCurrentIndex] = useState(() => lastIndex % MENSAGENS.length);
   const [dismissed, setDismissed] = useState(wasDismissed);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -100,12 +111,12 @@ export function MaintenanceBanner() {
     lastIndex = currentIndex;
   }, [currentIndex]);
 
-  const message = BANNER_MESSAGES[currentIndex];
+  const message = MENSAGENS[currentIndex];
 
   useEffect(() => {
     if (dismissed || reducedMotion || paused) return;
     const id = setTimeout(
-      () => setCurrentIndex((prev) => (prev + 1) % BANNER_MESSAGES.length),
+      () => setCurrentIndex((prev) => (prev + 1) % MENSAGENS.length),
       message.dwell ?? DEFAULT_DWELL
     );
     return () => clearTimeout(id);

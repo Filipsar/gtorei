@@ -25,6 +25,8 @@ export const pt = {
     profile: 'Perfil',
     search: 'Buscar',
     beginner: 'Iniciante',
+    challenges: 'Desafios',
+    referral: 'Indique e ganhe',
     classes: 'Aulas',
     updates: 'Atualizações',
     support: 'Apoie',

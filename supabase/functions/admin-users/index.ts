@@ -6,8 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_EMAIL = "farubini2@gmail.com";
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,16 +46,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userEmail = claimsData.claims.email;
-    if (userEmail !== ADMIN_EMAIL) {
+    // Use service role to bypass RLS
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Admin é quem tem o papel 'admin' em user_roles (a mesma regra das
+    // funções do banco, como admin_monthly_metrics), não um e-mail escrito
+    // aqui: e-mail no código precisava de deploy para trocar e dependia de o
+    // provedor de login nunca entregar o mesmo e-mail para outra conta.
+    const { data: ehAdmin, error: roleError } = await supabaseAdmin.rpc("has_role", {
+      _user_id: claimsData.claims.sub,
+      _role: "admin",
+    });
+    if (roleError || !ehAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Use service role to bypass RLS
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     // O PostgREST devolve no máximo 1.000 linhas por consulta, sem erro: passado
     // disso a lista vinha cortada e os totais do admin paravam de crescer
@@ -176,7 +181,9 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    // Detalhe só no log: a mensagem do banco pode expor nome de tabela e coluna
+    console.error("admin-users falhou", error);
+    return new Response(JSON.stringify({ error: "Erro ao carregar os usuários" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -345,3 +345,21 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Tema claro: o dourado do tema (#E6AC00) como cor de texto dá 1,9:1 sobre o
+   fundo quase branco, e o texto em destaque (títulos, rótulos, "Explorar", a
+   faixa do Instagram) ficava quase ilegível. Só o texto escurece, para âmbar
+   (4,8:1, passa no WCAG AA); botões e fundos seguem com o dourado. */
+@layer utilities {
+  .light .text-primary,
+  .light .hover\:text-primary:hover {
+    color: hsl(36 100% 30%);
+  }
+}
+
+/* App Android grátis: a faixa de anúncio fica por cima do rodapé da tela. A
+   altura dela (que varia com o aparelho) chega em --altura-anuncio, e a página
+   ganha esse espaço no fim para nada ficar escondido atrás. No site é 0. */
+#root {
+  padding-bottom: var(--altura-anuncio, 0px);
+}

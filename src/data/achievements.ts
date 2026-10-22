@@ -3,8 +3,8 @@
 export interface AchievementDef {
   key: string;
   name: string;
-  description: string;
-  category: 'level' | 'streak' | 'volume' | 'accuracy';
+  description: string;
+  category: 'level' | 'streak' | 'volume' | 'accuracy' | 'challenge' | 'referral';
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -44,6 +44,23 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'accuracy_98', name: 'Solver Humano', description: '98%+ de acurácia em sessão de 50+ mãos', category: 'accuracy' },
   { key: 'best_25', name: 'Vinte e Cinco Best', description: 'Obter 25 feedbacks "Best" em uma sessão', category: 'accuracy' },
   { key: 'best_50', name: 'Cinquenta Best', description: 'Obter 50 feedbacks "Best" em uma sessão', category: 'accuracy' },
+
+  // Desafios diários (concedidas pelo servidor ao resgatar: claim_daily_challenge)
+  { key: 'desafio_1', name: 'Primeiro Desafio', description: 'Resgatar o primeiro desafio diário', category: 'challenge' },
+  { key: 'desafio_10', name: 'Rotina', description: 'Resgatar 10 desafios diários', category: 'challenge' },
+  { key: 'desafio_50', name: 'Disciplina', description: 'Resgatar 50 desafios diários', category: 'challenge' },
+  { key: 'desafio_100', name: 'Cem Desafios', description: 'Resgatar 100 desafios diários', category: 'challenge' },
+  { key: 'dia_perfeito', name: 'Dia Perfeito', description: 'Resgatar os 3 desafios do mesmo dia', category: 'challenge' },
+  { key: 'desafio_seq_3', name: 'Constância', description: 'Desafio resgatado em 3 dias seguidos', category: 'challenge' },
+  { key: 'desafio_seq_7', name: 'Semana Cheia', description: 'Desafio resgatado em 7 dias seguidos', category: 'challenge' },
+  { key: 'desafio_seq_30', name: 'Mês de Ferro', description: 'Desafio resgatado em 30 dias seguidos', category: 'challenge' },
+
+  // Indicação (concedidas pelo servidor quando o indicado completa 50 mãos)
+  { key: 'indica_1', name: 'Primeiro Convite', description: '1 amigo indicado treinou 50 mãos', category: 'referral' },
+  { key: 'indica_5', name: 'Anfitrião', description: '5 indicados válidos', category: 'referral' },
+  { key: 'indica_15', name: 'Recrutador', description: '15 indicados válidos', category: 'referral' },
+  { key: 'indica_40', name: 'Líder de Mesa', description: '40 indicados válidos', category: 'referral' },
+  { key: 'indica_100', name: 'Embaixador GTORei', description: '100 indicados válidos', category: 'referral' },
 ];
 
 export function getAchievement(key: string): AchievementDef | undefined {
@@ -55,4 +72,6 @@ export const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
   streak: 'Sequência',
   volume: 'Volume',
   accuracy: 'Precisão',
+  challenge: 'Desafios diários',
+  referral: 'Indicação',
 };

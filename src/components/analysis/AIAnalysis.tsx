@@ -1,3 +1,4 @@
+import { anonimizarMaos } from '@/lib/anonimizarMaos';
 import { useRef, useState } from 'react';
 import { Upload, FileText, Loader2, Brain, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,9 +93,14 @@ export function AIAnalysis() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-hand-history', {
-        body: { hands: parsed },
+        body: { hands: anonimizarMaos(parsed) },
       });
-      if (error) throw error;
+      if (error) {
+        // Em resposta 4xx/5xx o supabase-js só diz "non-2xx status code"; a
+        // mensagem útil (limite do dia, arquivo grande) vem no corpo
+        const corpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
+        throw new Error(corpo?.error ?? 'Tente novamente.');
+      }
       if (data?.error) throw new Error(data.error);
       setAnalysis(data.analysis as AnalysisResult);
       toast({ title: 'Análise concluída!', description: 'Veja o resultado abaixo.' });

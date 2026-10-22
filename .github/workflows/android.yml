@@ -1,0 +1,92 @@
+# Gera o pacote do app Android (AAB) assinado para enviar à Play Store.
+#
+# Roda à mão (aba Actions > "App Android" > Run workflow) ou ao criar uma tag
+# android-v1.2.3. O AAB fica nos artefatos da execução; o envio ao Play Console
+# é feito pelo Filipe. Passo a passo e segredos em docs/PLAY-STORE.md.
+name: App Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Versão que aparece na loja (ex.: 1.0.0)'
+        required: true
+        default: '1.0.0'
+  push:
+    tags: ['android-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Site (vai dentro do app)
+        run: npm run build
+        env:
+          VITE_ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          VITE_ADMOB_INTERSTICIAL_ID: ${{ vars.ADMOB_INTERSTICIAL_ID }}
+
+      - run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Chave de upload (dos segredos do repositório)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Falta o segredo ANDROID_KEYSTORE_BASE64 (docs/PLAY-STORE.md, passo 3)"
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Versão
+        # Entra por variável de ambiente, nunca colado no script: texto digitado
+        # no formulário não vira comando
+        env:
+          VERSAO_PEDIDA: ${{ github.event.inputs.versao }}
+        run: |
+          V="${VERSAO_PEDIDA:-${GITHUB_REF_NAME#android-v}}"
+          if ! [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Versão '$V' fora do formato 1.2.3"
+            exit 1
+          fi
+          echo "VERSAO=$V" >> "$GITHUB_ENV"
+
+      - name: AAB assinado
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease \
+            -PVERSION_CODE="$GITHUB_RUN_NUMBER" \
+            -PVERSION_NAME="$VERSAO" \
+            -PADMOB_APP_ID="$ADMOB_APP_ID"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gtorei-${{ env.VERSAO }}-${{ github.run_number }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error

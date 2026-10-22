@@ -27,6 +27,8 @@ export const en: Translations = {
     profile: 'Profile',
     search: 'Search',
     beginner: 'Beginner',
+    challenges: 'Challenges',
+    referral: 'Invite friends',
     classes: 'Classes',
     updates: 'Updates',
     support: 'Support',

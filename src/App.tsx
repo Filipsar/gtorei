@@ -3,12 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { lazyPage } from "@/lib/lazyPage";
+import { CapturaConvite } from "@/components/referral/CapturaConvite";
+import { PonteApp } from "@/components/nativo/PonteApp";
+import { AvisoPrivacidade } from "@/components/legal/AvisoPrivacidade";
+import { ehApp } from "@/lib/nativo/plataforma";
 // A home entra direto no pacote principal: é a primeira tela de quem chega
 // pelo Google e a que conta na nota de velocidade. O resto carrega sob demanda.
 import HomePage from "./pages/HomePage";
@@ -31,6 +35,12 @@ const SearchPage = lazyPage(() => import("./pages/SearchPage"));
 const CommunityPage = lazyPage(() => import("./pages/CommunityPage"));
 const BeginnerGuidePage = lazyPage(() => import("./pages/BeginnerGuidePage"));
 const AdminPage = lazyPage(() => import("./pages/AdminPage"));
+const ReferralPage = lazyPage(() => import("./pages/ReferralPage"));
+const ChallengesPage = lazyPage(() => import("./pages/ChallengesPage"));
+const ProPage = lazyPage(() => import("./pages/ProPage"));
+const AppReturnPage = lazyPage(() => import("./pages/AppReturnPage"));
+const LegalPage = lazyPage(() => import("./pages/LegalPage"));
+const DeleteAccountPage = lazyPage(() => import("./pages/DeleteAccountPage"));
 
 const PageLoading = () => (
   <div className="flex min-h-screen items-center justify-center" role="status" aria-label="Carregando">
@@ -48,11 +58,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
            <LanguageProvider>
+          <CapturaConvite />
+          <PonteApp />
           <Suspense fallback={<PageLoading />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/apoiar" element={<DonatePage />} />
+            {/* No app, conteúdo digital só se vende pelo Google Play (regra da loja): o Pix vira o PRO */}
+            <Route path="/apoiar" element={ehApp() ? <Navigate to="/pro" replace /> : <DonatePage />} />
             <Route path="/treinar" element={<ProtectedRoute><TrainPage /></ProtectedRoute>} />
             <Route path="/tabelas" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
             <Route path="/analise" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
@@ -67,11 +80,22 @@ const App = () => (
             <Route path="/comunidade" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
             <Route path="/iniciante" element={<BeginnerGuidePage />} />
             <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+            <Route path="/indicar" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
+            <Route path="/desafios" element={<ProtectedRoute><ChallengesPage /></ProtectedRoute>} />
+            <Route path="/pro" element={<ProtectedRoute><ProPage /></ProtectedRoute>} />
+            <Route path="/app/retorno" element={<AppReturnPage />} />
+            <Route path="/excluir-conta" element={<DeleteAccountPage />} />
+            <Route path="/privacidade" element={<LegalPage doc="privacidade" />} />
+            <Route path="/termos" element={<LegalPage doc="termos" />} />
+            <Route path="/reembolso" element={<LegalPage doc="reembolso" />} />
+            <Route path="/cookies" element={<LegalPage doc="cookies" />} />
             <Route path="/gtoreiacessibilidade" element={<AccessibilityPage />} />
             <Route path="/atualizacoes" element={<UpdatesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
+          {/* Por último no HTML: o primeiro Tab da página é o "pular para o conteúdo" */}
+          <AvisoPrivacidade />
           </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>

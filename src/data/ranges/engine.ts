@@ -402,6 +402,30 @@ function assignHandActions(
   return actions;
 }
 
+// Ação principal: é a que pinta a matriz e dá a nota. Regra única para todas
+// as ranges — antes eram três, e o empate 50/50 virava fold no heurístico,
+// jogo no push/fold e o de EV maior na abertura calculada; na interpolação
+// dependia da ordem do array. A interpolação também misturava três ações
+// (K7s no HU BB 11bb: fold 44, call 37, all-in 19) e dava fold a uma mão que
+// continua em 56%, enquanto uma mais fraca saía call.
+// Fold só é a principal se passar de 50%, ou se empatar/vencer a ação de jogo
+// mais frequente e essa não tiver EV positivo (mão marginal da range por EV).
+const AGGRESSION: ActionType[] = ['allin', 'raise', 'call', 'fold'];
+
+function pickPrimaryAction(actions: ActionFrequency[]): ActionType {
+  const fold = actions.find((a) => a.action === 'fold')?.frequency ?? 0;
+  const plays = actions.filter((a) => a.action !== 'fold' && a.frequency > 0);
+  if (plays.length === 0 || fold > 50) return 'fold';
+  // Mais frequente; no empate, EV maior; depois a mais agressiva
+  const best = [...plays].sort((x, y) =>
+    y.frequency - x.frequency ||
+    (y.ev ?? 0) - (x.ev ?? 0) ||
+    AGGRESSION.indexOf(x.action) - AGGRESSION.indexOf(y.action)
+  )[0];
+  if (fold >= best.frequency && (best.ev ?? 0) <= 0) return 'fold';
+  return best.action;
+}
+
 // ============================================================
 // RANGES CALCULADAS (push/fold de stack curto)
 // ============================================================
@@ -479,12 +503,10 @@ function getOpenEvRange(gameMode: GameMode, position: Position, stack: number): 
       { action: 'raise', frequency: raise, ev: Number(d.er.toFixed(2)) },
       { action: 'fold', frequency: 100 - raise - allin, ev: 0 },
     ];
-    // Ação principal: a mais frequente; no empate, a de EV maior
-    const principal = [...actions].sort((x, y) => y.frequency - x.frequency || y.ev - x.ev)[0];
     return {
       hand: entry.hand,
       actions,
-      primaryAction: principal.action,
+      primaryAction: pickPrimaryAction(actions),
       suited: entry.suited,
       pair: entry.pair,
     };
@@ -548,7 +570,7 @@ function getSolvedRange(
     return {
       hand: entry.hand,
       actions,
-      primaryAction: f >= 50 ? acao : 'fold',
+      primaryAction: pickPrimaryAction(actions),
       suited: entry.suited,
       pair: entry.pair,
     };
@@ -598,7 +620,7 @@ export function generateModeRange(
     return {
       hand: entry.hand,
       actions,
-      primaryAction: actions.reduce((a, b) => a.frequency > b.frequency ? a : b).action,
+      primaryAction: pickPrimaryAction(actions),
       suited: entry.suited,
       pair: entry.pair,
     };
@@ -671,7 +693,7 @@ export function interpolateRange(
     return {
       hand: hL.hand,
       actions,
-      primaryAction: actions.reduce((a, b) => a.frequency > b.frequency ? a : b).action,
+      primaryAction: pickPrimaryAction(actions),
       suited: hL.suited,
       pair: hL.pair,
     };
