@@ -95,6 +95,8 @@ describe('abertura por EV: composição', () => {
 });
 
 describe('abertura por EV: consistência', () => {
+  // Percorre todas as ranges: leva ~1 s sozinho, mas passa dos 5 s padrão
+  // quando a máquina está carregada (rodando junto com o build, por exemplo)
   it('frequências somam 100 em toda mesa, posição e stack', () => {
     const mesas: [GameMode, Position[]][] = [
       ['8max', OITO], ['6max', ['UTG', 'HJ', 'CO', 'BTN', 'SB']],
@@ -106,7 +108,7 @@ describe('abertura por EV: consistência', () => {
         expect(soma, `${modo} ${p} ${s}BB ${h.hand}`).toBe(100);
       }
     }
-  });
+  }, 15_000);
 
   it('a ação principal é a de EV mais alto quando a mão não mistura', () => {
     for (const p of OITO) for (const s of [10, 30, 100]) {

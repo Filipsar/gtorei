@@ -17,6 +17,13 @@ interface PlayerSeatProps {
   showCards?: boolean;
   /** Metade da mesa em que o assento está: decide se o balão de ação sai por cima ou por baixo */
   half?: 'top' | 'bottom';
+  /**
+   * Assento colado na borda de cima. Lá, cartas embaixo cobriam as fichas da
+   * aposta e o balão por cima saía da mesa (tampava a barra de progresso e o
+   * controle de dificuldade). Então as cartas vão para a esquerda e os balões
+   * para a direita do assento.
+   */
+  noTopo?: boolean;
   className?: string;
 }
 
@@ -79,8 +86,13 @@ export function PlayerSeat({
   lastAction,
   showCards = false,
   half = 'bottom',
+  noTopo = false,
   className
 }: PlayerSeatProps) {
+  // Onde ficam os balões de ação e de fold: ao lado no topo, senão em direção à borda
+  const lugarDoBalao = noTopo
+    ? 'left-full top-1/2 ml-1.5 -translate-y-1/2'
+    : cn('left-1/2 -translate-x-1/2', half === 'top' ? 'bottom-full mb-1' : 'top-full mt-1');
   const positionColorClass = getPositionColorClass(position);
 
   return (
@@ -136,7 +148,7 @@ export function PlayerSeat({
       {/* Cartas do vilão, viradas para baixo até o showdown. O data-cartas é o
           que a mesa procura para jogá-las ao centro quando ele desiste. */}
       {cards && cards.length > 0 && !isHero && (
-        <div className="mt-1" data-cartas>
+        <div className={noTopo ? 'absolute right-full top-1/2 mr-1.5 -translate-y-1/2' : 'mt-1'} data-cartas>
           <HandDisplay cards={cards} size="xs" faceDown={!showCards} />
         </div>
       )}
@@ -146,8 +158,8 @@ export function PlayerSeat({
       {lastAction && !hasFolded && (
         <div
           className={cn(
-            'absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-accent px-1.5 py-0.5 text-[9px] font-bold text-accent-foreground shadow-md sm:text-[10px]',
-            half === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+            'absolute z-20 whitespace-nowrap rounded-md bg-accent px-1.5 py-0.5 text-[9px] font-bold text-accent-foreground shadow-md sm:text-[10px]',
+            lugarDoBalao
           )}
         >
           {lastAction.action}
@@ -158,8 +170,8 @@ export function PlayerSeat({
       {hasFolded && (
         <div
           className={cn(
-            'absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/60',
-            half === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+            'absolute z-20 whitespace-nowrap rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/60',
+            lugarDoBalao
           )}
         >
           Fold

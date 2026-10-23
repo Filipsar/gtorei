@@ -50,6 +50,8 @@ describe('ação principal', () => {
     }
   });
 
+  // Percorre todas as ranges: leva ~1 s sozinho, mas passa dos 5 s padrão
+  // quando a máquina está carregada (rodando junto com o build, por exemplo)
   it('onde a fold cresce ao descer na escala, nenhuma mão foldada fica acima de uma que continua', () => {
     // Ranges calculadas por EV não seguem a ordem de equity e ficam de fora
     // sozinhas: nelas a fold não é monótona.
@@ -62,7 +64,7 @@ describe('ação principal', () => {
       if (buracos.length) quebradas.push(`${rotulo}: ${buracos.map((x) => x.hand).join(', ')} foldam acima de ${h[ultimaQueContinua].hand}`);
     }
     expect(quebradas).toEqual([]);
-  });
+  }, 15_000);
 
   it('mão com fold até 50% e jogo de EV positivo nunca sai fold, na tabela ou interpolada', () => {
     // Pega o empate 50/50, que antes virava fold no heurístico e jogo no

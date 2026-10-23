@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.23.1',
+    date: '23/10/2026',
+    type: 'fix',
+    title: 'Fichas do Vilão Visíveis e Rei no Centro da Mesa',
+    description: 'Quando o vilão sentava no topo da mesa, as cartas dele cobriam as fichas da aposta e o aviso da jogada ("Raise 2.5BB") saía da mesa, por cima da barra de progresso e da dificuldade. Agora as cartas ficam ao lado do assento, o aviso também, e a aposta aparece inteira. Nos assentos laterais de cima as fichas ganharam folga das cartas. O centro do feltro trocou a marca antiga pelo rei, só como enfeite: antes, um clique sem querer no meio da mesa levava para a página inicial e encerrava o treino.',
+  },
+  {
     version: '1.23.0',
     date: '23/10/2026',
     type: 'feature',

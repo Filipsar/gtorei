@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { carregarGsap, type Gsap } from '@/lib/motion';
 import { Position, POSITIONS } from '@/data/gtoRanges';
@@ -7,7 +6,6 @@ import { PlayerSeat, getPositionColor } from './PlayerSeat';
 import { PlayerBet } from './ChipStack';
 import { CommunityCards } from './CommunityCards';
 import { CardType } from './PlayingCard';
-import gtoreiCrown from '@/assets/gtorei-crown.png';
 
 // Tipos de ação para o histórico
 export interface ActionEntry {
@@ -54,6 +52,11 @@ const TAU = Math.PI * 2;
 // deixam o assento encostado na borda, meio dentro meio fora.
 const RAIO_ASSENTO = 45;
 const RAIO_APOSTA = 31;
+// Na metade de cima as cartas viradas do vilão ficam embaixo do assento, entre
+// ele e a aposta; e o assento do topo encosta na borda, com a mesa achatada.
+// Com o raio normal as fichas colavam nas cartas ou na base do assento.
+const ehTopo = (angulo: number) => Math.sin(angulo) < -0.8;
+const raioAposta = (angulo: number) => (ehTopo(angulo) ? 26 : Math.sin(angulo) < 0 ? 28 : RAIO_APOSTA);
 const RAIO_BOTAO = 37;
 // Desloca o botao do dealer de lado: em cima do mesmo raio ele cobria a aposta
 const DESVIO_BOTAO = 0.2;
@@ -113,7 +116,6 @@ export function PokerTable({
   visiblePositions,
   className
 }: PokerTableProps) {
-  const navigate = useNavigate();
 
   const visiveis = visiblePositions?.length ? visiblePositions : POSITIONS;
   const angulos = anguloDosAssentos(visiveis, heroPosition);
@@ -250,7 +252,7 @@ export function PokerTable({
       const elemento = apostaRefs.current.get(pos);
       const angulo = angulosRef.current.get(pos);
       if (!elemento || angulo === undefined) return;
-      const { x, y } = deslocamento(angulo, RAIO_ASSENTO, RAIO_APOSTA);
+      const { x, y } = deslocamento(angulo, RAIO_ASSENTO, raioAposta(angulo));
       gsap.from(elemento, { x, y, scale: 0.7, opacity: 0, duration: 0.28, ease: 'power2.out' });
     });
 
@@ -274,9 +276,14 @@ export function PokerTable({
       return;
     }
 
+    // Da aposta até o centro, para cada ficha que está sendo varrida
+    const ateOPote = (i: number) => {
+      const angulo = angulosRef.current.get(varrendo[i].position) ?? 0;
+      return deslocamento(angulo, raioAposta(angulo), 0);
+    };
     gsap.to(nos, {
-      x: (i: number) => -deslocamento(angulosRef.current.get(varrendo[i].position) ?? 0, RAIO_APOSTA, 0).x,
-      y: (i: number) => -deslocamento(angulosRef.current.get(varrendo[i].position) ?? 0, RAIO_APOSTA, 0).y,
+      x: (i: number) => -ateOPote(i).x,
+      y: (i: number) => -ateOPote(i).y,
       scale: 0.45,
       opacity: 0,
       duration: 0.42,
@@ -313,26 +320,26 @@ export function PokerTable({
 
   return (
     <div className={cn('flex flex-col items-center gap-2 sm:gap-4', className)}>
-      <div ref={mesaRef} className="relative mx-auto aspect-[2/1] w-full max-w-2xl px-6 sm:px-8">
+      {/* mt: o assento do topo passa um pouco da borda da mesa; sem folga, encostava na barra de progresso */}
+      <div ref={mesaRef} className="relative mx-auto mt-3 aspect-[2/1] w-full max-w-2xl px-6 sm:mt-4 sm:px-8">
         {/* Feltro */}
         <div className="absolute inset-x-6 inset-y-3 overflow-hidden rounded-[50%] border-[6px] border-[hsl(var(--table-border))] table-felt shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)] sm:inset-x-8 sm:inset-y-4">
           {/* Fio dourado interno, no lugar da borda marrom que destoava do resto do site */}
           <div className="pointer-events-none absolute inset-2 rounded-[50%] border border-primary/20" />
           <div className="pointer-events-none absolute inset-0 rounded-[50%] shadow-[inset_0_0_60px_rgba(0,0,0,0.55)]" />
 
-          {/* Marca d'água no centro */}
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            title="Voltar ao início"
-            className="absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 opacity-[0.13] transition-opacity hover:opacity-[0.22]"
-          >
-            <img src={gtoreiCrown} alt="" className="h-8 w-8 object-contain sm:h-12 sm:w-12" />
-            <span className="text-lg font-bold uppercase tracking-[0.2em] sm:text-2xl">
-              <span className="text-primary">GTO</span>
-              <span className="text-white">REI</span>
-            </span>
-          </button>
+          {/* O rei (mascote) no centro do feltro, como marca d'água. Só enfeite:
+              a marca antiga era um botão para a página inicial, e um clique sem
+              querer no meio da mesa tirava a pessoa do treino. */}
+          <img
+            src="/mascote/rei-pensando.webp"
+            alt=""
+            aria-hidden="true"
+            width={346}
+            height={397}
+            decoding="async"
+            className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[42%] w-auto -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.16]"
+          />
         </div>
 
         {/* Cartas comunitárias e pote, empilhados no centro */}
@@ -381,7 +388,7 @@ export function PokerTable({
               key={`bet-${bet.position}`}
               ref={(no) => apostaRefs.current.set(bet.position, no)}
               className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-              style={pontoNaElipse(angulos.get(bet.position)!, RAIO_APOSTA)}
+              style={pontoNaElipse(angulos.get(bet.position)!, raioAposta(angulos.get(bet.position)!))}
             >
               <PlayerBet amount={bet.amount} />
             </div>
@@ -398,7 +405,7 @@ export function PokerTable({
                 if (no) varreduraRefs.current[i] = no;
               }}
               className="pointer-events-none absolute z-[9] -translate-x-1/2 -translate-y-1/2"
-              style={pontoNaElipse(angulos.get(bet.position)!, RAIO_APOSTA)}
+              style={pontoNaElipse(angulos.get(bet.position)!, raioAposta(angulos.get(bet.position)!))}
             >
               <PlayerBet amount={bet.amount} />
             </div>
@@ -470,6 +477,7 @@ export function PokerTable({
                 stack={stackToShow}
                 showCards={shouldShowCards}
                 half={Math.sin(angulo) < 0 ? 'top' : 'bottom'}
+                noTopo={ehTopo(angulo)}
                 // O villainAction só existe quando ele aposta ou aumenta. Sem o
                 // segundo caso, pagar e dar check não apareciam na mesa.
                 lastAction={
