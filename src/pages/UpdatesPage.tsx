@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.24.0',
+    date: '23/10/2026',
+    type: 'feature',
+    title: 'Simulado, Tela de Treino Nova e Menos XP no Open Raise',
+    description: 'Modo novo: o Simulado. Você joga 10, 20 ou 30 mãos seguidas sem ver a resposta e, no fim, recebe a correção mão a mão e o XP pelos acertos ("Best" vale 15, "Correta" 10 e erro tira 5, com bônus de ×1,25 a partir de 80% de acerto e de ×1,5 a partir de 90%). O XP só vale a partir de 10 mãos e é calculado pelo servidor. A tela de começar o treino também mudou: atalhos para Simulado e Aleatório no topo, as mesas em cartões, e a configuração em blocos (formato, cenário, posição, stack) com o botão de jogar sempre à vista. O Open Raise, o cenário mais fácil de decorar, passou a dar metade do XP.',
+  },
+  {
     version: '1.23.1',
     date: '23/10/2026',
     type: 'fix',

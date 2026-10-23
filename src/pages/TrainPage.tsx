@@ -16,6 +16,19 @@ import { ehApp } from '@/lib/nativo/plataforma';
 import { useDificuldade } from '@/hooks/useDificuldade';
 import { ajustarPontos, limitarPontos, sortearMao } from '@/lib/dificuldade';
 import { DificuldadeControle } from '@/components/poker/DificuldadeControle';
+import { SimuladoResultado } from '@/components/train/SimuladoResultado';
+import { Chip, OpcaoGrande, Secao } from '@/components/train/ConfigUI';
+import { ModeIcon } from '@/components/poker/ModeIcon';
+import {
+  CENARIOS_FORA_DO_SIMULADO,
+  CENARIO_DA_SESSAO_SIMULADO,
+  MINIMO_PARA_XP,
+  REGRA_DO_XP,
+  TAMANHOS_SIMULADO,
+  type Formato,
+  type RespostaSimulado,
+  type ResultadoSimulado,
+} from '@/lib/simulado';
 import { DecisionFeedback } from '@/components/poker/DecisionFeedback';
 import { ActionHistory, ActionEntry } from '@/components/poker/ActionHistory';
 import { generateCardsFromHand, CardType, HandDisplay } from '@/components/poker/PlayingCard';
@@ -47,7 +60,7 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3 } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, ClipboardCheck } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
@@ -55,7 +68,7 @@ import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
-type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning';
+type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning' | 'simuladoResultado';
 
 export default function TrainPage() {
   // Onboarding
@@ -68,9 +81,28 @@ export default function TrainPage() {
   // No modo aleatório, trainingMode guarda o que saiu na mão atual
   const [modoAleatorio, setModoAleatorio] = useState(false);
   const { isSupporter, loading: carregandoApoio } = useSupporter();
+  // Simulado: série sem resposta a cada mão, correção e XP no fim (src/lib/simulado.ts)
+  const [formato, setFormato] = useState<Formato>('livre');
+  const [tamanhoSimulado, setTamanhoSimulado] = useState<number>(20);
+  const [respostasSimulado, setRespostasSimulado] = useState<RespostaSimulado[]>([]);
+  const [resultadoSimulado, setResultadoSimulado] = useState<ResultadoSimulado | null>(null);
+  const [corrigindoSimulado, setCorrigindoSimulado] = useState(false);
+  const [erroSimulado, setErroSimulado] = useState<string | null>(null);
+  // As mãos são gravadas sem esperar; a correção espera todas chegarem ao banco
+  const gravacoesSimulado = useRef<PromiseLike<unknown>[]>([]);
+  // nextHand é declarada depois de handleAction; o simulado chama por aqui
+  const proximaMaoRef = useRef<() => void>(() => {});
+  const emSimulado = formato === 'simulado';
+
   const cenarioBloqueado = useCallback(
     (s: Scenario) => CENARIOS_APOIADOR.includes(s) && !isSupporter,
     [isSupporter]
+  );
+  // O que o sorteio pode trazer: além do bloqueio de apoiador, o simulado não
+  // tem a Simulação (pós-flop com várias decisões por mão)
+  const bloqueioDoSorteio = useCallback(
+    (s: Scenario) => cenarioBloqueado(s) || (emSimulado && CENARIOS_FORA_DO_SIMULADO.includes(s)),
+    [cenarioBloqueado, emSimulado]
   );
   const modoBloqueado = useCallback(
     (m: ModeChoice) => MODOS_APOIADOR.includes(m) && !isSupporter,
@@ -255,7 +287,7 @@ export default function TrainPage() {
       stacksEscolhidos: selectedStacks,
       stackAleatorio: randomStack,
       multiwayLigado: simulacaoMultiway,
-      bloqueado: cenarioBloqueado,
+      bloqueado: bloqueioDoSorteio,
     });
 
     const hand = generateRandomHand();
@@ -269,7 +301,7 @@ export default function TrainPage() {
     const estado = initializeHandState(cenario, posicao, stack, hand, cards, assentos, stackDist.villain, multiway);
 
     return { cenario, posicao, stack, hand, cards, stackDist, estado };
-  }, [scenario, randomScenario, selectedPositions, randomPosition, selectedStacks, randomStack, simulacaoMultiway, cenarioBloqueado, generateRandomHand]);
+  }, [scenario, randomScenario, selectedPositions, randomPosition, selectedStacks, randomStack, simulacaoMultiway, bloqueioDoSorteio, generateRandomHand]);
 
   const startGame = useCallback((opcoes?: { aleatorio?: boolean; modo?: TrainingMode }) => {
     // No aleatório o modo sai aqui, e é ele que vale para a mão inteira. Quando
@@ -292,7 +324,8 @@ export default function TrainPage() {
         .from('training_sessions')
         .insert({
           user_id: user.id,
-          scenario: selectedScenario,
+          // claim_simulado só corrige sessão marcada assim
+          scenario: emSimulado ? CENARIO_DA_SESSAO_SIMULADO : selectedScenario,
           position: pos,
           stack: stk,
         })
@@ -346,8 +379,12 @@ export default function TrainPage() {
     setIsCurrentHandFavorited(isHandFavorited(hand, selectedScenario, pos, stk));
     setSessionScore(0);
     setHandsPlayed(0);
+    setRespostasSimulado([]);
+    setResultadoSimulado(null);
+    setErroSimulado(null);
+    gravacoesSimulado.current = [];
     setPhase('playing');
-  }, [montarMao, scenario, randomPosition, randomStack, trainingMode, modoAleatorio, heroBounty, user]);
+  }, [montarMao, scenario, randomPosition, randomStack, trainingMode, modoAleatorio, heroBounty, user, emSimulado]);
 
   // Record a scored hand on the server (XP, level, session stats and ranking)
   const recordHand = useCallback(async (params: {
@@ -414,6 +451,55 @@ export default function TrainPage() {
     }
   }, [user, refreshProfile, checkAchievements]);
 
+  // Fim do simulado: espera as mãos chegarem ao banco e pede a correção ao
+  // servidor, que conta acertos e erros e paga o XP (claim_simulado)
+  const terminarSimulado = useCallback(async (respostas: RespostaSimulado[]) => {
+    setPhase('simuladoResultado');
+    // Só agora o acerto entra na dificuldade automática: no meio da série, o
+    // aviso de "você acertou X das últimas 20" entregaria a resposta
+    for (const r of respostas) dificuldade.registrar(r.feedback === 'best' || r.feedback === 'correct');
+    setRespostasSimulado(respostas);
+    setResultadoSimulado(null);
+    setErroSimulado(null);
+    if (respostas.length < MINIMO_PARA_XP || !user) return;
+    setCorrigindoSimulado(true);
+    try {
+      await Promise.all(gravacoesSimulado.current);
+      const sessionId = supabaseSessionId.current ?? (sessionPromise.current ? await sessionPromise.current : null);
+      if (!sessionId) throw new Error('sem_sessao');
+      void supabase
+        .from('training_sessions')
+        .update({ ended_at: new Date().toISOString() })
+        .eq('id', sessionId)
+        .then(() => undefined);
+      supabaseSessionId.current = null;
+      sessionPromise.current = null;
+
+      const { data, error } = await supabase.rpc('claim_simulado', {
+        _session_id: sessionId,
+        _dificuldade: dificuldade.efetiva,
+      });
+      if (error) throw error;
+      setResultadoSimulado(data as unknown as ResultadoSimulado);
+      await refreshProfile();
+      // Desafios do dia/semana/mês contam estas mãos
+      window.dispatchEvent(new Event(EVENTO_MAO_REGISTRADA));
+    } catch (e) {
+      const msg = (e as { message?: string } | null)?.message ?? '';
+      setErroSimulado(
+        msg.includes('simulado_curto')
+          ? 'Algumas mãos não chegaram ao servidor, e o XP só vale a partir de 10. A correção abaixo vale do mesmo jeito.'
+          : 'Não deu para calcular o XP agora. A correção abaixo vale do mesmo jeito.',
+      );
+    } finally {
+      setCorrigindoSimulado(false);
+    }
+    // App grátis: entre treinos é o lugar do anúncio de tela cheia
+    if (ehApp() && !isSupporter) {
+      void import('@/lib/nativo/anuncios').then(({ talvezMostrarIntersticial }) => talvezMostrarIntersticial());
+    }
+  }, [user, dificuldade, refreshProfile, isSupporter]);
+
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
     if (!handState || !currentHandId) return;
@@ -465,11 +551,54 @@ export default function TrainPage() {
         feedback.points = Math.round(feedback.points * 1.2); // 20% mais perda
       }
     }
+    // Open Raise (e o open shove de stack curto, que é o mesmo cenário): metade
+    // do ganho. É o cenário com mais fold óbvio, e rendia XP fácil (23/10/2026).
+    // O simulado usa o mesmo peso no servidor (claim_simulado).
+    if (scenario === 'openRaise' && feedback.points > 0) {
+      feedback.points = Math.round(feedback.points * 0.5);
+    }
 
     // XP ganho acompanha a dificuldade (mostrado no controle); perda não muda
     feedback.points = limitarPontos(ajustarPontos(feedback.points, dificuldade.efetiva));
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
+
+    // Simulado: nada de resposta agora. A mão vai para o banco com 0 ponto
+    // (o XP sai no fim, de claim_simulado) e a próxima entra direto.
+    if (emSimulado && scenario !== 'simulation') {
+      const resposta: RespostaSimulado = {
+        mao: handName,
+        cenario: scenario,
+        posicao: handState.heroPosition,
+        stack: effectiveStack,
+        suaAcao: action,
+        acaoCerta: handData.primaryAction,
+        feedback: feedback.type,
+        evPerdido: feedback.evLoss,
+      };
+      markHandAsPlayed(currentHandId, action, 0, feedback.type);
+      gravacoesSimulado.current.push(recordHand({
+        hand: handName,
+        scenario,
+        position: handState.heroPosition,
+        stack: handState.heroStack,
+        userAction: action,
+        correctAction: handData.primaryAction,
+        feedback: feedback.type,
+        points: 0,
+        evLoss: feedback.evLoss,
+        handCode: currentUniqueHandId,
+        gameMode: gm,
+        villainPosition: handState.villainPosition ?? null,
+        effectiveStack,
+      }));
+      setHandsPlayed(prev => prev + 1);
+      const todas = [...respostasSimulado, resposta];
+      setRespostasSimulado(todas);
+      if (todas.length >= tamanhoSimulado) void terminarSimulado(todas);
+      else proximaMaoRef.current();
+      return;
+    }
 
     // In simulation mode, defer scoring until hand completes
     const isSimulation = scenario === 'simulation';
@@ -587,7 +716,7 @@ export default function TrainPage() {
     // currentStackDistribution e currentUniqueHandId entram aqui porque são
     // lidos lá dentro: sem eles a função podia ficar com os valores da mão
     // anterior e gravar o stack efetivo — ou o ID — da mão errada.
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar, emSimulado, respostasSimulado, tamanhoSimulado, terminarSimulado]);
 
   // Calculate postflop bonus/penalty from street verdicts
   const calculatePostflopBonus = useCallback((): number => {
@@ -818,6 +947,7 @@ export default function TrainPage() {
     setSimulationStreetActions([]);
     setPhase('playing');
   }, [montarMao, scenario, trainingMode, modoAleatorio, heroBounty]);
+  proximaMaoRef.current = nextHand;
 
   // Toggle favorite hand
   const toggleFavoriteHand = useCallback(() => {
@@ -885,6 +1015,12 @@ export default function TrainPage() {
 
   // End session
   const endSession = useCallback(() => {
+    // Simulado encerrado antes do fim: corrige o que foi jogado
+    if (emSimulado && respostasSimulado.length > 0) {
+      endCurrentSession();
+      void terminarSimulado(respostasSimulado);
+      return;
+    }
     endCurrentSession();
 
     // Check accuracy achievements before resetting
@@ -927,7 +1063,7 @@ export default function TrainPage() {
     setPreviousHandResult(null);
     setCurrentStreak(0);
     setSessionBestCount(0);
-  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements, modoAleatorio, isSupporter]);
+  }, [user, handsPlayed, correctHandsCount, sessionScore, sessionBestCount, checkAchievements, modoAleatorio, isSupporter, emSimulado, respostasSimulado, terminarSimulado]);
 
   // Clear played hands session
   const handleClearSession = useCallback(() => {
@@ -983,24 +1119,55 @@ export default function TrainPage() {
     return modoAleatorio && nome ? `Aleatório · ${nome}` : nome;
   };
 
+  // Fim do simulado: correção e XP
+  if (phase === 'simuladoResultado') {
+    return (
+      <MainLayout>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+          <SimuladoResultado
+            respostas={respostasSimulado}
+            resultado={resultadoSimulado}
+            corrigindo={corrigindoSimulado}
+            erro={erroSimulado}
+            onNovo={() => startGame()}
+            onSair={() => setPhase('config')}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
   // Mode selection phase
   if (phase === 'modeSelect') {
     return (
       <MainLayout>
-        <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
-              <Zap className="h-8 w-8 text-primary" />
-              Treino Rápido
-            </h1>
-            <p className="text-body-sm text-muted-foreground mt-1">
-              Configure seu treino e pratique decisões GTO
-            </p>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
+                <Zap className="h-8 w-8 text-primary" />
+                Treinar
+              </h1>
+              <p className="text-body-sm text-muted-foreground mt-1">
+                Escolha como jogar. A dificuldade acompanha o seu acerto.
+              </p>
+            </div>
+            <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} ocultarAcertos={emSimulado} />
           </div>
           <div className="mb-6">
             <DailyChallengesCard compacto />
           </div>
-          <TrainingModeSelector onSelect={handleModeSelect} bloqueado={modoBloqueado} />
+          <TrainingModeSelector
+            onSelect={(m) => {
+              setFormato('livre');
+              handleModeSelect(m);
+            }}
+            onSimulado={() => {
+              setFormato('simulado');
+              handleModeSelect('rangeTraining');
+            }}
+            bloqueado={modoBloqueado}
+          />
         </div>
         {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
         {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
@@ -1013,228 +1180,234 @@ export default function TrainPage() {
   if (phase === 'config') {
     const availableScenarios = getAvailableScenarios();
     const availablePositions = getAvailablePositions();
+    const escolherFormato = (f: Formato) => {
+      setFormato(f);
+      // A Simulação não entra no simulado: troca por um cenário que entra
+      if (f === 'simulado' && CENARIOS_FORA_DO_SIMULADO.includes(scenario)) handleScenarioChange('openRaise');
+    };
+    const nomeCenario = SCENARIOS.find(s => s.id === scenario)?.label;
+    const resumo = [
+      randomScenario ? 'Cenário aleatório' : nomeCenario,
+      randomPosition ? 'posição aleatória' : selectedPositions.join(', '),
+      randomStack ? 'stack aleatório' : `${selectedStacks.join(', ')} BB`,
+      ...(trainingMode === 'bounty' ? [`bounty $${heroBounty}`] : []),
+      ...(finalTable && trainingMode !== 'bounty' ? ['mesa final'] : []),
+    ].join(' · ');
 
     return <MainLayout>
-        <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Button variant="ghost" size="sm" onClick={() => setPhase('modeSelect')} className="gap-1 text-muted-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Voltar
-              </Button>
-              <span className="text-body-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">{getModeLabel()}</span>
-              <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} />
+        <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+          {/* Topo: voltar, mesa escolhida e dificuldade */}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setPhase('modeSelect')} className="gap-1 text-muted-foreground -ml-2">
+              <ArrowLeft className="h-4 w-4" />
+              Mesas
+            </Button>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium">
+              {trainingMode && <ModeIcon mode={trainingMode} className="h-4 w-4" />}
+              {getModeLabel()}
+            </span>
+            <div className="ml-auto">
+              <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} ocultarAcertos={emSimulado} />
             </div>
-             <h1 className="text-heading-md sm:text-heading-lg text-foreground flex items-center gap-3">
-              <Zap className="h-8 w-8 text-primary" />
-              Treino Rápido
-            </h1>
-            <p className="text-body-sm text-muted-foreground mt-1">
-              Configure seu treino e pratique decisões GTO
-            </p>
           </div>
 
-          <div className="space-y-6">
-            {/* Bounty config (only in bounty mode) */}
+          <h1 className="text-heading-md sm:text-heading-lg text-foreground">Monte seu treino</h1>
+          <p className="text-body-sm text-muted-foreground mt-1 mb-6">Escolha o formato e o que treinar. Dá para marcar mais de uma posição e stack.</p>
+
+          <div className="space-y-4">
+            {/* Formato */}
+            <Secao titulo="Formato">
+              <div role="radiogroup" aria-label="Formato do treino" className="grid gap-3 sm:grid-cols-2">
+                <OpcaoGrande
+                  ativo={!emSimulado}
+                  onClick={() => escolherFormato('livre')}
+                  icone={<Zap className="h-5 w-5" />}
+                  titulo="Treino livre"
+                  descricao="Resposta e explicação depois de cada mão. Joga quanto quiser."
+                />
+                <OpcaoGrande
+                  ativo={emSimulado}
+                  onClick={() => escolherFormato('simulado')}
+                  icone={<ClipboardCheck className="h-5 w-5" />}
+                  titulo="Simulado"
+                  selo="Novo"
+                  descricao="Uma série sem resposta. A correção e o XP vêm no fim."
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {TAMANHOS_SIMULADO.map(t => (
+                      <Chip key={t} ativo={tamanhoSimulado === t} onClick={() => setTamanhoSimulado(t)}>
+                        {t} mãos
+                      </Chip>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{REGRA_DO_XP}</p>
+                </OpcaoGrande>
+              </div>
+            </Secao>
+
+            {/* Bounty (só no modo bounty) */}
             {trainingMode === 'bounty' && (
               <BountyConfig selectedBounty={heroBounty} onBountyChange={setHeroBounty} />
             )}
 
-            {/* Scenario selection */}
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-heading-xs">Cenário</h2>
-                  <div className="flex items-center gap-2">
-                    <Switch id="random-scenario" checked={randomScenario} onCheckedChange={setRandomScenario} />
-                    <Label htmlFor="random-scenario" className="text-sm flex items-center gap-1">
-                      <Shuffle className="h-4 w-4" />
-                      Aleatório
-                    </Label>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {SCENARIOS.map(s => {
-                    const isLocked = cenarioBloqueado(s.id);
-                    const isAvailable = availableScenarios.includes(s.id);
-                    const isDisabled = isLocked || !isAvailable;
-                    return (
-                      <Button
-                        key={s.id}
-                        variant={scenario === s.id && !randomScenario && !isDisabled ? 'default' : 'outline'}
-                        // Cadeado leva para o apoio em vez de só não responder:
-                        // um botão morto não diz como destravar.
-                        onClick={() => isLocked ? navigate('/apoiar') : (!isDisabled && handleScenarioChange(s.id))}
-                        disabled={randomScenario || (isDisabled && !isLocked)}
-                        className={cn(
-                          'h-auto py-3 flex flex-col items-center gap-1 relative',
-                          scenario === s.id && !randomScenario && !isDisabled && 'bg-primary text-primary-foreground',
-                          isDisabled && !isLocked && 'opacity-50 cursor-not-allowed',
-                          isLocked && 'border-primary/40 text-muted-foreground hover:border-primary hover:text-foreground'
-                        )}
-                      >
-                        {isLocked && (
-                          <Lock className="absolute top-2 right-2 h-3 w-3 text-primary" />
-                        )}
-                        <span className="font-medium">{s.label}</span>
-                        {isLocked && (
-                          <span className="text-[10px] text-primary">Para apoiadores</span>
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
+            {/* Cenário */}
+            <Secao titulo="Cenário" ajuda={emSimulado ? 'A Simulação (pós-flop) fica fora do simulado.' : undefined}>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => setRandomScenario(true)}
+                  aria-pressed={randomScenario}
+                  className={cn(
+                    'flex items-center gap-2 rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    randomScenario ? 'border-primary bg-primary/10' : 'border-border bg-background/40 hover:border-primary/40',
+                  )}
+                >
+                  <Shuffle className={cn('h-4 w-4 shrink-0', randomScenario ? 'text-primary' : 'text-muted-foreground')} />
+                  <span>
+                    <span className="block text-sm font-semibold">Aleatório</span>
+                    <span className="block text-[11px] leading-tight text-muted-foreground">Um diferente a cada mão</span>
+                  </span>
+                </button>
+                {SCENARIOS.filter(s => availableScenarios.includes(s.id)).map(s => {
+                  const travado = cenarioBloqueado(s.id);
+                  const fora = emSimulado && CENARIOS_FORA_DO_SIMULADO.includes(s.id);
+                  const ativo = !randomScenario && scenario === s.id && !travado && !fora;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      aria-pressed={ativo}
+                      disabled={fora}
+                      onClick={() => {
+                        // Cadeado leva para o apoio em vez de só não responder
+                        if (travado) return navigate('/apoiar');
+                        setRandomScenario(false);
+                        handleScenarioChange(s.id);
+                      }}
+                      className={cn(
+                        'relative rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        ativo ? 'border-primary bg-primary/10' : 'border-border bg-background/40 hover:border-primary/40',
+                        fora && 'cursor-not-allowed opacity-40 hover:border-border',
+                      )}
+                    >
+                      {travado && <Lock className="absolute right-2.5 top-2.5 h-3 w-3 text-primary" aria-label="Para apoiadores" />}
+                      <span className="block text-sm font-semibold">{s.label}</span>
+                      <span className="block text-[11px] leading-tight text-muted-foreground">
+                        {travado ? 'Para apoiadores' : fora ? 'Fora do simulado' : s.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-                {/* Multiway só existe na Simulação: é o único cenário que joga
-                    o pós-flop, e é lá que ter um terceiro muda a decisão. */}
-                {scenario === 'simulation' && !randomScenario && !cenarioBloqueado('simulation') && getAvailablePositions().length >= 3 && (
-                  <div className="mt-4 flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/40 p-3">
+              {/* Multiway só existe na Simulação: é o único cenário que joga
+                  o pós-flop, e é lá que ter um terceiro muda a decisão. */}
+              {scenario === 'simulation' && !randomScenario && !emSimulado && !cenarioBloqueado('simulation') && availablePositions.length >= 3 && (
+                <div className="mt-3 flex items-start justify-between gap-4 rounded-xl border border-border bg-muted/40 p-3">
+                  <div>
+                    <Label htmlFor="sim-multiway" className="text-sm font-medium">Pote multiway</Label>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Um terceiro jogador paga a abertura e vai ao flop com vocês. Ele pode
+                      desistir no meio do caminho — e pode ganhar a mão no showdown.
+                    </p>
+                  </div>
+                  <Switch id="sim-multiway" checked={simulacaoMultiway} onCheckedChange={setSimulacaoMultiway} />
+                </div>
+              )}
+            </Secao>
+
+            {/* Posição */}
+            <Secao titulo="Posição">
+              <div className="flex flex-wrap gap-2">
+                <Chip ativo={randomPosition} onClick={() => setRandomPosition(!randomPosition)}>
+                  <Shuffle className="h-3.5 w-3.5" /> Aleatória
+                </Chip>
+                {availablePositions.map(pos => {
+                  const invalida = invalidPositions.includes(pos);
+                  return (
+                    <Chip
+                      key={pos}
+                      ativo={!randomPosition && selectedPositions.includes(pos) && !invalida}
+                      desabilitado={invalida}
+                      titulo={invalida ? 'Não existe neste cenário' : undefined}
+                      className="min-w-[3.5rem]"
+                      onClick={() => {
+                        if (randomPosition) {
+                          setRandomPosition(false);
+                          setSelectedPositions([pos]);
+                        } else togglePosition(pos);
+                      }}
+                    >
+                      {pos}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </Secao>
+
+            {/* Stack */}
+            <Secao titulo="Stack (BB)">
+              <div className="flex flex-wrap gap-2">
+                <Chip ativo={randomStack} onClick={() => setRandomStack(!randomStack)}>
+                  <Shuffle className="h-3.5 w-3.5" /> Aleatório
+                </Chip>
+                {STACK_SIZES.map(stk => (
+                  <Chip
+                    key={stk}
+                    ativo={!randomStack && selectedStacks.includes(stk)}
+                    className="min-w-[3rem] tabular-nums"
+                    onClick={() => {
+                      if (randomStack) {
+                        setRandomStack(false);
+                        setSelectedStacks([stk]);
+                      } else toggleStack(stk);
+                    }}
+                  >
+                    {stk}
+                  </Chip>
+                ))}
+              </div>
+            </Secao>
+
+            {/* Mais opções */}
+            <Secao titulo="Mais opções">
+              <div className="divide-y divide-border">
+                {trainingMode !== 'bounty' && (
+                  <div className="flex items-center justify-between gap-4 pb-3">
                     <div>
-                      <Label htmlFor="sim-multiway" className="text-sm font-medium">
-                        Pote multiway
-                      </Label>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Um terceiro jogador paga a abertura e vai ao flop com vocês. Ele pode
-                        desistir no meio do caminho — e pode ganhar a mão no showdown.
-                      </p>
+                      <Label htmlFor="mesa-final" className="text-sm font-medium">Mesa final</Label>
+                      <p className="text-xs text-muted-foreground">Ajustes de ICM de mesa final</p>
                     </div>
-                    <Switch
-                      id="sim-multiway"
-                      checked={simulacaoMultiway}
-                      onCheckedChange={setSimulacaoMultiway}
-                    />
+                    <Switch id="mesa-final" checked={finalTable} onCheckedChange={setFinalTable} />
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Position selection */}
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-heading-xs">Posição</h2>
-                  <div className="flex items-center gap-2">
-                    <Switch id="random-pos" checked={randomPosition} onCheckedChange={setRandomPosition} />
-                    <Label htmlFor="random-pos" className="text-sm flex items-center gap-1">
-                      <Shuffle className="h-4 w-4" />
-                      Aleatório
-                    </Label>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                {availablePositions.map(pos => {
-                    const isInvalid = invalidPositions.includes(pos);
-                    return (
-                      <Button key={pos} variant={selectedPositions.includes(pos) && !randomPosition && !isInvalid ? 'default' : 'outline'} size="sm" onClick={() => togglePosition(pos)} disabled={randomPosition || isInvalid} className={cn('min-w-[3.5rem]', selectedPositions.includes(pos) && !randomPosition && !isInvalid && 'bg-primary text-primary-foreground', isInvalid && 'opacity-40 cursor-not-allowed')}>
-                        {pos}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Stack selection */}
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-heading-xs">Stack (BB)</h2>
-                  <div className="flex items-center gap-2">
-                    <Switch id="random-stack" checked={randomStack} onCheckedChange={setRandomStack} />
-                    <Label htmlFor="random-stack" className="text-sm flex items-center gap-1">
-                      <Shuffle className="h-4 w-4" />
-                      Aleatório
-                    </Label>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {STACK_SIZES.map(stk => <Button key={stk} variant={selectedStacks.includes(stk) && !randomStack ? 'default' : 'outline'} size="sm" onClick={() => toggleStack(stk)} disabled={randomStack} className={cn('min-w-[3rem]', selectedStacks.includes(stk) && !randomStack && 'bg-primary text-primary-foreground')}>
-                      {stk}
-                    </Button>)}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Final table toggle (hidden in bounty mode - always on) */}
-            {trainingMode !== 'bounty' && (
-              <Card>
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-heading-xs">Modo Mesa Final</h2>
-                      <p className="text-sm text-muted-foreground">
-                        Ativa ajustes ICM para final tables
-                      </p>
-                    </div>
-                    <Switch checked={finalTable} onCheckedChange={setFinalTable} />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Session reset button */}
-            <Card className="border-dashed border-muted-foreground/30">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
+                <div className={cn('flex items-center justify-between gap-4', trainingMode !== 'bounty' && 'pt-3')}>
                   <div>
-                    <h2 className="text-heading-xs flex items-center gap-2">
-                      <RefreshCw className="h-5 w-5" />
-                      Limpar Sessão
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Permite jogar as mesmas mãos novamente para ganhar pontos
-                    </p>
+                    <p className="text-sm font-medium">Mãos já jogadas</p>
+                    <p className="text-xs text-muted-foreground">Mão repetida não vale ponto. Limpe para jogá-las de novo valendo.</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleClearSession}>
-                    🔄 Limpar
+                  <Button variant="outline" size="sm" onClick={handleClearSession} className="shrink-0 gap-1.5">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Limpar
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Secao>
+          </div>
 
-            {/* Config summary */}
-            <Card className="bg-muted/50">
-              <CardContent className="p-4 sm:p-6">
-                <h2 className="text-heading-xs mb-3">Resumo</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Modo</p>
-                    <p className="font-medium">{getModeLabel()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Cenário</p>
-                    <p className="font-medium">
-                      {randomScenario ? 'Aleatório' : SCENARIOS.find(s => s.id === scenario)?.label}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Posição</p>
-                    <p className="font-medium">
-                      {randomPosition ? 'Aleatório' : selectedPositions.join(', ')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Stack</p>
-                    <p className="font-medium">
-                      {randomStack ? 'Aleatório' : selectedStacks.join(', ') + ' BB'}
-                    </p>
-                  </div>
-                  {trainingMode === 'bounty' && (
-                    <div>
-                      <p className="text-muted-foreground">Bounty</p>
-                      <p className="font-medium">${heroBounty}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Start button */}
-            <Button onClick={() => startGame()} size="lg" className="w-full h-16 text-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold">
-              <Play className="h-6 w-6 mr-2" />
-              JOGAR
-            </Button>
+          {/* Barra fixa: o resumo e o botão ficam sempre à mão */}
+          <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-border bg-background/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{emSimulado ? `Simulado de ${tamanhoSimulado} mãos` : 'Treino livre'}</span>
+                {' · '}
+                {resumo}
+              </p>
+              <Button onClick={() => startGame()} size="lg" className="h-12 px-8 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 glow-gold">
+                <Play className="h-5 w-5" />
+                {emSimulado ? 'Começar simulado' : 'Jogar'}
+              </Button>
+            </div>
           </div>
         </div>
       </MainLayout>;
@@ -1246,18 +1419,30 @@ export default function TrainPage() {
         {/* Header with session info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              <span className="font-bold text-lg">{sessionScore} pts</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Target className="h-4 w-4" />
-              <span>{handsPlayed} mãos</span>
-            </div>
+            {emSimulado ? (
+              // No simulado não aparece ponto nem acerto: só em que mão está
+              <div className="flex items-center gap-3">
+                <ClipboardCheck className="h-5 w-5 text-primary" />
+                <span className="font-bold text-lg tabular-nums">
+                  Mão {Math.min(respostasSimulado.length + 1, tamanhoSimulado)} de {tamanhoSimulado}
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  <span className="font-bold text-lg">{sessionScore} pts</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Target className="h-4 w-4" />
+                  <span>{handsPlayed} mãos</span>
+                </div>
+              </>
+            )}
             {trainingMode && (
               <span className="text-body-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">{getModeLabel()}</span>
             )}
-            <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} />
+            <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} ocultarAcertos={emSimulado} />
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -1278,13 +1463,16 @@ export default function TrainPage() {
           </div>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar: no simulado, quantas mãos já foram; no livre, os pontos da sessão */}
         <div className="mb-6">
-          <Progress value={Math.max(0, Math.min(100, sessionScore / 10))} className="h-2" />
+          <Progress
+            value={emSimulado ? (100 * respostasSimulado.length) / tamanhoSimulado : Math.max(0, Math.min(100, sessionScore / 10))}
+            className="h-2"
+          />
         </div>
 
         {/* Already played warning */}
-        {isHandAlreadyPlayedState && phase === 'playing' && <div className="mb-4 p-3 rounded-lg bg-primary/20 border border-primary/30 flex items-center gap-3">
+        {isHandAlreadyPlayedState && phase === 'playing' && !emSimulado && <div className="mb-4 p-3 rounded-lg bg-primary/20 border border-primary/30 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-primary flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm text-primary font-medium">

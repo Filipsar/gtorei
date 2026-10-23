@@ -190,6 +190,31 @@ const DESENHOS: Record<string, ReactNode> = {
     </>
   ),
 
+  /* ---------- Simulado: a folha da prova ---------- */
+  simulado_1: (
+    <>
+      <rect x="8" y="5" width="16" height="22" rx="2.5" />
+      <line x1="12" y1="11" x2="20" y2="11" />
+      <line x1="12" y1="15" x2="20" y2="15" />
+      <Visto x={15} y={21} t={0.7} />
+    </>
+  ),
+  simulado_10: (
+    <>
+      <path d="M11 4h13a2 2 0 0 1 2 2v17" className="opacity-60" />
+      <rect x="6" y="7" width="16" height="21" rx="2.5" />
+      <line x1="10" y1="13" x2="18" y2="13" />
+      <Visto x={13} y={22} t={0.7} />
+      <Selo />
+    </>
+  ),
+  simulado_perfeito: (
+    <>
+      <rect x="8" y="5" width="16" height="22" rx="2.5" />
+      <polygon points={estrela(16, 16, 6)} className="fill-primary stroke-none" />
+    </>
+  ),
+
   /* ---------- Indicação: de um convite ao grupo inteiro ---------- */
   indica_1: (
     <>

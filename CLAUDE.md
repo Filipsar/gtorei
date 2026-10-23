@@ -163,6 +163,13 @@ passa por ele.
   Elite ×1,4, com teto de 30 pontos por mão, o limite de `record_hand_result`). O
   automático usa só o acerto das últimas 20 mãos. Substitui o viés escondido por nível
   de XP que existia em `generateRandomHand`.
+- Simulado (23/10/2026): série de 10 a 30 mãos sem resposta, correção e XP no fim
+  (`src/lib/simulado.ts`, `SimuladoResultado.tsx`). Cada mão é gravada com 0 ponto numa
+  sessão `scenario = 'simulado'`, e o XP sai do servidor (`claim_simulado`, migration
+  `20261023130000_simulado.sql`), que recalcula tudo a partir de `played_hands`. Sem a
+  migration, a correção aparece mas o XP dá erro. A sessão fica com `scenario =
+  'simulado'`, mas cada mão em `played_hands` guarda o próprio cenário. O `openRaise` passou a valer metade do XP
+  (mesma regra no cliente e no `claim_simulado`).
 - pg_cron não está instalado (conferido em 22/10/2026): a limpeza dos códigos de mão
   nunca rodou. Correção em `supabase/migrations/20261022120000_limpeza_codigos_de_mao.sql`.
 - Não fazer: perfil de valor por usuário (receita de anúncio, aparelho, país) nem

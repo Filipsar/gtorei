@@ -4,7 +4,7 @@ export interface AchievementDef {
   key: string;
   name: string;
   description: string;
-  category: 'level' | 'streak' | 'volume' | 'accuracy' | 'challenge' | 'referral';
+  category: 'level' | 'streak' | 'volume' | 'accuracy' | 'challenge' | 'referral' | 'drill';
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -61,6 +61,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'mes_1', name: 'Mês Vencido', description: 'Resgatar o primeiro desafio mensal', category: 'challenge' },
   { key: 'mes_perfeito', name: 'Mês Perfeito', description: 'Resgatar os 3 desafios do mesmo mês', category: 'challenge' },
 
+  // Simulado (concedidas pelo servidor ao corrigir: claim_simulado)
+  { key: 'simulado_1', name: 'Primeiro Simulado', description: 'Terminar um simulado', category: 'drill' },
+  { key: 'simulado_10', name: 'Dez Simulados', description: 'Ganhar XP em 10 simulados', category: 'drill' },
+  { key: 'simulado_perfeito', name: 'Simulado Perfeito', description: 'Acertar todas as mãos de um simulado de 20 ou mais', category: 'drill' },
+
   // Indicação (concedidas pelo servidor quando o indicado completa 50 mãos)
   { key: 'indica_1', name: 'Primeiro Convite', description: '1 amigo indicado treinou 50 mãos', category: 'referral' },
   { key: 'indica_5', name: 'Anfitrião', description: '5 indicados válidos', category: 'referral' },
@@ -80,4 +85,5 @@ export const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
   accuracy: 'Precisão',
   challenge: 'Desafios diários',
   referral: 'Indicação',
+  drill: 'Simulado',
 };

@@ -9,6 +9,8 @@ interface Props {
   acertosNaJanela: number;
   maosNaJanela: number;
   onMudar: (p: Preferencia) => void;
+  /** No simulado: a contagem de acertos entregaria a resposta */
+  ocultarAcertos?: boolean;
 }
 
 const xp = (m: number) => `XP ×${m.toLocaleString('pt-BR', { minimumFractionDigits: 1 })}`;
@@ -17,7 +19,7 @@ const xp = (m: number) => `XP ×${m.toLocaleString('pt-BR', { minimumFractionDig
  * Mostra a dificuldade em vigor e deixa escolher. Fica visível no treino o
  * tempo todo: a pessoa sempre sabe que tipo de mão está vindo e por quê.
  */
-export function DificuldadeControle({ preferencia, nivel, acertosNaJanela, maosNaJanela, onMudar }: Props) {
+export function DificuldadeControle({ preferencia, nivel, acertosNaJanela, maosNaJanela, onMudar, ocultarAcertos }: Props) {
   const auto = preferencia === 'auto';
   const opcoes: { valor: Preferencia; titulo: string; detalhe: string }[] = [
     {
@@ -48,7 +50,7 @@ export function DificuldadeControle({ preferencia, nivel, acertosNaJanela, maosN
           Muda só quais mãos aparecem: quanto mais difícil, mais mãos da borda da range, onde a decisão é apertada. A
           resposta certa de cada mão é a mesma em qualquer dificuldade. O XP ganho acompanha a dificuldade.
         </p>
-        {auto && (
+        {auto && !ocultarAcertos && (
           <p className="mt-2 text-xs">
             Agora: <strong>{nivel.nome}</strong>. Nesta rodada, {acertosNaJanela} acertos em {maosNaJanela} de {JANELA} mãos.
           </p>
