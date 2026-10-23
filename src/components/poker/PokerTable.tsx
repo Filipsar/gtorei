@@ -449,6 +449,9 @@ export function PokerTable({
           } else if (playerStacks && playerStacks[pos]) {
             stackToShow = playerStacks[pos];
           }
+          // Aposta na frente do tamanho do stack: ele não tem mais nada atrás
+          const aposta = activeBets.find((b) => b.position === pos)?.amount;
+          const allIn = stackToShow !== undefined && aposta !== undefined && aposta >= stackToShow;
 
           return (
             <div
@@ -475,6 +478,7 @@ export function PokerTable({
                 hasFolded={hasFolded}
                 cards={cardsToShow}
                 stack={stackToShow}
+                allIn={allIn}
                 showCards={shouldShowCards}
                 half={Math.sin(angulo) < 0 ? 'top' : 'bottom'}
                 noTopo={ehTopo(angulo)}

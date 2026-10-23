@@ -10,6 +10,8 @@ interface PlayerSeatProps {
   hasFolded?: boolean;
   cards?: CardType[];
   stack?: number;
+  /** Já pôs tudo na mesa: o assento mostra "All-in" em vez do stack de antes da aposta */
+  allIn?: boolean;
   lastAction?: {
     action: string;
     amount?: number;
@@ -83,6 +85,7 @@ export function PlayerSeat({
   hasFolded = false,
   cards,
   stack,
+  allIn = false,
   lastAction,
   showCards = false,
   half = 'bottom',
@@ -138,10 +141,18 @@ export function PlayerSeat({
           )}
         </div>
 
-        {stack !== undefined && stack > 0 && (
-          <span className="mt-0.5 text-[9px] font-semibold leading-none tabular-nums text-white/80 sm:text-[10px]">
-            {stack} <span className="text-white/45">BB</span>
+        {/* No hero o anel de vez (ring + offset) passa 4px do avatar: com a
+            margem menor ele cobria o número do stack */}
+        {allIn ? (
+          <span className={cn('text-[9px] font-bold uppercase leading-none tracking-wide text-red-400 sm:text-[10px]', isHero ? 'mt-1.5' : 'mt-0.5')}>
+            All-in
           </span>
+        ) : (
+          stack !== undefined && stack > 0 && (
+            <span className={cn('text-[9px] font-semibold leading-none tabular-nums text-white/80 sm:text-[10px]', isHero ? 'mt-1.5' : 'mt-0.5')}>
+              {stack} <span className="text-white/45">BB</span>
+            </span>
+          )
         )}
       </div>
 

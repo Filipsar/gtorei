@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.24.1',
+    date: '23/10/2026',
+    type: 'fix',
+    title: 'All-in Aparece no Assento',
+    description: 'Quando o vilão ia all-in, o assento dele continuava mostrando o stack de antes da aposta, como se ainda tivesse fichas atrás. Agora aparece "All-in" no lugar. E o anel dourado que marca a sua vez não cobre mais o tamanho do seu stack.',
+  },
+  {
     version: '1.24.0',
     date: '23/10/2026',
     type: 'feature',
