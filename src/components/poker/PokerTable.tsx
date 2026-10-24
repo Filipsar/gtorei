@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { carregarGsap, type Gsap } from '@/lib/motion';
 import { Position, POSITIONS } from '@/data/gtoRanges';
@@ -44,6 +45,8 @@ interface PokerTableProps {
   bounties?: Record<string, number>;
   playerStacks?: Record<string, number>;
   visiblePositions?: Position[];
+  /** Mão de mesa final (ICM): borda dourada e o aviso no feltro */
+  mesaFinal?: boolean;
   className?: string;
 }
 
@@ -157,6 +160,7 @@ export function PokerTable({
   bounties,
   playerStacks,
   visiblePositions,
+  mesaFinal = false,
   className
 }: PokerTableProps) {
 
@@ -442,9 +446,17 @@ export function PokerTable({
       {/* mt: o assento do topo passa um pouco da borda da mesa; sem folga, encostava na barra de progresso */}
       <div ref={mesaRef} className="relative mx-auto mt-3 aspect-[2/1] w-full max-w-2xl px-6 sm:mt-4 sm:px-8">
         {/* Feltro */}
-        <div className="absolute inset-x-6 inset-y-3 overflow-hidden rounded-[50%] border-[6px] border-[hsl(var(--table-border))] table-felt shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)] sm:inset-x-8 sm:inset-y-4">
+        <div
+          className={cn(
+            'absolute inset-x-6 inset-y-3 overflow-hidden rounded-[50%] border-[6px] table-felt sm:inset-x-8 sm:inset-y-4',
+            // Mesa final: a borda vira dourada, com um brilho leve em volta
+            mesaFinal
+              ? 'border-primary/70 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9),0_0_26px_-4px_hsl(var(--primary)/0.55)]'
+              : 'border-[hsl(var(--table-border))] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]'
+          )}
+        >
           {/* Fio dourado interno, no lugar da borda marrom que destoava do resto do site */}
-          <div className="pointer-events-none absolute inset-2 rounded-[50%] border border-primary/20" />
+          <div className={cn('pointer-events-none absolute inset-2 rounded-[50%] border', mesaFinal ? 'border-primary/45' : 'border-primary/20')} />
           <div className="pointer-events-none absolute inset-0 rounded-[50%] shadow-[inset_0_0_60px_rgba(0,0,0,0.55)]" />
 
           {/* O rei (mascote) no centro do feltro, como marca d'água. Só enfeite:
@@ -459,6 +471,14 @@ export function PokerTable({
             decoding="async"
             className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[42%] w-auto -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.16]"
           />
+          {/* Escrito no feltro, entre o pote e a aposta de quem senta no topo.
+              Embaixo do pote ele ficava atrás das fichas do herói no celular. */}
+          {mesaFinal && (
+            <p className="pointer-events-none absolute inset-x-0 top-[31%] z-0 flex -translate-y-1/2 select-none items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.28em] text-primary/80 sm:text-xs">
+              <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+              Mesa final
+            </p>
+          )}
         </div>
 
         {/* Cartas comunitárias e pote, empilhados no centro */}

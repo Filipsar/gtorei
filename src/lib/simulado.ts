@@ -23,6 +23,17 @@ export const CENARIOS_FORA_DO_SIMULADO: Scenario[] = ['simulation', 'multiway'];
 /** Marca da sessão no banco: é o que claim_simulado confere */
 export const CENARIO_DA_SESSAO_SIMULADO = 'simulado';
 
+/**
+ * No simulado nada se escolhe: cenário, posição e stack saem do sorteio a cada
+ * mão, e a mesa final também. Uma mão em quatro cai na mesa final (ICM); no
+ * Bounty ela é sempre ICM, como no resto do treino.
+ */
+export const CHANCE_DE_MESA_FINAL = 0.25;
+
+export function sortearMesaFinal(bounty: boolean, sorteio: () => number = Math.random): boolean {
+  return bounty || sorteio() < CHANCE_DE_MESA_FINAL;
+}
+
 export interface RespostaSimulado {
   mao: string;
   cenario: Scenario;
@@ -32,6 +43,8 @@ export interface RespostaSimulado {
   acaoCerta: string;
   feedback: 'best' | 'correct' | 'inaccuracy' | 'mistake' | 'blunder';
   evPerdido: number;
+  /** A mão caiu na mesa final (a range muda com o ICM) */
+  mesaFinal?: boolean;
 }
 
 export interface ResultadoSimulado {

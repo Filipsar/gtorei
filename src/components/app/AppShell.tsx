@@ -40,9 +40,12 @@ const ALTURA_ABAS = 64;
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
-  // Lição e duelo: a tela é só da mão, sem abas nem pop-up tirando o foco
+  // Lição e partida do duelo: a tela é só da mão, sem abas nem pop-up tirando o
+  // foco (no duelo, sair da mesa por uma aba estouraria o tempo de decisão)
   const busca = new URLSearchParams(location.search);
-  const emLicao = location.pathname === '/treinar' && (busca.has('licao') || busca.has('duelo'));
+  const emLicao =
+    (location.pathname === '/treinar' && busca.has('licao')) ||
+    (location.pathname === '/duelo' && busca.has('partida'));
 
   useEffect(() => {
     const raiz = document.documentElement.style;

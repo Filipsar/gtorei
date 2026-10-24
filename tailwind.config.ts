@@ -276,6 +276,14 @@ export default {
           "100%": { transform: "translateY(0)" },
         },
         // Estrelas do fim da lição: estouram uma depois da outra
+        "aviso-desce": {
+          "0%": { opacity: "0", transform: "translateY(-120%)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "esvazia": {
+          "0%": { transform: "scaleX(1)" },
+          "100%": { transform: "scaleX(0)" },
+        },
         "estrela-entra": {
           "0%": { opacity: "0", transform: "scale(0) rotate(-40deg)" },
           "60%": { opacity: "1", transform: "scale(1.35) rotate(8deg)" },
@@ -290,6 +298,9 @@ export default {
       animation: {
         "rei-sobe": "rei-sobe 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
         "estrela-entra": "estrela-entra 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        "aviso-desce": "aviso-desce 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",
+        // Mesma duração do aviso de desafio (DURACAO_DO_AVISO)
+        "esvazia": "esvazia 3.5s linear both",
         "fogo-azul": "fogo-azul 1.6s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",

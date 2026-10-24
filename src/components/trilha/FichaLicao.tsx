@@ -1,6 +1,5 @@
-import type { CSSProperties } from 'react';
-import { Check, Lock, Star, Trophy } from 'lucide-react';
-import { VAR_DA_COR, type CorDoNivel, type Licao } from '@/data/trilha';
+import { Check, Lock, Star } from 'lucide-react';
+import { VAR_DA_COR, faceDaFicha, fichaDaLicao, type CorDoNivel, type FaceDaFicha, type Licao } from '@/data/trilha';
 import type { Estado, Estrelas } from '@/lib/trilha';
 import { cn } from '@/lib/utils';
 
@@ -13,27 +12,25 @@ interface Props {
   onAbrir: () => void;
 }
 
-// A face da ficha deitada na mesa, vista na diagonal
-const INCLINACAO = 'rotateX(52deg) rotateZ(-24deg)';
-// Espessura da ficha: camadas mais escuras empilhadas embaixo da face. Com a
-// inclinação, elas aparecem como a borda lateral da ficha.
-const espessura = (fundo: string) =>
-  [1, 2, 3, 4, 5, 6, 7]
-    .map((i) => `0 ${i * 1.6}px 0 color-mix(in srgb, ${fundo} ${78 - i * 3}%, black)`)
-    .concat('0 16px 14px rgba(0,0,0,0.45)')
-    .join(', ');
+/** O mesmo achatamento da face, para o texto parecer impresso nela */
+const naFace = (f: FaceDaFicha) =>
+  `translate(-50%, -50%) rotate(${f.giro}deg) scale(1, ${f.achatamento}) rotate(${-f.giro}deg)`;
+
+/** Rótulo curto (BTN) cabe maior; "All-in" precisa diminuir para caber no miolo */
+const corpoDoRotulo = (rotulo: string) => (rotulo.length <= 3 ? 'text-[17px]' : rotulo.length === 4 ? 'text-[14px]' : 'text-[12px]');
 
 /**
- * Uma lição na trilha, desenhada como ficha de poker deitada na mesa: borda
- * com as marcas brancas, miolo na cor do nível, a espessura aparecendo de lado.
- * O rótulo (BTN, 10BB…) fica em pé, por cima, para continuar legível.
- * Bloqueada: ficha cinza com cadeado. A atual pulsa e ganha o balão "Jogar".
+ * Uma lição na trilha: a ficha de poker (arte em public/trilha) na cor da
+ * posição que ela treina, deitada na mesa. O rótulo (BTN, 10BB…) é escrito
+ * pelo app no miolo, deitado junto com a face: a arte vem sem letra, porque o
+ * gerador de imagem erra. Bloqueada: ficha cinza com cadeado. A atual pulsa e
+ * ganha o balão "Jogar".
  */
 export function FichaLicao({ licao, numero, estado, estrelas, cor, onAbrir }: Props) {
   const bloqueada = estado === 'bloqueada';
-  const tamanho = licao.mesaFinal ? 92 : 80;
-  const corDaFicha = bloqueada ? 'var(--muted)' : VAR_DA_COR[cor];
-  const fundo = `hsl(${corDaFicha})`;
+  const tamanho = licao.mesaFinal ? 96 : 84;
+  const src = fichaDaLicao(licao, bloqueada);
+  const face = faceDaFicha(src);
 
   const descricao =
     estado === 'feita'
@@ -58,51 +55,43 @@ export function FichaLicao({ licao, numero, estado, estrelas, cor, onAbrir }: Pr
         onClick={onAbrir}
         aria-label={`Lição ${numero}: ${licao.titulo}, ${descricao}`}
         className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        style={{ width: tamanho + 8, height: tamanho, perspective: '520px' } as CSSProperties}
+        style={{ width: tamanho, height: tamanho }}
       >
-        {/* Face da ficha. Aperta para baixo ao tocar, como ficha empilhada. */}
-        <span
-          aria-hidden="true"
-          // O aperto entra por variável: a classe translate-y perderia para o transform inline
-          className="absolute inset-x-1 inset-y-0 rounded-full p-[6px] transition-transform duration-100 group-active:[--aperto:4px]"
-          style={{
-            transform: `translateY(var(--aperto, 0px)) ${INCLINACAO}`,
-            // Borda: cor e marcas brancas alternadas, oito vezes
-            background: bloqueada
-              ? fundo
-              : `repeating-conic-gradient(from 11deg, ${fundo} 0deg 33deg, hsl(0 0% 96%) 33deg 45deg)`,
-            boxShadow: espessura(fundo),
-          }}
-        >
+        {/* Brilho atrás da ficha da vez, na cor do nível */}
+        {estado === 'atual' && (
           <span
-            className={cn(
-              'block h-full w-full rounded-full border-2 border-dashed',
-              bloqueada ? 'border-muted-foreground/40' : 'border-black/25'
-            )}
-            style={{ background: fundo }}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-[-14%] rounded-full opacity-70 blur-md motion-safe:animate-pulse"
+            style={{ background: `radial-gradient(circle, hsl(${VAR_DA_COR[cor]} / 0.85), transparent 68%)` }}
           />
-          {estado === 'atual' && (
-            <span
-              className="pointer-events-none absolute -inset-2 rounded-full border-4 opacity-70 motion-safe:animate-pulse"
-              style={{ borderColor: fundo }}
+        )}
+        {/* A ficha afunda um pouco ao tocar, como ficha empilhada. A caixa
+            tem a proporção da arte, para o % da face cair no lugar certo. */}
+        <span className="absolute inset-0 flex items-center transition-transform duration-100 group-active:translate-y-1">
+          <span className="relative block w-full" style={{ aspectRatio: `${face.largura} / ${face.altura}` }}>
+            <img
+              src={src}
+              alt=""
+              aria-hidden="true"
+              width={face.largura}
+              height={face.altura}
+              draggable={false}
+              className={cn('h-full w-full select-none', bloqueada && 'opacity-90')}
             />
-          )}
-        </span>
-
-        {/* Rótulo em pé sobre a face */}
-        <span
-          className={cn(
-            'pointer-events-none absolute inset-0 flex -translate-y-1 items-center justify-center font-extrabold uppercase leading-none tracking-tight',
-            bloqueada ? 'text-muted-foreground' : 'text-black'
-          )}
-        >
-          {bloqueada ? (
-            <Lock className="h-6 w-6" aria-hidden="true" />
-          ) : licao.mesaFinal ? (
-            <Trophy className="h-8 w-8" aria-hidden="true" />
-          ) : (
-            <span className="text-sm">{licao.rotulo}</span>
-          )}
+            {/* A mesa final liberada mostra o Rei da arte; bloqueada, o cadeado */}
+            {(!licao.mesaFinal || bloqueada) && (
+              <span
+                className="pointer-events-none absolute flex items-center justify-center whitespace-nowrap font-black uppercase leading-none tracking-tight text-white [text-shadow:0_1px_0_rgb(0_0_0/0.45),0_0_3px_rgb(0_0_0/0.35)]"
+                style={{ left: `${face.cx}%`, top: `${face.cy}%`, transform: naFace(face) }}
+              >
+                {bloqueada ? (
+                  <Lock className="h-6 w-6 text-white/85 drop-shadow-[0_1px_0_rgb(0_0_0/0.5)]" aria-hidden="true" />
+                ) : (
+                  <span className={corpoDoRotulo(licao.rotulo)}>{licao.rotulo}</span>
+                )}
+              </span>
+            )}
+          </span>
         </span>
 
         {estado === 'feita' && (
@@ -115,7 +104,7 @@ export function FichaLicao({ licao, numero, estado, estrelas, cor, onAbrir }: Pr
         )}
       </button>
       {/* Estrelas só para quem já passou: 7, 8 e 9+ acertos de 10 */}
-      <span aria-hidden="true" className={cn('mt-2 flex gap-0.5', estado !== 'feita' && 'invisible')}>
+      <span aria-hidden="true" className={cn('mt-1 flex gap-0.5', estado !== 'feita' && 'invisible')}>
         {[1, 2, 3].map((i) => (
           <Star
             key={i}

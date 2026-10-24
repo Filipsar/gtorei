@@ -129,6 +129,7 @@ export function SimuladoResultado({ respostas, resultado, corrigindo, erro, onNo
                         <span className="tabular-nums text-muted-foreground">{i + 1}.</span> {resp.mao}{' '}
                         <span className="text-sm font-normal text-muted-foreground">
                           · {resp.posicao} · {resp.stack} BB · {nomeCenario(resp.cenario)}
+                          {resp.mesaFinal && ' · mesa final'}
                         </span>
                       </p>
                       <p className="text-sm">

@@ -11,7 +11,7 @@
 import type { Position, Scenario } from '@/data/gtoRanges';
 import type { TrainingMode } from '@/lib/sorteioDeMao';
 
-/** Um spot montado de antemão (lição da trilha, duelo): o treino abre direto nele */
+/** Um spot montado de antemão (lição da trilha): o treino abre direto nele */
 export interface Preset {
   modo: TrainingMode;
   /** Mais de um cenário: cada mão sorteia entre eles */
@@ -33,6 +33,9 @@ export interface Licao extends Preset {
 
 export type PoseDoRei = 'explicando' | 'surpreso' | 'pensando' | 'errou' | 'inteiro' | 'confiante' | 'acertou';
 
+/** Ilustração do cabeçalho do nível (public/trilha/<nome>.webp) */
+export type Ilustracao = 'pilha-alta' | 'pilha-dupla' | 'pilha-allin' | 'ficha-azul' | 'ficha-laranja' | 'ficha-verde';
+
 /** Cor do nível: os mesmos tokens das posições da mesa */
 export type CorDoNivel = 'late' | 'blinds' | 'middle' | 'early' | 'primary';
 
@@ -53,6 +56,7 @@ export interface Nivel {
   cor: CorDoNivel;
   /** Pose do rei ao lado do nível (public/mascote/rei-<pose>.webp). Nível fechado: acertou */
   rei: PoseDoRei;
+  ilustracao: Ilustracao;
   licoes: Licao[];
 }
 
@@ -66,6 +70,7 @@ export const NIVEIS: Nivel[] = [
     descricao: 'Ninguém entrou ainda. Quais mãos merecem a primeira aposta, de cada lugar da mesa.',
     cor: 'late',
     rei: 'explicando',
+    ilustracao: 'pilha-alta',
     licoes: [
       { id: 'abrir-btn', titulo: 'Abrir do botão', resumo: 'Você fala por último depois do flop: é de onde mais se abre.', modo: 'rangeTraining', cenarios: ['openRaise'], posicoes: ['BTN'], stacks: FUNDO, rotulo: 'BTN' },
       { id: 'abrir-co', titulo: 'Abrir do cutoff', resumo: 'Um lugar antes do botão. Ainda abre bastante, um pouco menos.', modo: 'rangeTraining', cenarios: ['openRaise'], posicoes: ['CO'], stacks: FUNDO, rotulo: 'CO' },
@@ -82,6 +87,7 @@ export const NIVEIS: Nivel[] = [
     descricao: 'Com pouca ficha a decisão muda: abrir pequeno, ir de all-in ou largar a mão.',
     cor: 'early',
     rei: 'surpreso',
+    ilustracao: 'pilha-dupla',
     licoes: [
       { id: 'curto-btn', titulo: 'Botão com 10 BB', resumo: 'Dez big blinds no botão: a posição que mais rouba os blinds.', modo: 'rangeTraining', cenarios: ['openRaise'], posicoes: ['BTN'], stacks: [10], rotulo: '10BB' },
       { id: 'curto-co', titulo: 'Cutoff com 12 BB', resumo: 'Um pouco mais de ficha e dois jogadores a mais para passar.', modo: 'rangeTraining', cenarios: ['openRaise'], posicoes: ['CO'], stacks: [12], rotulo: '12BB' },
@@ -97,6 +103,7 @@ export const NIVEIS: Nivel[] = [
     descricao: 'Alguém abriu antes de você. Pagar, aumentar ou largar.',
     cor: 'blinds',
     rei: 'pensando',
+    ilustracao: 'ficha-azul',
     licoes: [
       { id: 'responder-bb', titulo: 'Big blind defende', resumo: 'Você já pôs 1 BB no pote e é o último a decidir: paga com mais mãos.', modo: 'rangeTraining', cenarios: ['vsOpenRaise'], posicoes: ['BB'], stacks: [30, 40], rotulo: 'BB' },
       { id: 'responder-btn', titulo: 'Botão contra abertura', resumo: 'Com posição sobre quem abriu, dá para jogar mais mãos.', modo: 'rangeTraining', cenarios: ['vsOpenRaise'], posicoes: ['BTN'], stacks: [30, 40], rotulo: 'BTN' },
@@ -113,6 +120,7 @@ export const NIVEIS: Nivel[] = [
     cor: 'middle',
     // Mão na testa diante do all-in
     rei: 'errou',
+    ilustracao: 'pilha-allin',
     licoes: [
       { id: 'allin-bb', titulo: 'Big blind contra all-in', resumo: 'Você já tem 1 BB no pote e ninguém fala depois: paga mais largo.', modo: 'rangeTraining', cenarios: ['vsOpenShove'], posicoes: ['BB'], stacks: [10, 12], rotulo: 'BB' },
       { id: 'allin-sb', titulo: 'Small blind contra all-in', resumo: 'O big blind ainda fala depois de você: pague com mais cuidado.', modo: 'rangeTraining', cenarios: ['vsOpenShove'], posicoes: ['SB'], stacks: [10, 12], rotulo: 'SB' },
@@ -127,6 +135,7 @@ export const NIVEIS: Nivel[] = [
     descricao: 'Fim de torneio, só três jogadores: as ranges abrem e os blinds pesam.',
     cor: 'primary',
     rei: 'inteiro',
+    ilustracao: 'ficha-laranja',
     licoes: [
       { id: 'tres-btn', titulo: 'Botão abre', resumo: 'Com três na mesa, o botão é o primeiro a falar.', modo: 'threeHand', cenarios: ['openRaise'], posicoes: ['BTN'], stacks: [17, 20, 25], rotulo: 'BTN' },
       { id: 'tres-sb', titulo: 'Small blind contra o botão', resumo: 'O botão abriu e o big blind ainda fala.', modo: 'threeHand', cenarios: ['vsOpenRaise'], posicoes: ['SB'], stacks: [20, 25], rotulo: 'SB' },
@@ -141,6 +150,7 @@ export const NIVEIS: Nivel[] = [
     descricao: 'Só você e um oponente. Quase toda mão vale alguma coisa.',
     cor: 'late',
     rei: 'confiante',
+    ilustracao: 'ficha-verde',
     licoes: [
       { id: 'hu-sb', titulo: 'Abrir no heads-up', resumo: 'No heads-up o small blind é o botão: abre a maior parte das mãos.', modo: 'hu', cenarios: ['openRaise'], posicoes: ['SB'], stacks: [20, 25, 30], rotulo: 'SB' },
       { id: 'hu-bb', titulo: 'Defender no heads-up', resumo: 'O big blind contra uma abertura que pode ser quase qualquer coisa.', modo: 'hu', cenarios: ['vsOpenRaise'], posicoes: ['BB'], stacks: [20, 25, 30], rotulo: 'BB' },
@@ -151,6 +161,54 @@ export const NIVEIS: Nivel[] = [
 ];
 
 export const LICOES: Licao[] = NIVEIS.flatMap((n) => n.licoes);
+
+const COR_DA_POSICAO: Record<Position, string> = {
+  UTG: 'vermelho', UTG1: 'vermelho', LJ: 'vermelho', HJ: 'laranja', CO: 'verde', BTN: 'verde', SB: 'azul', BB: 'azul',
+};
+
+/**
+ * Onde fica o miolo de cada ficha, medido no anel tracejado da arte: centro
+ * (em % da imagem), quanto a face achata na perspectiva e para que lado ela
+ * está inclinada. Cada ficha saiu do gerador num ângulo diferente, então o
+ * centro da imagem não serve: o rótulo ficava torto e fora do miolo.
+ */
+export interface FaceDaFicha {
+  largura: number;
+  altura: number;
+  cx: number;
+  cy: number;
+  /** Eixo menor / eixo maior do anel */
+  achatamento: number;
+  /** Giro do eixo maior, em graus (sentido horário) */
+  giro: number;
+}
+
+const FACES: Record<string, FaceDaFicha> = {
+  '/trilha/ficha-verde.webp': { largura: 320, altura: 307, cx: 50.7, cy: 47.5, achatamento: 0.9, giro: 21 },
+  '/trilha/ficha-laranja.webp': { largura: 319, altura: 320, cx: 48.1, cy: 47, achatamento: 0.85, giro: -42 },
+  '/trilha/ficha-vermelho.webp': { largura: 320, altura: 295, cx: 48.2, cy: 46.4, achatamento: 0.81, giro: -28 },
+  '/trilha/ficha-azul.webp': { largura: 320, altura: 311, cx: 47.8, cy: 46.9, achatamento: 0.8, giro: -39 },
+  '/trilha/ficha-cinza.webp': { largura: 320, altura: 307, cx: 48.1, cy: 46.9, achatamento: 0.84, giro: -33 },
+  '/trilha/ficha-final.webp': { largura: 360, altura: 353, cx: 50, cy: 47, achatamento: 1, giro: 0 },
+};
+
+const FACE_PADRAO: FaceDaFicha = { largura: 320, altura: 310, cx: 50, cy: 47, achatamento: 1, giro: 0 };
+
+export const faceDaFicha = (src: string): FaceDaFicha => FACES[src] ?? FACE_PADRAO;
+
+/** Imagens com o miolo medido (o teste confere que toda ficha da trilha tem) */
+export const temFaceMedida = (src: string) => src in FACES;
+
+/**
+ * Imagem da ficha da lição (public/trilha): a cor da posição que ela treina,
+ * a mesma das posições na mesa. Mesa final é a ficha dourada com o Rei;
+ * bloqueada, a cinza.
+ */
+export function fichaDaLicao(licao: Licao, bloqueada: boolean): string {
+  if (bloqueada) return '/trilha/ficha-cinza.webp';
+  if (licao.mesaFinal) return '/trilha/ficha-final.webp';
+  return `/trilha/ficha-${COR_DA_POSICAO[licao.posicoes[0]]}.webp`;
+}
 
 export function licaoPorId(id: string | null | undefined): Licao | null {
   return (id && LICOES.find((l) => l.id === id)) || null;

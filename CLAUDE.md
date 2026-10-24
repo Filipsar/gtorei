@@ -174,9 +174,18 @@ passa por ele.
   `localStorage.gtorei_previa_app = '1'` (`usarLayoutDoApp()`; some no build). Fora da
   trilha de propósito: vs 3-bet, Bounty, Simulação e Multiway. Guia de design usado: skill
   ui-ux-pro-max, clonada em `../ui-ux-pro-max-skill`.
-  Abas do app: Trilha, Treinar, Duelo, Ranking, Mais (Desafios mora em Mais). Duelo
-  (`/duelo`, `src/data/duelo.ts`): heads-up por `?duelo=curto|medio|fundo`, placar Você x
-  Rei. No app, depois de cada mão o Rei comenta (`ReiComenta`, texto de
+  Abas do app: Trilha, Treinar, Duelo, Ranking, Mais (Desafios mora em Mais; no app o
+  cartão de desafios não aparece no Treinar). Duelo ao vivo (24/10/2026, migration
+  `20261024140000_duelo_ao_vivo.sql`, `src/lib/duelo.ts`, `src/components/duelo/`): HU
+  entre dois jogadores, 10 mãos, um no SB e o outro no BB, só preflop (com call a mesa
+  corre até o river). O servidor embaralha, guarda as cartas (`duelo_cartas`, sem leitura
+  direta), valida cada jogada e decide o showdown (`_duelo_forca`, conferido contra o
+  `handEvaluator` do app em 4.000 mãos no PGlite). Fila única de até 3 minutos; partida em
+  `/duelo?partida=id`, que esconde as abas. 30 s por decisão, conferidos a cada chamada
+  (sem pg_cron). A nota GTO vem do app e só existe onde o treino de HU tem range (abrir do
+  SB, BB contra raise e contra all-in). Sem a migration, a aba avisa que o duelo não está
+  disponível. O duelo contra o Rei (`?duelo=`) saiu. Desafio concluído vira aviso de 3,5 s
+  no topo (`AvisoDeDesafio`, app e site). No app, depois de cada mão o Rei comenta (`ReiComenta`, texto de
   `src/lib/explicacao.ts`, tirado da mesma range que dá a nota); o quadro completo abre em
   "Ver range". Sem tutorial nem teste de nível no app: a trilha faz esse papel.
   Ligas por elo (24/10/2026, migration `20261024130000_ligas_por_elo.sql`): Bronze, Prata,
@@ -184,6 +193,11 @@ passa por ele.
   top 3 sobem, no Rei quem sai do top 10 cai. Sem pg_cron: a semana fecha na primeira
   chamada de `get_liga()` depois do fim. Ranking e perfil do app em
   `src/components/app/RankingApp.tsx` e `PerfilApp.tsx`; o site continua com os de antes.
+  Arte do app (24/10/2026): fichas, pilhas e baú em `public/trilha/`, poses do Rei em
+  `public/mascote/rei-*.webp`. Prompts em `midia/_arte/prompts-trilha.md`; o Gemini entrega
+  JPG com fundo magenta, recortado por `midia/_arte/recortar-trilha.py` (tira o magenta das
+  bordas e das sombras e separa as folhas de expressões). `src/test/assetsDoApp.test.ts`
+  falha se o app pedir uma imagem que não existe.
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.
   Ao criar tabela nova com dados do usuário, incluir na lista `TABELAS` da função.
 - Políticas (22/10/2026): `/privacidade`, `/termos`, `/reembolso`, `/cookies` em
@@ -203,7 +217,10 @@ passa por ele.
   `20261023130000_simulado.sql`), que recalcula tudo a partir de `played_hands`. Sem a
   migration, a correção aparece mas o XP dá erro. A sessão fica com `scenario =
   'simulado'`, mas cada mão em `played_hands` guarda o próprio cenário. O `openRaise` passou a valer metade do XP
-  (mesma regra no cliente e no `claim_simulado`).
+  (mesma regra no cliente e no `claim_simulado`; no cliente, `pesarPorCenario`). Desde
+  24/10/2026 o simulado não deixa escolher cenário, posição, stack nem mesa final: tudo é
+  sorteado a cada mão, e 1 mão em 4 cai na mesa final (`sortearMesaFinal`). Mão de mesa
+  final ganha borda dourada e o aviso no feltro (`PokerTable` `mesaFinal`).
 - pg_cron não está instalado (conferido em 22/10/2026): a limpeza dos códigos de mão
   nunca rodou. Correção em `supabase/migrations/20261022120000_limpeza_codigos_de_mao.sql`.
 - Não fazer: perfil de valor por usuário (receita de anúncio, aparelho, país) nem

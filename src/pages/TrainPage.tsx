@@ -14,14 +14,13 @@ import { EVENTO_MAO_REGISTRADA } from '@/hooks/useDailyChallenges';
 import { DailyChallengesCard } from '@/components/challenges/DailyChallengesCard';
 import { ehApp, usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { useDificuldade } from '@/hooks/useDificuldade';
-import { ajustarPontos, limitarPontos, sortearMao } from '@/lib/dificuldade';
+import { ajustarPontos, limitarPontos, pesarPorCenario, sortearMao } from '@/lib/dificuldade';
 import { DificuldadeControle } from '@/components/poker/DificuldadeControle';
 import { SimuladoResultado } from '@/components/train/SimuladoResultado';
 import { LicaoResultado } from '@/components/train/LicaoResultado';
 import { ReiComenta } from '@/components/train/ReiComenta';
 import { licaoPorId, type Licao } from '@/data/trilha';
-import { dueloPorId } from '@/data/duelo';
-import { explicarJogada } from '@/lib/explicacao';
+import { explicarJogada, poseDoComentario } from '@/lib/explicacao';
 import { MAOS_POR_LICAO, proximaLicao, registrarResultado, type Estrelas } from '@/lib/trilha';
 import { Chip, OpcaoGrande, Secao } from '@/components/train/ConfigUI';
 import { ModeIcon } from '@/components/poker/ModeIcon';
@@ -32,6 +31,7 @@ import {
   REGRA_DO_XP,
   TAMANHOS_SIMULADO,
   acertou,
+  sortearMesaFinal,
   type Formato,
   type RespostaSimulado,
   type ResultadoSimulado,
@@ -107,11 +107,7 @@ export default function TrainPage() {
   // com a resposta a cada uma, estrelas no fim
   const [searchParams] = useSearchParams();
   const licao = useMemo(() => licaoPorId(searchParams.get('licao')), [searchParams]);
-  // Duelo do app (?duelo=curto|medio|fundo, src/data/duelo.ts): heads-up sem
-  // fim marcado, com placar Você x Rei
-  const duelo = useMemo(() => dueloPorId(searchParams.get('duelo')), [searchParams]);
-  const preset = licao ?? duelo?.preset ?? null;
-  const [placar, setPlacar] = useState({ voce: 0, rei: 0 });
+  const preset = licao ?? null;
   // No app o Rei comenta cada mão; o quadro completo abre em "Ver range"
   const comentarioDoRei = usarLayoutDoApp();
   const [detalhesAbertos, setDetalhesAbertos] = useState(false);
@@ -308,18 +304,22 @@ export default function TrainPage() {
    * assim que uma das duas ficou para trás. Agora é um caminho só.
    */
   const montarMao = useCallback((aleatorio: boolean, modo: TrainingMode) => {
+    // No simulado nada se escolhe: cenário, posição, stack e mesa final saem
+    // do sorteio a cada mão
     const { cenario, posicao, stack, multiway } = sortearConfiguracaoDaMao({
       modo,
       aleatorio,
       cenarioEscolhido: scenario,
-      cenarioAleatorio: randomScenario,
+      cenarioAleatorio: randomScenario || emSimulado,
       posicoesEscolhidas: selectedPositions,
-      posicaoAleatoria: randomPosition,
+      posicaoAleatoria: randomPosition || emSimulado,
       stacksEscolhidos: selectedStacks,
-      stackAleatorio: randomStack,
-      multiwayLigado: simulacaoMultiway,
+      stackAleatorio: randomStack || emSimulado,
+      multiwayLigado: simulacaoMultiway && !emSimulado,
       bloqueado: bloqueioDoSorteio,
     });
+    // null: vale a chave "Mesa final" da configuração
+    const mesaFinal = emSimulado ? sortearMesaFinal(modo === 'bounty') : null;
 
     const hand = generateRandomHand();
     const cards = generateCardsFromHand(hand);
@@ -331,21 +331,21 @@ export default function TrainPage() {
     // Remontada com o stack do vilão já valendo
     const estado = initializeHandState(cenario, posicao, stack, hand, cards, assentos, stackDist.villain, multiway);
 
-    return { cenario, posicao, stack, hand, cards, stackDist, estado };
-  }, [scenario, randomScenario, selectedPositions, randomPosition, selectedStacks, randomStack, simulacaoMultiway, bloqueioDoSorteio, generateRandomHand]);
+    return { cenario, posicao, stack, hand, cards, stackDist, estado, mesaFinal };
+  }, [scenario, randomScenario, selectedPositions, randomPosition, selectedStacks, randomStack, simulacaoMultiway, bloqueioDoSorteio, generateRandomHand, emSimulado]);
 
   const startGame = useCallback((opcoes?: { aleatorio?: boolean; modo?: TrainingMode }) => {
     // No aleatório o modo sai aqui, e é ele que vale para a mão inteira. Quando
     // a chamada vem da escolha de modo, o primeiro sorteio já foi feito lá.
     const aleatorio = opcoes?.aleatorio ?? modoAleatorio;
     const modo = aleatorio ? (opcoes?.modo ?? sortearModo()) : (trainingMode ?? 'rangeTraining');
-    const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado } =
+    const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado, mesaFinal } =
       montarMao(aleatorio, modo);
 
     createSession({
       scenario: selectedScenario,
-      position: aleatorio || randomPosition ? 'random' : pos,
-      stack: aleatorio || randomStack ? 'random' : stk
+      position: aleatorio || randomPosition || emSimulado ? 'random' : pos,
+      stack: aleatorio || randomStack || emSimulado ? 'random' : stk
     });
 
     // Persist session to Supabase (awaited before the first hand is recorded)
@@ -382,6 +382,7 @@ export default function TrainPage() {
       // acompanha o modo que saiu em vez de ficar presa na primeira mão.
       setFinalTable(modo === 'bounty');
     }
+    if (mesaFinal !== null) setFinalTable(mesaFinal);
     if (selectedScenario !== scenario) {
       setScenario(selectedScenario);
     }
@@ -417,8 +418,8 @@ export default function TrainPage() {
     setPhase('playing');
   }, [montarMao, scenario, randomPosition, randomStack, trainingMode, modoAleatorio, heroBounty, user, emSimulado]);
 
-  // Lição ou duelo novo (ou o mesmo de novo): monta o spot e pede a mesa
-  const chaveDoPreset = licao?.id ?? (duelo ? `duelo-${duelo.id}` : null);
+  // Lição nova (ou a mesma de novo): monta o spot e pede a mesa
+  const chaveDoPreset = licao?.id ?? null;
   useEffect(() => {
     if (!preset || !chaveDoPreset) return;
     setFormato('livre');
@@ -440,7 +441,6 @@ export default function TrainPage() {
     setLicaoPendente(null);
     setRespostasLicao([]);
     setFimDaLicao(null);
-    setPlacar({ voce: 0, rei: 0 });
     startGame();
   }, [licaoPendente, startGame]);
 
@@ -583,7 +583,7 @@ export default function TrainPage() {
   const handleAction = useCallback((action: ActionType) => {
     if (!handState || !currentHandId) return;
 
-    // Na lição e no duelo, mão repetida é comum (o spot é fixo) e conta do mesmo jeito
+    // Na lição, mão repetida é comum (o spot é fixo) e conta do mesmo jeito
     if (isHandAlreadyPlayedState && !preset) {
       toast({
         title: "Mão já jogada!",
@@ -623,23 +623,8 @@ export default function TrainPage() {
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
 
-    // Cenários vs3Bet e vsOpenShove: -80% ganho, +20% perda
-    if (scenario === 'vs3bet' || scenario === 'vsOpenShove') {
-      if (feedback.points > 0) {
-        feedback.points = Math.round(feedback.points * 0.2); // 80% menos ganho
-      } else if (feedback.points < 0) {
-        feedback.points = Math.round(feedback.points * 1.2); // 20% mais perda
-      }
-    }
-    // Open Raise (e o open shove de stack curto, que é o mesmo cenário): metade
-    // do ganho. É o cenário com mais fold óbvio, e rendia XP fácil (23/10/2026).
-    // O simulado usa o mesmo peso no servidor (claim_simulado).
-    if (scenario === 'openRaise' && feedback.points > 0) {
-      feedback.points = Math.round(feedback.points * 0.5);
-    }
-
-    // XP ganho acompanha a dificuldade (mostrado no controle); perda não muda
-    feedback.points = limitarPontos(ajustarPontos(feedback.points, dificuldade.efetiva));
+    // Peso do cenário (pesarPorCenario) e, no ganho, a dificuldade mostrada no controle
+    feedback.points = limitarPontos(ajustarPontos(pesarPorCenario(scenario, feedback.points), dificuldade.efetiva));
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 
@@ -660,11 +645,6 @@ export default function TrainPage() {
         },
       ]);
     }
-    // Duelo: acerto é ponto seu, erro é ponto do Rei
-    if (duelo && scenario !== 'simulation') {
-      setPlacar((p) => (isCorrect ? { ...p, voce: p.voce + 1 } : { ...p, rei: p.rei + 1 }));
-    }
-
     // Simulado: nada de resposta agora. A mão vai para o banco com 0 ponto
     // (o XP sai no fim, de claim_simulado) e a próxima entra direto.
     if (emSimulado && scenario !== 'simulation') {
@@ -677,6 +657,7 @@ export default function TrainPage() {
         acaoCerta: handData.primaryAction,
         feedback: feedback.type,
         evPerdido: feedback.evLoss,
+        mesaFinal: finalTable && trainingMode !== 'bounty',
       };
       markHandAsPlayed(currentHandId, action, 0, feedback.type);
       gravacoesSimulado.current.push(recordHand({
@@ -818,7 +799,7 @@ export default function TrainPage() {
     // currentStackDistribution e currentUniqueHandId entram aqui porque são
     // lidos lá dentro: sem eles a função podia ficar com os valores da mão
     // anterior e gravar o stack efetivo — ou o ID — da mão errada.
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar, emSimulado, respostasSimulado, tamanhoSimulado, terminarSimulado, licao, duelo, preset]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar, emSimulado, respostasSimulado, tamanhoSimulado, terminarSimulado, licao, preset]);
 
   // Calculate postflop bonus/penalty from street verdicts
   const calculatePostflopBonus = useCallback((): number => {
@@ -1027,7 +1008,7 @@ export default function TrainPage() {
     }
     // Mesma regra do começo da sessão: no aleatório, cada mão sorteia o modo
     const modo = modoAleatorio ? sortearModo() : (trainingMode ?? 'rangeTraining');
-    const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado } =
+    const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado, mesaFinal } =
       montarMao(modoAleatorio, modo);
 
     const handId = generateHandId(selectedScenario, pos, stk, getCardsString(cards));
@@ -1039,6 +1020,7 @@ export default function TrainPage() {
       // Bounty é sempre ICM, e no aleatório o modo muda a cada mão
       setFinalTable(modo === 'bounty');
     }
+    if (mesaFinal !== null) setFinalTable(mesaFinal);
     if (selectedScenario !== scenario) {
       setScenario(selectedScenario);
     }
@@ -1304,9 +1286,12 @@ export default function TrainPage() {
             </div>
             <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} ocultarAcertos={emSimulado} />
           </div>
-          <div className="mb-6">
-            <DailyChallengesCard compacto />
-          </div>
+          {/* No app os desafios moram em Mais; quando um fecha, sobe o aviso (AvisoDeDesafio) */}
+          {!usarLayoutDoApp() && (
+            <div className="mb-6">
+              <DailyChallengesCard compacto />
+            </div>
+          )}
           <TrainingModeSelector
             onSelect={(m) => {
               setFormato('livre');
@@ -1336,7 +1321,12 @@ export default function TrainPage() {
       if (f === 'simulado' && CENARIOS_FORA_DO_SIMULADO.includes(scenario)) handleScenarioChange('openRaise');
     };
     const nomeCenario = SCENARIOS.find(s => s.id === scenario)?.label;
-    const resumo = [
+    // Mesa final só se escolhe fora do simulado e fora do Bounty (lá é sempre ICM)
+    const escolheMesaFinal = trainingMode !== 'bounty' && !emSimulado;
+    const resumo = emSimulado ? [
+      'cenário, posição, stack e mesa final sorteados a cada mão',
+      ...(trainingMode === 'bounty' ? [`bounty $${heroBounty}`] : []),
+    ].join(' · ') : [
       randomScenario ? 'Cenário aleatório' : nomeCenario,
       randomPosition ? 'posição aleatória' : selectedPositions.join(', '),
       randomStack ? 'stack aleatório' : `${selectedStacks.join(', ')} BB`,
@@ -1362,7 +1352,11 @@ export default function TrainPage() {
           </div>
 
           <h1 className="text-heading-md sm:text-heading-lg text-foreground">Monte seu treino</h1>
-          <p className="text-body-sm text-muted-foreground mt-1 mb-6">Escolha o formato e o que treinar. Dá para marcar mais de uma posição e stack.</p>
+          <p className="text-body-sm text-muted-foreground mt-1 mb-6">
+            {emSimulado
+              ? 'Escolha quantas mãos. O resto sai no sorteio, mão a mão.'
+              : 'Escolha o formato e o que treinar. Dá para marcar mais de uma posição e stack.'}
+          </p>
 
           <div className="space-y-4">
             {/* Formato */}
@@ -1390,6 +1384,9 @@ export default function TrainPage() {
                       </Chip>
                     ))}
                   </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Cenário, posição, stack e mesa final são sorteados a cada mão, como numa mesa de verdade.
+                  </p>
                   <p className="mt-2 text-xs text-muted-foreground">{REGRA_DO_XP}</p>
                 </OpcaoGrande>
               </div>
@@ -1400,8 +1397,10 @@ export default function TrainPage() {
               <BountyConfig selectedBounty={heroBounty} onBountyChange={setHeroBounty} />
             )}
 
+            {/* Cenário, posição e stack: no simulado tudo isso é sorteado */}
+            {!emSimulado && (<>
             {/* Cenário */}
-            <Secao titulo="Cenário" ajuda={emSimulado ? 'A Simulação (pós-flop) fica fora do simulado.' : undefined}>
+            <Secao titulo="Cenário">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <button
                   type="button"
@@ -1420,14 +1419,12 @@ export default function TrainPage() {
                 </button>
                 {SCENARIOS.filter(s => availableScenarios.includes(s.id)).map(s => {
                   const travado = cenarioBloqueado(s.id);
-                  const fora = emSimulado && CENARIOS_FORA_DO_SIMULADO.includes(s.id);
-                  const ativo = !randomScenario && scenario === s.id && !travado && !fora;
+                  const ativo = !randomScenario && scenario === s.id && !travado;
                   return (
                     <button
                       key={s.id}
                       type="button"
                       aria-pressed={ativo}
-                      disabled={fora}
                       onClick={() => {
                         // Cadeado leva para o apoio em vez de só não responder
                         if (travado) return navigate('/apoiar');
@@ -1437,13 +1434,12 @@ export default function TrainPage() {
                       className={cn(
                         'relative rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         ativo ? 'border-primary bg-primary/10' : 'border-border bg-background/40 hover:border-primary/40',
-                        fora && 'cursor-not-allowed opacity-40 hover:border-border',
                       )}
                     >
                       {travado && <Lock className="absolute right-2.5 top-2.5 h-3 w-3 text-primary" aria-label="Para apoiadores" />}
                       <span className="block text-sm font-semibold">{s.label}</span>
                       <span className="block text-[11px] leading-tight text-muted-foreground">
-                        {travado ? 'Para apoiadores' : fora ? 'Fora do simulado' : s.description}
+                        {travado ? 'Para apoiadores' : s.description}
                       </span>
                     </button>
                   );
@@ -1518,11 +1514,12 @@ export default function TrainPage() {
                 ))}
               </div>
             </Secao>
+            </>)}
 
             {/* Mais opções */}
             <Secao titulo="Mais opções">
               <div className="divide-y divide-border">
-                {trainingMode !== 'bounty' && (
+                {escolheMesaFinal && (
                   <div className="flex items-center justify-between gap-4 pb-3">
                     <div>
                       <Label htmlFor="mesa-final" className="text-sm font-medium">Mesa final</Label>
@@ -1531,7 +1528,7 @@ export default function TrainPage() {
                     <Switch id="mesa-final" checked={finalTable} onCheckedChange={setFinalTable} />
                   </div>
                 )}
-                <div className={cn('flex items-center justify-between gap-4', trainingMode !== 'bounty' && 'pt-3')}>
+                <div className={cn('flex items-center justify-between gap-4', escolheMesaFinal && 'pt-3')}>
                   <div>
                     <p className="text-sm font-medium">Mãos já jogadas</p>
                     <p className="text-xs text-muted-foreground">Mão repetida não vale ponto. Limpe para jogá-las de novo valendo.</p>
@@ -1597,34 +1594,6 @@ export default function TrainPage() {
             <span className="shrink-0 text-sm font-bold tabular-nums" aria-label={`${respostasLicao.length} de ${MAOS_POR_LICAO} mãos`}>
               {Math.min(respostasLicao.length, MAOS_POR_LICAO)}/{MAOS_POR_LICAO}
             </span>
-          </div>
-        ) : duelo ? (
-          // Duelo: placar Você x Rei, que conta toda resposta (até mão repetida)
-          <div className="mb-4 flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 shrink-0"
-              onClick={() => {
-                encerrarSessaoNoBanco();
-                if (placar.voce + placar.rei > 0) {
-                  toast({ title: `Duelo encerrado: Você ${placar.voce} x ${placar.rei} Rei` });
-                }
-                navigate('/duelo');
-              }}
-              aria-label="Encerrar o duelo"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duelo · {duelo.titulo}</p>
-              <p className="mt-0.5 flex items-center gap-2 text-lg font-bold tabular-nums" aria-live="polite">
-                <span>Você {placar.voce}</span>
-                <span className="text-muted-foreground" aria-hidden="true">×</span>
-                <span>{placar.rei} Rei</span>
-              </p>
-            </div>
-            <img src="/mascote/rei-avatar.webp" alt="" aria-hidden="true" width={192} height={256} className="h-11 w-auto shrink-0" />
           </div>
         ) : (
         <>
@@ -1737,6 +1706,8 @@ export default function TrainPage() {
               activeBets={handState.activeBets}
               bounties={trainingMode === 'bounty' ? currentBounties : undefined}
               playerStacks={currentStackDistribution?.all}
+              // No Bounty o ICM vale sempre, então não é aviso de mesa final
+              mesaFinal={finalTable && trainingMode !== 'bounty'}
               visiblePositions={(() => {
                 const modePositions = MODE_POSITIONS[trainingMode];
                 if (!modePositions) return undefined;
@@ -2261,6 +2232,7 @@ export default function TrainPage() {
               tipo: lastFeedback.feedback.type,
               evPerdido: lastFeedback.feedback.evLoss,
             })}
+            pose={poseDoComentario({ tipo: lastFeedback.feedback.type, suaAcao: lastFeedback.userAction, sequencia: currentStreak })}
             pontos={isHandAlreadyPlayedState ? null : lastFeedback.feedback.points}
             onProxima={nextHand}
             onDetalhes={() => setDetalhesAbertos(true)}

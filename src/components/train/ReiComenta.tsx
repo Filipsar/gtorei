@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { BarChart3, Check, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { Explicacao } from '@/lib/explicacao';
+import type { Explicacao, PoseDoComentario } from '@/lib/explicacao';
 import { cn } from '@/lib/utils';
 
 interface Props {
   explicacao: Explicacao;
+  /** Pose do Rei (poseDoComentario em src/lib/explicacao.ts) */
+  pose: PoseDoComentario;
   /** XP desta mão; null quando a mão é repetida e não pontua */
   pontos: number | null;
   onProxima: () => void;
@@ -17,7 +19,7 @@ interface Props {
  * no acerto, a jogada certa no erro. O quadro completo (range, frequências)
  * continua a um toque, em "Ver range".
  */
-export function ReiComenta({ explicacao, pontos, onProxima, onDetalhes }: Props) {
+export function ReiComenta({ explicacao, pose, pontos, onProxima, onDetalhes }: Props) {
   const proxima = useRef<HTMLButtonElement>(null);
   const { acertou, titulo, texto } = explicacao;
 
@@ -33,11 +35,11 @@ export function ReiComenta({ explicacao, pontos, onProxima, onDetalhes }: Props)
       <div className="relative mx-auto max-w-lg px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6 motion-safe:animate-rei-sobe">
         <div className="flex items-end gap-2">
           <img
-            src={acertou ? '/mascote/rei-acertou.webp' : '/mascote/rei-explicando.webp'}
+            src={`/mascote/rei-${pose}.webp`}
             alt=""
             aria-hidden="true"
-            width={acertou ? 445 : 426}
-            height={acertou ? 372 : 397}
+            width={330}
+            height={420}
             className="-mb-1 h-24 w-auto shrink-0 select-none"
           />
           <div

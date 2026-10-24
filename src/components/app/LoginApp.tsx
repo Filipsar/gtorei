@@ -86,7 +86,7 @@ function Inicio({ onEmail, onCriar }: { onEmail: () => void; onCriar: () => void
   return (
     <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       <div className="flex flex-1 flex-col items-center justify-end pb-6 pt-10">
-        <img src="/mascote/rei-explicando.webp" alt="" aria-hidden="true" width={426} height={397} className="h-44 w-auto drop-shadow-2xl" />
+        <img src="/mascote/rei-acenando.webp" alt="" aria-hidden="true" width={348} height={420} className="h-48 w-auto drop-shadow-2xl" />
         <h1 className="mt-4 text-4xl font-bold tracking-tight">
           <span className="text-primary">GTO</span>Rei
         </h1>

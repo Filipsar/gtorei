@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acertou, resumoLocal, type RespostaSimulado } from '@/lib/simulado';
+import { CHANCE_DE_MESA_FINAL, acertou, resumoLocal, sortearMesaFinal, type RespostaSimulado } from '@/lib/simulado';
 
 const resposta = (feedback: RespostaSimulado['feedback']): RespostaSimulado => ({
   mao: 'AKs',
@@ -27,5 +27,16 @@ describe('simulado: conta local de acertos', () => {
 
   it('simulado vazio não divide por zero', () => {
     expect(resumoLocal([])).toEqual({ total: 0, acertos: 0, erros: 0, precisao: 0 });
+  });
+});
+
+describe('mesa final no simulado', () => {
+  it('sai no sorteio: abaixo da chance é mesa final, acima não', () => {
+    expect(sortearMesaFinal(false, () => CHANCE_DE_MESA_FINAL - 0.01)).toBe(true);
+    expect(sortearMesaFinal(false, () => CHANCE_DE_MESA_FINAL)).toBe(false);
+  });
+
+  it('no Bounty é sempre ICM, como no resto do treino', () => {
+    expect(sortearMesaFinal(true, () => 0.99)).toBe(true);
   });
 });

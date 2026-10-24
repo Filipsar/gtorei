@@ -12,7 +12,7 @@ export function AberturaDoApp() {
       role="status"
       aria-label="Abrindo o GTORei"
     >
-      <img src="/mascote/rei-confiante.webp" alt="" width={314} height={391} className="h-40 w-auto" />
+      <img src="/mascote/rei-acenando.webp" alt="" width={348} height={420} className="h-44 w-auto" />
       <p className="text-3xl font-bold">
         <span className="text-primary">GTO</span>Rei
       </p>

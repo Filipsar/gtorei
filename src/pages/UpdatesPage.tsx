@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.25.0',
+    date: '24/10/2026',
+    type: 'improvement',
+    title: 'Simulado Sorteado e Aviso de Desafio',
+    description: 'No simulado não se escolhe mais cenário, posição, stack nem mesa final: tudo é sorteado a cada mão, como numa mesa de verdade, e uma mão em quatro cai na mesa final. Quando a mão é de mesa final, a mesa ganha borda dourada e o aviso no feltro, no simulado e no treino livre. E quando você conclui um desafio jogando, um aviso pequeno aparece no topo por 3,5 segundos.',
+  },
+  {
     version: '1.24.3',
     date: '24/10/2026',
     type: 'fix',

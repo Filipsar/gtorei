@@ -110,19 +110,34 @@ function SuaLiga() {
       {mudou && (
         <p
           className={cn(
-            'rounded-xl border p-3 text-sm',
+            'flex items-center gap-3 rounded-xl border p-3 text-sm',
             mudou.elo_depois > mudou.elo_antes ? 'border-primary/40 bg-primary/10' : 'border-border bg-muted'
           )}
         >
+          <img
+            src={mudou.elo_depois > mudou.elo_antes ? '/mascote/rei-subiu.webp' : '/mascote/rei-triste.webp'}
+            alt=""
+            aria-hidden="true"
+            width={330}
+            height={420}
+            className="h-14 w-auto shrink-0"
+          />
+          <span>
           {mudou.elo_depois > mudou.elo_antes
             ? `Você subiu para ${eloPorNumero(mudou.elo_depois).nome}! Terminou a semana em ${mudou.posicao}º.`
             : `Você caiu para ${eloPorNumero(mudou.elo_depois).nome}. Fique no top ${FICAM_NO_REI} para voltar e continuar no Rei.`}
+          </span>
         </p>
       )}
 
       <section className="rounded-2xl border border-border bg-card p-5 text-center" aria-labelledby="seu-elo">
+        {/* No Rei, o próprio Rei no trono de fichas; nos outros elos, o brasão */}
         <div className="flex justify-center pt-3">
-          <EloBadge elo={liga.elo} tamanho={96} />
+          {noRei ? (
+            <img src="/mascote/rei-trono.webp" alt="" aria-hidden="true" width={447} height={480} className="h-40 w-auto" />
+          ) : (
+            <EloBadge elo={liga.elo} tamanho={96} />
+          )}
         </div>
         <h2 id="seu-elo" className="mt-3 text-2xl font-bold">
           Liga {elo.nome}

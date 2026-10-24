@@ -641,6 +641,12 @@ export type Database = {
       claim_simulado: { Args: { _session_id: string; _dificuldade?: string }; Returns: Json }
       get_period_challenges: { Args: never; Returns: Json }
       get_liga: { Args: never; Returns: Json }
+      duelo_atual: { Args: never; Returns: string | null }
+      duelo_procurar: { Args: never; Returns: Json }
+      duelo_sair_fila: { Args: never; Returns: string | null }
+      duelo_estado: { Args: { _duelo: string }; Returns: Json }
+      duelo_agir: { Args: { _duelo: string; _mao: number; _acao: string; _acertou?: boolean | null }; Returns: Json }
+      duelo_desistir: { Args: { _duelo: string }; Returns: Json }
       claim_referral: { Args: { _code: string }; Returns: string }
       complete_level_test: { Args: { _results: Json }; Returns: Json }
       get_daily_challenges: { Args: never; Returns: Json }

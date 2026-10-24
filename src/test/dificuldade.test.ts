@@ -5,6 +5,7 @@ import {
   ajustarPontos,
   dificuldadeInicial,
   limitarPontos,
+  pesarPorCenario,
   registrarNoAuto,
   sortearMao,
   type EstadoAuto,
@@ -64,5 +65,18 @@ describe('sorteio da mão', () => {
 
   it('sempre devolve uma mão válida', () => {
     for (let i = 0; i < 500; i++) expect(sortearMao('dificil')).toMatch(/^([AKQJT2-9])([AKQJT2-9])(s|o)?$/);
+  });
+});
+
+describe('peso do cenário nos pontos', () => {
+  it('open raise rende metade do ganho e perde igual', () => {
+    expect(pesarPorCenario('openRaise', 15)).toBe(8);
+    expect(pesarPorCenario('openRaise', -8)).toBe(-8);
+  });
+
+  it('vs 3-bet e vs all-in: 80% menos ganho, 20% mais perda', () => {
+    expect(pesarPorCenario('vsOpenShove', 15)).toBe(3);
+    expect(pesarPorCenario('vs3bet', -10)).toBe(-12);
+    expect(pesarPorCenario('vsOpenRaise', 15)).toBe(15);
   });
 });

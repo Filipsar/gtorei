@@ -92,6 +92,21 @@ export function ajustarPontos(pontos: number, id: IdDificuldade): number {
 /** O servidor (record_hand_result) aceita de -300 a 30 por mão */
 export const limitarPontos = (pontos: number) => Math.max(-300, Math.min(30, Math.round(pontos)));
 
+/**
+ * Peso de cada cenário nos pontos da mão, antes da dificuldade.
+ * vs 3-bet e vs open shove: 80% menos ganho e 20% mais perda. Open Raise (e o
+ * open shove de stack curto, que é o mesmo cenário): metade do ganho, por ter
+ * mais fold óbvio e render XP fácil (23/10/2026). O simulado usa o mesmo peso
+ * no servidor (claim_simulado).
+ */
+export function pesarPorCenario(cenario: string, pontos: number): number {
+  if (cenario === 'vs3bet' || cenario === 'vsOpenShove') {
+    return pontos > 0 ? Math.round(pontos * 0.2) : pontos < 0 ? Math.round(pontos * 1.2) : 0;
+  }
+  if (cenario === 'openRaise' && pontos > 0) return Math.round(pontos * 0.5);
+  return pontos;
+}
+
 // Mãos da borda da range: as decisões apertadas de raise/call/fold
 export const MAOS_MARGINAIS = [
   'T9s', '98s', '87s', '76s', '65s', 'J9s', 'T8s', '97s', '86s',

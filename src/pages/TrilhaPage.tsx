@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 // Zigue-zague das fichas, em px a partir do centro. Cada nível começa no meio.
 const DESVIOS = [0, 56, 84, 56, 0, -56, -84, -56];
 const ALTURA_DA_LINHA = 112;
+// Dias sem lição até o Rei aparecer cochilando no resumo
+const DIAS_PARA_COCHILAR = 3;
 // Pose do segundo rei, nos níveis com 5 lições ou mais (sempre diferente da do nível)
 const REI_EXTRA = ['confiante', 'pensando', 'explicando'] as const;
 // Blinds de cada nível, como na estrutura de um torneio (só ambientação)
@@ -47,12 +49,14 @@ export default function TrilhaPage() {
   const feitas = LICOES.filter((l) => estados.get(l.id) === 'feita').length;
   const estrelas = LICOES.reduce((s, l) => s + (progresso[l.id]?.estrelas ?? 0), 0);
   const jogar = (l: Licao) => navigate(`/treinar?licao=${l.id}`);
+  // Última lição jogada: some faz dias, o Rei cochila no resumo
+  const ultimaVez = Object.values(progresso).reduce<string | null>((max, r) => (!max || r.em > max ? r.em : max), null);
 
   return (
     <MainLayout>
       <SEO title="Trilha — GTORei" description="Trilha de aprendizado do GTORei." path="/trilha" noindex />
       <div className="mx-auto max-w-lg px-4 pb-10 pt-4">
-        <Resumo atual={atual} feitas={feitas} estrelas={estrelas} onContinuar={() => atual && jogar(atual)} />
+        <Resumo atual={atual} feitas={feitas} estrelas={estrelas} ultimaVez={ultimaVez} onContinuar={() => atual && jogar(atual)} />
 
         {NIVEIS.map((nivel, i) => (
           <NivelDaTrilha
@@ -80,23 +84,33 @@ export default function TrilhaPage() {
   );
 }
 
-function Resumo({ atual, feitas, estrelas, onContinuar }: { atual: Licao | null; feitas: number; estrelas: number; onContinuar: () => void }) {
+function Resumo({ atual, feitas, estrelas, ultimaVez, onContinuar }: {
+  atual: Licao | null;
+  feitas: number;
+  estrelas: number;
+  ultimaVez: string | null;
+  onContinuar: () => void;
+}) {
   const total = LICOES.length;
+  const sumido = !!ultimaVez && Date.now() - new Date(ultimaVez).getTime() > DIAS_PARA_COCHILAR * 86_400_000;
+  // Quem chega dá com o Rei acenando; quem sumiu, com ele cochilando; no resto, estudando
+  const rei = !ultimaVez ? 'acenando' : sumido ? 'cochilando' : 'lendo';
   return (
     <section className="relative mb-8 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-4">
       <img
-        src="/mascote/rei-explicando.webp"
+        src={`/mascote/rei-${rei}.webp`}
         alt=""
         aria-hidden="true"
-        width={426}
-        height={397}
-        className="pointer-events-none absolute -bottom-3 -right-3 h-28 w-auto"
+        width={330}
+        height={420}
+        className="pointer-events-none absolute -bottom-3 -right-2 h-32 w-auto"
       />
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Seu torneio</p>
       <h1 className="mt-1 pr-24 text-xl font-bold leading-tight">
         {atual ? atual.titulo : 'Trilha completa'}
       </h1>
       <p className="mt-1 pr-24 text-sm text-muted-foreground">
+        {sumido && <span className="mb-1 block text-foreground">Faz uns dias, hein? Uma lição rápida para voltar ao ritmo.</span>}
         {feitas} de {total} lições ·{' '}
         <span className="inline-flex items-center gap-0.5 align-middle">
           {estrelas} <Star className="h-3.5 w-3.5 fill-current text-primary" aria-label="estrelas" />
@@ -160,9 +174,17 @@ function NivelDaTrilha({
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{nivel.descricao}</p>
         </div>
-        <div className="shrink-0 text-right">
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <img
+            src={`/trilha/${nivel.ilustracao}.webp`}
+            alt=""
+            aria-hidden="true"
+            width={300}
+            height={320}
+            className={cn('h-14 w-auto', bloqueado && 'opacity-40 grayscale')}
+          />
           {bloqueado ? (
-            <Lock className="ml-auto h-5 w-5 text-muted-foreground" aria-label="Nível bloqueado" />
+            <Lock className="h-4 w-4 text-muted-foreground" aria-label="Nível bloqueado" />
           ) : (
             <p className="text-sm font-bold tabular-nums">
               {feitas}/{nivel.licoes.length}
@@ -219,6 +241,16 @@ function NivelDaTrilha({
           </li>
         ))}
       </ol>
+      {/* O baú fecha o nível: abre quando a mesa final passa. Só enfeite. */}
+      <div className="flex justify-center" aria-hidden="true">
+        <img
+          src={fechado ? '/trilha/bau-aberto.webp' : '/trilha/bau-fechado.webp'}
+          alt=""
+          width={360}
+          height={330}
+          className={cn('h-20 w-auto', bloqueado && 'opacity-40 grayscale')}
+        />
+      </div>
     </section>
   );
 }

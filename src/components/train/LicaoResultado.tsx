@@ -24,19 +24,22 @@ export function LicaoResultado({ licao, respostas, estrelas, liberou, xp, onCont
   const acertos = respostas.filter(acertou).length;
   const passou = estrelas > 0;
   const erros = respostas.filter((r) => !acertou(r));
+  // Mesa final passada fecha o nível: o Rei com o baú aberto. Três estrelas: troféu
+  const fechouNivel = passou && !!licao.mesaFinal;
+  const rei = !passou ? 'errou' : fechouNivel ? 'bau' : estrelas === 3 ? 'trofeu' : 'acertou';
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-4 pb-6 pt-8">
       <div className="flex-1">
         <img
-          src={passou ? '/mascote/rei-acertou.webp' : '/mascote/rei-errou.webp'}
+          src={`/mascote/rei-${rei}.webp`}
           alt=""
           aria-hidden="true"
-          width={passou ? 445 : 368}
-          height={passou ? 372 : 362}
-          className="mx-auto h-36 w-auto"
+          width={400}
+          height={420}
+          className={cn('mx-auto w-auto', fechouNivel ? 'h-44' : 'h-36')}
         />
-        <h1 className="mt-4 text-center text-2xl font-bold">{passou ? 'Lição concluída!' : 'Quase lá'}</h1>
+        <h1 className="mt-4 text-center text-2xl font-bold">{fechouNivel ? 'Nível concluído!' : passou ? 'Lição concluída!' : 'Quase lá'}</h1>
         <p className="mt-1 text-center text-muted-foreground">
           {passou
             ? licao.titulo
@@ -80,7 +83,10 @@ export function LicaoResultado({ licao, respostas, estrelas, liberou, xp, onCont
           </div>
           <div className="rounded-2xl border border-border bg-card p-4 text-center">
             <dt className="text-xs uppercase tracking-wider text-muted-foreground">XP</dt>
-            <dd className="mt-1 text-2xl font-bold tabular-nums text-primary">+{Math.max(0, xp)}</dd>
+            <dd className="mt-1 flex items-center justify-center gap-2 text-2xl font-bold tabular-nums text-primary">
+              <img src="/trilha/pilha-alta.webp" alt="" aria-hidden="true" width={276} height={320} className="h-8 w-auto" />
+              +{Math.max(0, xp)}
+            </dd>
           </div>
         </dl>
 

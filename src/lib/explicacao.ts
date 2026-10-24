@@ -94,6 +94,29 @@ export function explicarJogada(d: DadosDaJogada): Explicacao {
   return { acertou, titulo, texto: [abertura, range, ev].filter(Boolean).join(' ') };
 }
 
+/** Arquivo em public/mascote (rei-<pose>.webp) que acompanha o comentário */
+export type PoseDoComentario = 'allin' | 'rindo' | 'ombros' | 'acertou' | 'joinha' | 'susto' | 'errou' | 'explicando';
+
+/** Sequência de acertos a partir da qual o Rei aparece rindo */
+export const SEQUENCIA_PARA_RIR = 5;
+
+/**
+ * A pose do Rei para a mão: comemora conforme a jogada certa, e no erro vai do
+ * susto (erro grave) à explicação (imprecisão).
+ */
+export function poseDoComentario(d: { tipo: DadosDaJogada['tipo']; suaAcao: ActionType; sequencia: number }): PoseDoComentario {
+  const acertou = d.tipo === 'best' || d.tipo === 'correct';
+  if (acertou) {
+    if (d.suaAcao === 'allin') return 'allin';
+    if (d.sequencia >= SEQUENCIA_PARA_RIR) return 'rindo';
+    if (d.suaAcao === 'fold') return 'ombros';
+    return d.tipo === 'best' ? 'acertou' : 'joinha';
+  }
+  if (d.tipo === 'blunder') return 'susto';
+  if (d.tipo === 'mistake') return 'errou';
+  return 'explicando';
+}
+
 function capitalizar(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
