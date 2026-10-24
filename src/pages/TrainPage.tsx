@@ -15,6 +15,8 @@ import { DailyChallengesCard } from '@/components/challenges/DailyChallengesCard
 import { ehApp, usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { useDificuldade } from '@/hooks/useDificuldade';
 import { ajustarPontos, limitarPontos, pesarPorCenario, sortearMao } from '@/lib/dificuldade';
+import { somDaJogada, tocar } from '@/lib/sons';
+import { BotaoDeSom } from '@/components/poker/BotaoDeSom';
 import { DificuldadeControle } from '@/components/poker/DificuldadeControle';
 import { SimuladoResultado } from '@/components/train/SimuladoResultado';
 import { LicaoResultado } from '@/components/train/LicaoResultado';
@@ -444,6 +446,11 @@ export default function TrainPage() {
     startGame();
   }, [licaoPendente, startGame]);
 
+  // Cartas na mesa a cada mão nova (src/lib/sons.ts)
+  useEffect(() => {
+    if (currentUniqueHandId) tocar('cartas');
+  }, [currentUniqueHandId]);
+
   // O painel do Rei fecha o quadro de detalhes junto quando a mão muda
   useEffect(() => {
     if (phase !== 'feedback') setDetalhesAbertos(false);
@@ -582,6 +589,7 @@ export default function TrainPage() {
   // Handle action
   const handleAction = useCallback((action: ActionType) => {
     if (!handState || !currentHandId) return;
+    tocar(somDaJogada(action));
 
     // Na lição, mão repetida é comum (o spot é fixo) e conta do mesmo jeito
     if (isHandAlreadyPlayedState && !preset) {
@@ -923,6 +931,7 @@ export default function TrainPage() {
   // Handle postflop action in simulation mode with delays
   const handlePostflopAction = useCallback((action: 'check' | 'bet' | 'fold' | 'allin' | 'call' | 'raise') => {
     if (!handState) return;
+    tocar(somDaJogada(action));
     
     const betSize = action === 'bet' ? selectedBetSize : undefined;
     const currentStreet = handState.street;
@@ -1594,6 +1603,7 @@ export default function TrainPage() {
             <span className="shrink-0 text-sm font-bold tabular-nums" aria-label={`${respostasLicao.length} de ${MAOS_POR_LICAO} mãos`}>
               {Math.min(respostasLicao.length, MAOS_POR_LICAO)}/{MAOS_POR_LICAO}
             </span>
+            <BotaoDeSom className="-mr-2" />
           </div>
         ) : (
         <>
@@ -1626,6 +1636,7 @@ export default function TrainPage() {
             <DificuldadeControle preferencia={dificuldade.preferencia} nivel={dificuldade.nivel} acertosNaJanela={dificuldade.acertosNaJanela} maosNaJanela={dificuldade.maosNaJanela} onMudar={dificuldade.mudarPreferencia} ocultarAcertos={emSimulado} />
           </div>
           <div className="flex items-center gap-2">
+            <BotaoDeSom />
             <Button
               variant="ghost"
               size="icon"

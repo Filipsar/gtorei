@@ -21,6 +21,7 @@ export const pt = {
     ranking: 'Ranking',
     achievements: 'Conquistas',
     community: 'Comunidade',
+    news: 'Notícias',
     favorites: 'Favoritos',
     profile: 'Perfil',
     search: 'Buscar',

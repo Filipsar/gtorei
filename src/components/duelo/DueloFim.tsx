@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Swords } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/app/RankingApp';
 import { EloBadge } from '@/components/app/EloBadge';
 import { comSinal, jogador, outroLado, type VisaoDoDuelo } from '@/lib/duelo';
+import { tocar } from '@/lib/sons';
 
 interface Props {
   visao: VisaoDoDuelo;
@@ -16,6 +18,10 @@ export function DueloFim({ visao, onDeNovo, onSair }: Props) {
   const dele = jogador(visao, outroLado(visao.eu));
   const venceu = visao.vencedor === 'eu';
   const empate = visao.vencedor === null;
+
+  useEffect(() => {
+    if (venceu) tocar('estrelas');
+  }, [venceu]);
 
   const pose = empate ? 'ombros' : venceu ? 'trofeu' : 'triste';
   const titulo = empate ? 'Empate' : venceu ? 'Você venceu!' : 'Não foi dessa vez';

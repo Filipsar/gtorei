@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PerfilApp } from '@/components/app/PerfilApp';
@@ -48,8 +48,6 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-  const screenshotInputRef = useRef<HTMLInputElement>(null);
 
   const isOwnProfile = !userId || userId === user?.id;
   const targetUserId = userId || user?.id;
@@ -122,7 +120,7 @@ export default function ProfilePage() {
       toast.error('Erro ao fazer upload do banner');
     } finally {
       setUploading(false);
-      if (bannerInputRef.current) bannerInputRef.current.value = '';
+      e.target.value = '';
     }
   };
 
@@ -153,7 +151,7 @@ export default function ProfilePage() {
       toast.error('Erro ao fazer upload do screenshot');
     } finally {
       setUploading(false);
-      if (screenshotInputRef.current) screenshotInputRef.current.value = '';
+      e.target.value = '';
     }
   };
 
@@ -198,169 +196,19 @@ export default function ProfilePage() {
 
   const levelImg = LEVEL_IMAGES[profileData.level] || levelIniciante;
 
-  // No app, o perfil refeito para celular (src/components/app/PerfilApp.tsx)
-  if (usarLayoutDoApp()) {
-    return (
-      <MainLayout>
-        <PerfilApp
-          dados={profileData}
-          proprio={isOwnProfile}
-          enviando={uploading}
-          imagemDoNivel={levelImg}
-          onEnviarCapa={handleBannerUpload}
-          onEnviarResultado={handleScreenshotUpload}
-          onRemoverResultado={removeScreenshot}
-        />
-      </MainLayout>
-    );
-  }
-
+  // O mesmo perfil no app e no site (src/components/app/PerfilApp.tsx): uma
+  // coluna no celular, duas na tela larga. O perfil antigo do site saiu em 24/10/2026.
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto pb-8">
-        {/* Banner */}
-        <div className="relative h-48 sm:h-64 bg-muted overflow-hidden rounded-b-2xl">
-          {profileData.banner_url ? (
-            <img
-              src={profileData.banner_url}
-              alt="Banner"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20" />
-          )}
-          {isOwnProfile && (
-            <>
-              <input
-                ref={bannerInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleBannerUpload}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                className="absolute bottom-3 right-3 gap-2"
-                onClick={() => bannerInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Camera className="h-4 w-4" />
-                {profileData.banner_url ? 'Trocar Banner' : 'Adicionar Banner'}
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Profile Info */}
-        <div className="px-4 sm:px-6 -mt-16 relative z-10">
-          <div className="flex items-end gap-4">
-            <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-background">
-              <AvatarImage src={profileData.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/20 text-primary text-3xl">
-                {profileData.username.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="pb-2">
-              <div className="flex items-center gap-2">
-                <h1 className="text-heading-md text-foreground">{profileData.username}</h1>
-                {isOwnProfile && <Badge variant="outline">Você</Badge>}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <img src={levelImg} alt="" className={cn('w-6 h-6 object-contain', getLevelFxClass(profileData.level))} />
-                <span className="text-muted-foreground">{getLevelName(profileData.level)}</span>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-primary font-semibold">{profileData.total_xp} XP</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-primary">{profileData.hands_played}</p>
-                <p className="text-body-xs text-muted-foreground">Mãos Jogadas</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-primary">{profileData.total_xp}</p>
-                <p className="text-body-xs text-muted-foreground">XP Total</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-primary">{profileData.level}</p>
-                <p className="text-body-xs text-muted-foreground">Nível</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Screenshots */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-heading-xs text-foreground">Resultados</h2>
-              {isOwnProfile && (profileData.screenshot_urls || []).length < 4 && (
-                <>
-                  <input
-                    ref={screenshotInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleScreenshotUpload}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => screenshotInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                    Adicionar ({(profileData.screenshot_urls || []).length}/4)
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {(profileData.screenshot_urls || []).length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <ImagePlus className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">
-                    {isOwnProfile
-                      ? 'Adicione screenshots dos seus resultados de poker!'
-                      : 'Nenhum resultado compartilhado ainda.'}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(profileData.screenshot_urls || []).map((url, i) => (
-                  <div key={i} className="relative group rounded-xl overflow-hidden border border-border">
-                    <img
-                      src={url}
-                      alt={`Resultado ${i + 1}`}
-                      className="w-full h-48 object-cover"
-                    />
-                    {isOwnProfile && (
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                        onClick={() => removeScreenshot(i)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <PerfilApp
+        dados={profileData}
+        proprio={isOwnProfile}
+        enviando={uploading}
+        imagemDoNivel={levelImg}
+        onEnviarCapa={handleBannerUpload}
+        onEnviarResultado={handleScreenshotUpload}
+        onRemoverResultado={removeScreenshot}
+      />
     </MainLayout>
   );
 }

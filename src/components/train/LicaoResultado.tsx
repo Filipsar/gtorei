@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Check, ChevronRight, RotateCcw, Star, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Licao } from '@/data/trilha';
 import { ACERTOS_PARA_PASSAR, MAOS_POR_LICAO, type Estrelas } from '@/lib/trilha';
 import type { RespostaSimulado } from '@/lib/simulado';
 import { acertou } from '@/lib/simulado';
+import { tocar } from '@/lib/sons';
 import { cn } from '@/lib/utils';
 
 const ACAO: Record<string, string> = { fold: 'Fold', call: 'Call', raise: 'Raise', allin: 'All-in', check: 'Check' };
@@ -27,6 +29,13 @@ export function LicaoResultado({ licao, respostas, estrelas, liberou, xp, onCont
   // Mesa final passada fecha o nível: o Rei com o baú aberto. Três estrelas: troféu
   const fechouNivel = passou && !!licao.mesaFinal;
   const rei = !passou ? 'errou' : fechouNivel ? 'bau' : estrelas === 3 ? 'trofeu' : 'acertou';
+
+  // O som das estrelas sai junto com a primeira que entra (atraso de 530 ms)
+  useEffect(() => {
+    if (!passou) return;
+    const t = setTimeout(() => tocar('estrelas'), 530);
+    return () => clearTimeout(t);
+  }, [passou]);
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-4 pb-6 pt-8">

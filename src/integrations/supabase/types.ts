@@ -520,6 +520,54 @@ export type Database = {
         }
         Relationships: []
       }
+      noticias: {
+        Row: {
+          atualizada_em: string | null
+          criada_em: string
+          fonte: string
+          id: string
+          link: string
+          publicada_em: string | null
+          publicada_na_fonte: string | null
+          resumo: string | null
+          slug: string | null
+          status: string
+          titulo: string | null
+          titulo_fonte: string
+          trecho_fonte: string | null
+        }
+        Insert: {
+          atualizada_em?: string | null
+          criada_em?: string
+          fonte: string
+          id?: string
+          link: string
+          publicada_em?: string | null
+          publicada_na_fonte?: string | null
+          resumo?: string | null
+          slug?: string | null
+          status?: string
+          titulo?: string | null
+          titulo_fonte: string
+          trecho_fonte?: string | null
+        }
+        Update: {
+          atualizada_em?: string | null
+          criada_em?: string
+          fonte?: string
+          id?: string
+          link?: string
+          publicada_em?: string | null
+          publicada_na_fonte?: string | null
+          resumo?: string | null
+          slug?: string | null
+          status?: string
+          titulo?: string | null
+          titulo_fonte?: string
+          trecho_fonte?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

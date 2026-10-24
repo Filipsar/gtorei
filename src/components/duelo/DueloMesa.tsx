@@ -43,6 +43,8 @@ import {
   type UltimaMao,
   type VisaoDoDuelo,
 } from '@/lib/duelo';
+import { somDaJogada, tocar } from '@/lib/sons';
+import { BotaoDeSom } from '@/components/poker/BotaoDeSom';
 import { cn } from '@/lib/utils';
 
 const NOME_DA_ACAO: Record<ActionType, string> = { fold: 'Fold', call: 'Call', raise: 'Raise', allin: 'All-in' };
@@ -106,6 +108,8 @@ export function DueloMesa({ duelo, onSair, onDeNovo }: Props) {
   // Última mão cujo resultado já foi mostrado (null: ainda não carregou)
   const resultadoVisto = useRef<number | null>(null);
   const ordemAtual = useRef(-1);
+  // Quantas jogadas de cada mão já tocaram som (as do outro chegam pelo servidor)
+  const jogadasOuvidas = useRef(new Map<number, number>());
   const sessao = useRef<PromiseLike<string | null> | null>(null);
 
   const aplicar = useCallback((v: VisaoDoDuelo) => {
@@ -114,8 +118,16 @@ export function DueloMesa({ duelo, onSair, onDeNovo }: Props) {
     desvio.current = new Date(v.agora).getTime() - Date.now();
     if (v.minhas_cartas) cartasPorMao.current.set(v.mao, v.minhas_cartas);
     const fechou = v.ultima?.mao ?? 0;
+    // Som das jogadas novas do outro (as minhas tocam no clique)
+    const primeira = resultadoVisto.current === null;
+    for (const [n, acoes] of [[fechou, v.ultima?.acoes ?? []], [v.mao, v.estado.acoes]] as const) {
+      if (!n) continue;
+      const ja = jogadasOuvidas.current.get(n) ?? 0;
+      if (!primeira) for (const a of acoes.slice(ja)) if (a.quem !== v.eu) tocar(somDaJogada(a.acao));
+      jogadasOuvidas.current.set(n, Math.max(ja, acoes.length));
+    }
     // Quem entra (ou volta) com o duelo andando não revê a mão anterior
-    if (resultadoVisto.current === null) resultadoVisto.current = v.status === 'fim' ? fechou - 1 : fechou;
+    if (primeira) resultadoVisto.current = v.status === 'fim' ? fechou - 1 : fechou;
     if (v.ultima && fechou > resultadoVisto.current) {
       resultadoVisto.current = fechou;
       setMostrando(v.ultima);
@@ -163,6 +175,12 @@ export function DueloMesa({ duelo, onSair, onDeNovo }: Props) {
     const t = setTimeout(() => setMostrando(null), PAUSA_DO_RESULTADO_MS);
     return () => clearTimeout(t);
   }, [mostrando]);
+
+  // Cartas na mesa quando a mão nova aparece (depois da pausa do resultado)
+  const maoNaTela = visao && !mostrando && visao.status === 'jogando' ? visao.mao : null;
+  useEffect(() => {
+    if (maoNaTela) tocar('cartas');
+  }, [maoNaTela]);
 
   useEffect(() => {
     if (!nota) return;
@@ -221,6 +239,9 @@ export function DueloMesa({ duelo, onSair, onDeNovo }: Props) {
     if (!visao || enviando || mostrando) return;
     const spot = spotDaDecisao(visao.estado, visao.eu);
     const avaliacao = spot ? avaliarDecisao(spot, lerCartas(visao.minhas_cartas), acao, profile?.level ?? 1) : null;
+    tocar(somDaJogada(acao));
+    // A jogada é minha: não toca de novo quando voltar do servidor
+    jogadasOuvidas.current.set(visao.mao, visao.estado.acoes.length + 1);
     setEnviando(true);
     const { data, error } = await supabase.rpc('duelo_agir', {
       _duelo: duelo,
@@ -357,6 +378,7 @@ export function DueloMesa({ duelo, onSair, onDeNovo }: Props) {
             <Avatar url={dele.avatar} nome={dele.nome} tamanho={32} />
           </div>
         </div>
+        <BotaoDeSom />
       </div>
 
       {/* Vez e relógio */}

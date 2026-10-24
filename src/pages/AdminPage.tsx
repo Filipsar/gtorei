@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity, Smartphone } from 'lucide-react';
+import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity, Smartphone, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,7 @@ import { fatiarPagina } from '@/lib/paginacao';
 import { MonthlyComparison } from '@/components/admin/MonthlyComparison';
 import { ReferralLevel5 } from '@/components/admin/ReferralLevel5';
 import { AppTeste } from '@/components/admin/AppTeste';
+import { AdminNoticias } from '@/components/admin/AdminNoticias';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -75,7 +76,7 @@ const columnLabels: Record<ColumnKey, string> = {
   created_at: 'Cadastro',
 };
 
-type TabKey = 'jogadores' | 'dashboard' | 'app';
+type TabKey = 'jogadores' | 'dashboard' | 'app' | 'noticias';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -367,7 +368,8 @@ export default function AdminPage() {
     doc.save(`gtorei-relatorio-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}.pdf`);
   };
 
-  const tabLabel = activeTab === 'jogadores' ? 'Jogadores' : activeTab === 'app' ? 'App Android' : 'Dashboard';
+  const tabLabel =
+    activeTab === 'jogadores' ? 'Jogadores' : activeTab === 'app' ? 'App Android' : activeTab === 'noticias' ? 'Notícias' : 'Dashboard';
 
   return (
     <MainLayout>
@@ -389,6 +391,9 @@ export default function AdminPage() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('app')}>
                 <Smartphone className="h-4 w-4 mr-2" /> App Android
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('noticias')}>
+                <Newspaper className="h-4 w-4 mr-2" /> Notícias
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -423,6 +428,8 @@ export default function AdminPage() {
         {/* A aba do app não depende da lista de jogadores: abre sem esperar ela carregar */}
         {activeTab === 'app' ? (
           <AppTeste />
+        ) : activeTab === 'noticias' ? (
+          <AdminNoticias />
         ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

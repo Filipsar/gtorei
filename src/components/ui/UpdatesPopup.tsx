@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Instagram, ChevronLeft, ChevronRight, X, ClipboardCheck, Smartphone } from 'lucide-react';
+import { Heart, Instagram, ChevronLeft, ChevronRight, X, Smartphone, Trophy } from 'lucide-react';
+import { EloBadge } from '@/components/app/EloBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
 import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
@@ -11,7 +12,7 @@ import { ehApp } from '@/lib/nativo/plataforma';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.24.2';
+const CURRENT_VERSION = '1.26.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
 const DONATE_URL = '/apoiar';
 
@@ -108,17 +109,25 @@ export function UpdatesPopup() {
         ]
       : []),
     {
-      icon: <ClipboardCheck className="h-10 w-10" />,
-      iconBg: 'bg-primary/20 text-primary',
-      title: 'Simulado: a resposta só no fim',
+      // Três brasões da escada no lugar do ícone
+      icon: (
+        <span className="flex items-end gap-1" aria-hidden="true">
+          <EloBadge elo={1} tamanho={34} />
+          <EloBadge elo={4} tamanho={42} />
+          <EloBadge elo={7} tamanho={52} />
+        </span>
+      ),
+      iconBg: 'bg-primary/15',
+      title: 'Ranking novo: ligas por elo',
       titleClass: 'text-primary',
       description:
-        'Jogue 10, 20 ou 30 mãos seguidas sem ver se acertou. No fim vem a correção mão a mão e o XP pelos acertos, com bônus a partir de 80% de precisão. Está em Treinar.',
+        'Bronze, Prata, Ouro, Adamantio, Rúnico, Diamante e Rei. Todo dia você disputa com quem está no seu elo: os primeiros sobem e os últimos caem (no Bronze ninguém cai). O XP do dia é o de sempre, das mãos, do simulado e do duelo. O ranking global do mês continua, agora com o elo de cada um.',
+      badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
       cta: (
         <div className="mt-4 w-full flex justify-center">
-          <Button variant="outline" onClick={() => irPara('/treinar')}>
-            <ClipboardCheck className="h-4 w-4 mr-2" />
-            Fazer um simulado
+          <Button onClick={() => irPara('/ranking')}>
+            <Trophy className="h-4 w-4 mr-2" />
+            Ver minha liga
           </Button>
         </div>
       ),

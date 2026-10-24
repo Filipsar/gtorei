@@ -23,3 +23,6 @@ User-agent: facebookexternalhit
 Allow: /
 
 Sitemap: https://www.gtorei.com.br/sitemap.xml
+
+# Notícias (páginas geradas no servidor, api/noticias.ts)
+Sitemap: https://www.gtorei.com.br/sitemap-noticias.xml

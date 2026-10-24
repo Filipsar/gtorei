@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown, Smartphone } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown, Smartphone, Newspaper } from 'lucide-react';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
 import { ADMIN_EMAIL } from '@/data/admin';
@@ -34,6 +34,8 @@ interface ItemNav {
   icon: LucideIcon;
   locked?: boolean;
   external?: boolean;
+  /** Página servida pelo servidor, fora do SPA (/noticias): abre com carregamento completo */
+  servidor?: boolean;
 }
 
 interface SecaoNav {
@@ -103,6 +105,8 @@ export function AppSidebar() {
         { title: t.sidebar.achievements, url: '/conquistas', icon: Award },
         { title: t.sidebar.referral, url: '/indicar', icon: Gift },
         { title: t.sidebar.community, url: '/comunidade', icon: Users },
+        // No app o dist vai empacotado e não tem as funções do servidor
+        ...(app ? [] : [{ title: t.sidebar.news, url: '/noticias', icon: Newspaper, servidor: true }]),
         { title: t.sidebar.search, url: '/buscar', icon: Search },
         { title: t.sidebar.profile, url: '/perfil', icon: User },
       ],
@@ -172,7 +176,15 @@ export function AppSidebar() {
     return (
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild isActive={ativo} tooltip={collapsed ? item.title : undefined}>
-          {item.external ? (
+          {item.servidor ? (
+            <a
+              href={item.url}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-sidebar-accent"
+            >
+              <item.icon className="h-5 w-5 shrink-0 text-sidebar-foreground" />
+              {!collapsed && <span className="text-sm">{item.title}</span>}
+            </a>
+          ) : item.external ? (
             <a
               href={item.url}
               target="_blank"

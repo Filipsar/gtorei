@@ -188,16 +188,38 @@ passa por ele.
   no topo (`AvisoDeDesafio`, app e site). No app, depois de cada mão o Rei comenta (`ReiComenta`, texto de
   `src/lib/explicacao.ts`, tirado da mesma range que dá a nota); o quadro completo abre em
   "Ver range". Sem tutorial nem teste de nível no app: a trilha faz esse papel.
-  Ligas por elo (24/10/2026, migration `20261024130000_ligas_por_elo.sql`): Bronze, Prata,
-  Ouro, Adamantio, Rúnico, Diamante, Rei. Semana do `rankings` weekly (domingo a sábado);
-  top 3 sobem, no Rei quem sai do top 10 cai. Sem pg_cron: a semana fecha na primeira
-  chamada de `get_liga()` depois do fim. Ranking e perfil do app em
-  `src/components/app/RankingApp.tsx` e `PerfilApp.tsx`; o site continua com os de antes.
+  Ligas por elo (migrations `20261024130000_ligas_por_elo.sql` e
+  `20261024150000_ligas_diarias.sql`): Bronze, Prata, Ouro, Adamantio, Rúnico, Diamante,
+  Rei. Desde 24/10/2026 a disputa é diária (XP do `rankings` daily, Brasília), com regra
+  por elo: sobem 10/10/10/6/6/3 e caem do 20º/20º/15º/10º/10º para baixo (Bronze não cai);
+  no Rei ficam os 10 primeiros. A tabela está no SQL (`_regra_do_elo`) e em
+  `src/data/elos.ts` (`REGRAS_DOS_ELOS`); `src/test/ligas.test.ts` falha se divergirem. Sem
+  pg_cron: os dias fecham, em ordem, na primeira chamada de `get_liga()` depois da
+  meia-noite. Ranking e perfil são os mesmos no app e no site
+  (`src/components/app/RankingApp.tsx` com `site`, `PerfilApp.tsx` responsivo); o ranking
+  global é do mês, e só o admin escolhe meses anteriores. O anúncio das ligas é um slide do
+  `UpdatesPopup` (versão 1.26.0).
+  Sons da mesa (24/10/2026): `public/sons/` (cartas, fichas, check, estrelas), tocados por
+  `src/lib/sons.ts`; o botão `BotaoDeSom` liga e desliga (guardado no aparelho). Os
+  arquivos originais vieram em `sounds/`, na raiz, fora do git.
   Arte do app (24/10/2026): fichas, pilhas e baú em `public/trilha/`, poses do Rei em
   `public/mascote/rei-*.webp`. Prompts em `midia/_arte/prompts-trilha.md`; o Gemini entrega
   JPG com fundo magenta, recortado por `midia/_arte/recortar-trilha.py` (tira o magenta das
   bordas e das sombras e separa as folhas de expressões). `src/test/assetsDoApp.test.ts`
   falha se o app pedir uma imagem que não existe.
+- Notícias (24/10/2026, migration `20261024160000_noticias.sql`): `/noticias` e
+  `/noticias/:slug` saem em HTML pronto de funções do Vercel (`api/noticias.ts`, com o
+  código comum em `api/_noticias.ts`), não do SPA: é o que deixa o Google ler a página.
+  Rewrites e `includeFiles: .env` no `vercel.json` (as funções leem a URL e a chave
+  publicável do `.env` versionado; não há variável no Vercel). Fluxo: o admin abre /admin →
+  Notícias, `api/rss.ts` lê os feeds de uma lista fixa (PokerNews Brasil, PokerNews,
+  CardPlayer) e o app grava o que é novo como rascunho; publicar exige título e resumo
+  escritos pelo admin (mínimo de 200 caracteres, conferido no banco). O trecho do feed
+  nunca vai para a página: só manchete e link de outro site seria conteúdo raspado e
+  prejudica o site inteiro no Google. Sitemap próprio em `/sitemap-noticias.xml` (citado no
+  `robots.txt`). A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
+  `npx tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext
+  --types node --skipLibCheck api/*.ts`. O `dev` do Vite não serve `api/`.
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.
   Ao criar tabela nova com dados do usuário, incluir na lista `TABELAS` da função.
 - Políticas (22/10/2026): `/privacidade`, `/termos`, `/reembolso`, `/cookies` em

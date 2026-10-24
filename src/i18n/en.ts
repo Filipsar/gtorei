@@ -23,6 +23,7 @@ export const en: Translations = {
     ranking: 'Ranking',
     achievements: 'Achievements',
     community: 'Community',
+    news: 'News',
     favorites: 'Favorites',
     profile: 'Profile',
     search: 'Search',

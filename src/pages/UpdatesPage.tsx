@@ -22,6 +22,27 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.27.0',
+    date: '24/10/2026',
+    type: 'feature',
+    title: 'Notícias de Poker',
+    description: 'Nova página de notícias, no menu Comunidade: o que acontece no poker, resumido em português pelo GTORei, com o que importa para quem joga torneio e o link para a matéria original. As primeiras chegam nos próximos dias.',
+  },
+  {
+    version: '1.26.1',
+    date: '24/10/2026',
+    type: 'improvement',
+    title: 'Sons na Mesa e Range Inteira no Celular',
+    description: 'A mesa ganhou som: cartas a cada mão nova, fichas quando entra aposta, a batida do check e as estrelas no fim da lição. O botão de alto-falante no topo do treino liga e desliga. E a janela "Range GTO Completo" agora cabe no celular: a última coluna e o quadro da sua mão não saem mais da tela, e o quadro do AA não abre mais sozinho por cima do título. Toque numa mão para ver as frequências dela.',
+  },
+  {
+    version: '1.26.0',
+    date: '24/10/2026',
+    type: 'feature',
+    title: 'Ranking por Ligas, Disputa Diária e Perfil Novo',
+    description: 'O ranking agora é por ligas: Bronze, Prata, Ouro, Adamantio, Rúnico, Diamante e Rei. Todo dia você disputa com quem está no seu elo. No Bronze os 10 primeiros sobem; na Prata e no Ouro sobem 10 e cai quem termina do 20º para baixo; no Adamantio sobem 6 e cai do 15º para baixo; no Rúnico sobem 6 e cai do 10º; no Diamante sobem 3 e cai do 10º; no Rei fica quem termina no top 10. O ranking global do mês continua, com o elo de cada um. O perfil também foi refeito, com elo, progresso do nível e resultados.',
+  },
+  {
     version: '1.25.0',
     date: '24/10/2026',
     type: 'improvement',

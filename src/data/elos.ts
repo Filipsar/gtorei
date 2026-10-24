@@ -1,4 +1,4 @@
-// Elos das ligas do app (migration 20261024130000_ligas_por_elo.sql).
+// Elos das ligas (migrations 20261024130000_ligas_por_elo e 20261024150000_ligas_diarias).
 // O número é o que o banco guarda em liga_jogador.elo.
 
 export interface Elo {
@@ -25,10 +25,30 @@ export const ELOS: Elo[] = [
 ];
 
 export const ELO_REI = 7;
-/** Quantos sobem por semana em cada elo abaixo do Rei */
-export const SOBEM = 3;
-/** No Rei, quantos ficam; o resto cai para Diamante */
-export const FICAM_NO_REI = 10;
+
+/**
+ * A disputa é diária (migration 20261024150000_ligas_diarias.sql): no fim do
+ * dia, dentro de cada elo, os `sobem` primeiros (com XP no dia) sobem um elo e
+ * quem termina da posição `caiA` para baixo cai um. No Rei ficam os 10
+ * primeiros. A mesma tabela está no SQL (_regra_do_elo): mudou lá, muda aqui.
+ */
+export interface RegraDoElo {
+  sobem: number;
+  /** Desta posição para baixo cai (nulo: ninguém cai) */
+  caiA: number | null;
+}
+
+export const REGRAS_DOS_ELOS: Record<number, RegraDoElo> = {
+  1: { sobem: 10, caiA: null },
+  2: { sobem: 10, caiA: 20 },
+  3: { sobem: 10, caiA: 20 },
+  4: { sobem: 6, caiA: 15 },
+  5: { sobem: 6, caiA: 10 },
+  6: { sobem: 3, caiA: 10 },
+  7: { sobem: 0, caiA: 11 },
+};
+
+export const regraDoElo = (n: number): RegraDoElo => REGRAS_DOS_ELOS[n] ?? REGRAS_DOS_ELOS[1];
 
 export function eloPorNumero(n: number | null | undefined): Elo {
   return ELOS.find((e) => e.numero === n) ?? ELOS[0];

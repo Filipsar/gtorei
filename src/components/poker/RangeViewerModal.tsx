@@ -1,15 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { RANKS, Scenario, Position, ActionType, HandData, RangeData, getRange, GameMode } from '@/data/gtoRanges';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { Crown } from 'lucide-react';
 
 interface RangeViewerModalProps {
@@ -59,6 +52,8 @@ const scenarioLabels: Record<Scenario, string> = {
   multiway: 'Multiway',
 };
 
+const tipoDaMao = (mao: string) => (mao.length === 2 ? 'Par' : mao.endsWith('s') ? 'Suited' : 'Offsuit');
+
 export function RangeViewerModal({
   open,
   onClose,
@@ -78,10 +73,16 @@ export function RangeViewerModal({
   const range =
     rangeRecebida ??
     getRange(scenario, position, stack, finalTable, gameMode, bountyMultiplier, 3, villainPosition);
+  // A mão cujos números aparecem embaixo da matriz: a do mouse, a tocada ou a sua.
+  // Era um tooltip por célula, que no celular abria sozinho no AA (o foco da
+  // janela caía na primeira célula) e ficava preso em cima do título.
   const [hoveredHand, setHoveredHand] = useState<string | null>(null);
+  const [tocada, setTocada] = useState<string | null>(null);
+  const fechar = useRef<HTMLButtonElement>(null);
 
-  // Encontrar dados da mão do herói
-  const heroHandData = range.hands.find(h => h.hand === heroHand);
+  const mostrada = hoveredHand ?? tocada ?? heroHand;
+  const ehSuaMao = mostrada === heroHand;
+  const dadosMostrados = range.hands.find(h => h.hand === mostrada);
 
   // Criar matriz 13x13
   const matrix: HandData[][] = [];
@@ -109,7 +110,14 @@ export function RangeViewerModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-hidden bg-card border-border p-0">
+      <DialogContent
+        className="flex max-h-[90dvh] w-[95vw] max-w-4xl flex-col gap-0 overflow-hidden border-border bg-card p-0"
+        // O foco vai para "Fechar", não para a primeira célula da matriz
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          fechar.current?.focus();
+        }}
+      >
         {/* O X de fechar vem do próprio DialogContent. Havia um segundo botão
             aqui dentro, e a janela aparecia com dois X colados um no outro. */}
         <DialogHeader className="p-4 pb-0 pr-12">
@@ -122,8 +130,10 @@ export function RangeViewerModal({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-4 pt-2">
-          <div className="space-y-6">
+        {/* Rolagem simples: dentro da ScrollArea do Radix a matriz não encolhia
+            e empurrava a última coluna e o quadro da mão para fora da tela */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-3 sm:px-4">
+          <div className="space-y-4 sm:space-y-6">
             {/* Legenda */}
             <div className="flex flex-wrap gap-3 justify-center">
               {Object.entries(actionColors).map(([action, colors]) => (
@@ -136,157 +146,122 @@ export function RangeViewerModal({
               ))}
             </div>
 
-            {/* Matriz de Ranges */}
-            <TooltipProvider delayDuration={100}>
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-[350px] max-w-[500px] mx-auto">
-                  {/* Header row */}
-                  <div className="grid grid-cols-[1.5rem_repeat(13,1fr)] gap-0.5 mb-0.5">
-                    <div className="h-5" />
-                    {RANKS.map((rank) => (
-                      <div
-                        key={`header-${rank}`}
-                        className="h-5 flex items-center justify-center text-[10px] font-medium text-muted-foreground"
-                      >
-                        {rank}
-                      </div>
-                    ))}
+            {/* Matriz de Ranges: 13 colunas que cabem na largura que houver */}
+            <div className="mx-auto w-full max-w-[480px]" onMouseLeave={() => setHoveredHand(null)}>
+              {/* Header row */}
+              <div className="mb-[2px] grid grid-cols-[1rem_repeat(13,minmax(0,1fr))] gap-[2px] sm:grid-cols-[1.5rem_repeat(13,minmax(0,1fr))]">
+                <div />
+                {RANKS.map((rank) => (
+                  <div
+                    key={`header-${rank}`}
+                    className="flex h-5 items-center justify-center text-[10px] font-medium text-muted-foreground"
+                  >
+                    {rank}
+                  </div>
+                ))}
+              </div>
+
+              {/* Matrix rows */}
+              {RANKS.map((rowRank, i) => (
+                <div
+                  key={rowRank}
+                  className="mb-[2px] grid grid-cols-[1rem_repeat(13,minmax(0,1fr))] gap-[2px] sm:grid-cols-[1.5rem_repeat(13,minmax(0,1fr))]"
+                >
+                  <div className="flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                    {rowRank}
                   </div>
 
-                  {/* Matrix rows */}
-                  {RANKS.map((rowRank, i) => (
-                    <div key={rowRank} className="grid grid-cols-[1.5rem_repeat(13,1fr)] gap-0.5 mb-0.5">
-                      <div className="h-7 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                        {rowRank}
-                      </div>
+                  {RANKS.map((colRank, j) => {
+                    const hand = matrix[i]?.[j];
+                    if (!hand) return <div key={`${rowRank}-${colRank}`} className="aspect-square" />;
 
-                      {RANKS.map((colRank, j) => {
-                        const hand = matrix[i]?.[j];
-                        if (!hand) return <div key={`${rowRank}-${colRank}`} className="h-7" />;
+                    const isPair = i === j;
+                    const isHeroHand = hand.hand === heroHand;
+                    const isShown = mostrada === hand.hand;
 
-                        const isPair = i === j;
-                        const isSuited = i < j;
-                        const isHeroHand = hand.hand === heroHand;
-                        const isHovered = hoveredHand === hand.hand;
+                    const primaryAction = hand.actions.find(a => a.action === hand.primaryAction);
+                    const freq = primaryAction?.frequency || 0;
 
-                        const primaryAction = hand.actions.find(a => a.action === hand.primaryAction);
-                        const freq = primaryAction?.frequency || 0;
+                    return (
+                      <button
+                        key={hand.hand}
+                        type="button"
+                        aria-label={`${hand.hand}: ${actionLabels[hand.primaryAction]} ${freq}%`}
+                        aria-pressed={isShown}
+                        className={cn(
+                          'relative flex aspect-square min-w-0 items-center justify-center rounded-sm text-[8px] font-medium leading-none text-white sm:text-[10px]',
+                          'cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          'border sm:border-2',
+                          actionColors[hand.primaryAction].bg,
+                          isHeroHand
+                            ? 'z-10 border-primary ring-2 ring-primary/50 shadow-lg shadow-primary/30'
+                            : isShown
+                              ? 'border-white/70'
+                              : 'border-transparent',
+                          isPair && 'font-bold'
+                        )}
+                        style={{
+                          opacity: freq < 100 ? 0.5 + (freq / 100) * 0.5 : 1,
+                        }}
+                        onClick={() => setTocada(hand.hand)}
+                        onMouseEnter={() => setHoveredHand(hand.hand)}
+                      >
+                        {hand.hand.replace('o', '').replace('s', '')}
 
-                        return (
-                          <Tooltip key={hand.hand}>
-                            <TooltipTrigger asChild>
-                              <button
-                                className={cn(
-                                  'h-7 flex items-center justify-center text-[9px] font-medium rounded-sm relative',
-                                  'transition-all duration-150 cursor-pointer',
-                                  'border-2',
-                                  actionColors[hand.primaryAction].bg,
-                                  isHeroHand 
-                                    ? 'border-primary ring-2 ring-primary/50 shadow-lg shadow-primary/30 z-10' 
-                                    : 'border-transparent',
-                                  isHovered && !isHeroHand && 'border-white/30',
-                                  isPair && 'font-bold',
-                                  'text-white'
-                                )}
-                                style={{
-                                  opacity: freq < 100 ? 0.5 + (freq / 100) * 0.5 : 1,
-                                }}
-                                onMouseEnter={() => setHoveredHand(hand.hand)}
-                                onMouseLeave={() => setHoveredHand(null)}
-                              >
-                                {hand.hand.replace('o', '').replace('s', '')}
-                                
-                                {/* Coroa para mão do herói */}
-                                {isHeroHand && (
-                                  <div className="absolute -top-1.5 -right-1.5 text-primary">
-                                    <Crown className="w-3 h-3 fill-primary" />
-                                  </div>
-                                )}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="top"
-                              className="bg-popover border-border p-3 max-w-[200px]"
-                            >
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-bold text-foreground">{hand.hand}</span>
-                                  <span className={cn(
-                                    'text-xs px-2 py-0.5 rounded',
-                                    isPair && 'bg-primary/20 text-primary',
-                                    isSuited && !isPair && 'bg-secondary/20 text-secondary',
-                                    !isSuited && !isPair && 'bg-muted text-muted-foreground'
-                                  )}>
-                                    {isPair ? 'Par' : isSuited ? 'Suited' : 'Offsuit'}
-                                  </span>
-                                </div>
-
-                                <div className="border-t border-border pt-2 space-y-1">
-                                  {hand.actions
-                                    .filter(a => a.frequency > 0)
-                                    .sort((a, b) => b.frequency - a.frequency)
-                                    .map((action) => (
-                                      <div key={action.action} className="flex items-center justify-between text-xs">
-                                        <span className="capitalize">{actionLabels[action.action]}</span>
-                                        <div className="flex items-center gap-2">
-                                          <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                              className={cn(
-                                                'h-full rounded-full',
-                                                actionColors[action.action].bg
-                                              )}
-                                              style={{ width: `${action.frequency}%` }}
-                                            />
-                                          </div>
-                                          <span className="text-muted-foreground w-8 text-right">
-                                            {action.frequency}%
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                </div>
-
-                                <div className="border-t border-border pt-2 text-xs">
-                                  <span className="text-muted-foreground">Ação GTO: </span>
-                                  <span className="font-medium capitalize">{actionLabels[hand.primaryAction]}</span>
-                                </div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                  ))}
+                        {/* Coroa para mão do herói */}
+                        {isHeroHand && (
+                          <div className="absolute -top-1.5 -right-1.5 text-primary">
+                            <Crown className="w-3 h-3 fill-primary" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-            </TooltipProvider>
+              ))}
+            </div>
 
-            {/* Detalhes da mão do herói */}
-            {heroHandData && (
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-primary fill-primary" />
-                  <span className="font-bold">Sua Mão: {heroHand}</span>
+            {/* Números da mão mostrada (a sua, até tocar em outra) */}
+            {dadosMostrados && (
+              <div className="bg-muted/50 rounded-lg p-3 space-y-3 sm:p-4" aria-live="polite">
+                <div className="flex flex-wrap items-center gap-2">
+                  {ehSuaMao && <Crown className="w-5 h-5 text-primary fill-primary" />}
+                  <span className="font-bold">{ehSuaMao ? `Sua Mão: ${heroHand}` : mostrada}</span>
+                  {!ehSuaMao && (
+                    <>
+                      <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">{tipoDaMao(mostrada)}</span>
+                      <button
+                        type="button"
+                        className="ml-auto text-xs font-medium text-foreground underline underline-offset-2"
+                        onClick={() => {
+                          setTocada(null);
+                          setHoveredHand(null);
+                        }}
+                      >
+                        Ver a sua ({heroHand})
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  {heroHandData.actions
+                  {dadosMostrados.actions
                     .filter(a => a.frequency > 0)
                     .sort((a, b) => b.frequency - a.frequency)
                     .map((action) => {
-                      const isUserAction = action.action === heroAction;
+                      const isUserAction = ehSuaMao && action.action === heroAction;
                       return (
-                        <div 
-                          key={action.action} 
+                        <div
+                          key={action.action}
                           className={cn(
-                            'flex items-center gap-3 p-2 rounded',
+                            'flex items-center gap-2 p-2 rounded sm:gap-3',
                             isUserAction && 'bg-primary/10 border border-primary/30'
                           )}
                         >
-                          <span className="text-sm w-16 capitalize font-medium">
+                          <span className="text-sm w-14 shrink-0 capitalize font-medium sm:w-16">
                             {actionLabels[action.action]}
                           </span>
-                          <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                          <div className="min-w-0 flex-1 h-3 bg-muted rounded-full overflow-hidden">
                             <div
                               className={cn(
                                 'h-full rounded-full transition-all',
@@ -295,11 +270,11 @@ export function RangeViewerModal({
                               style={{ width: `${action.frequency}%` }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground w-12 text-right">
+                          <span className="text-sm text-muted-foreground w-11 shrink-0 text-right">
                             {action.frequency}%
                           </span>
                           {isUserAction && (
-                            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+                            <span className="shrink-0 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
                               Sua escolha
                             </span>
                           )}
@@ -307,13 +282,19 @@ export function RangeViewerModal({
                       );
                     })}
                 </div>
+                {!ehSuaMao && (
+                  <p className="text-xs text-muted-foreground">
+                    Ação GTO: <span className="font-medium text-foreground">{actionLabels[dadosMostrados.primaryAction]}</span>
+                  </p>
+                )}
               </div>
             )}
+            <p className="text-center text-xs text-muted-foreground">Toque numa mão para ver as frequências dela.</p>
           </div>
-        </ScrollArea>
+        </div>
 
         <div className="p-4 pt-2 border-t border-border">
-          <Button onClick={onClose} className="w-full">
+          <Button ref={fechar} onClick={onClose} className="w-full">
             Fechar
           </Button>
         </div>
