@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.27.1',
+    date: '24/10/2026',
+    type: 'improvement',
+    title: 'Notícias com Imagem',
+    description: 'Cada notícia agora tem imagem, na página, na lista e quando o link é compartilhado: uma foto com o crédito de quem fez ou a arte do GTORei com o título da notícia.',
+  },
+  {
     version: '1.27.0',
     date: '24/10/2026',
     type: 'feature',

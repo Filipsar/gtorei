@@ -221,7 +221,14 @@ passa por ele.
   noindex). A porta de entrada pública é a página inicial: "Notícias" no menu do topo e no
   rodapé e a seção "Últimas notícias" (`src/components/home/UltimasNoticias.tsx`, some sem
   notícia publicada). Links para `/noticias` são `<a href>` comuns, nunca `Link` do roteador.
-  No admin dá para marcar várias, abrir os editores juntos e publicar as prontas em lote. A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
+  No admin dá para marcar várias, abrir os editores juntos e publicar as prontas em lote.
+  Imagem (migration `20261024170000_noticias_imagem.sql`, bucket público `noticias`, só o
+  admin envia): a enviada pelo admin, com crédito, ou a arte do GTORei gerada no navegador
+  (`src/lib/imagemDaNoticia.ts`: 1200x630, JPEG, título + Rei lendo; nome começa com
+  `gerada-` e é refeita quando o título muda). A foto do feed da fonte nunca é usada: é da
+  agência ou do site de origem. O título do rascunho começa em branco (o da fonte aparece
+  só como referência). `api/_noticias.ts` consulta sem as colunas de imagem se elas ainda
+  não existirem. A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
   `npx tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext
   --types node --skipLibCheck api/*.ts`. O `dev` do Vite não serve `api/`.
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.

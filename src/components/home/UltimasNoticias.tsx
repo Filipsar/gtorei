@@ -8,6 +8,7 @@ interface Resumida {
   fonte: string;
   resumo: string;
   publicada_em: string;
+  imagem_url?: string | null;
 }
 
 const dia = (iso: string) =>
@@ -28,15 +29,14 @@ export function UltimasNoticias() {
   const [lista, setLista] = useState<Resumida[]>([]);
 
   useEffect(() => {
-    void supabase
-      .from('noticias')
-      .select('titulo, slug, fonte, resumo, publicada_em')
-      .eq('status', 'publicada')
-      .order('publicada_em', { ascending: false })
-      .limit(3)
-      .then(({ data, error }) => {
-        if (!error && data) setLista(data as Resumida[]);
-      });
+    const consultar = (colunas: string) =>
+      supabase.from('noticias').select(colunas).eq('status', 'publicada').order('publicada_em', { ascending: false }).limit(3);
+    void (async () => {
+      // Sem as colunas de imagem (migration 20261024170000 por aplicar), vai sem elas
+      let { data, error } = await consultar('titulo, slug, fonte, resumo, publicada_em, imagem_url');
+      if (error) ({ data, error } = await consultar('titulo, slug, fonte, resumo, publicada_em'));
+      if (!error && data) setLista(data as unknown as Resumida[]);
+    })();
   }, []);
 
   if (lista.length === 0) return null;
@@ -67,8 +67,18 @@ export function UltimasNoticias() {
             <li key={n.slug}>
               <a
                 href={`/noticias/${n.slug}`}
-                className="group flex h-full flex-col rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/50 sm:p-6"
+                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/50 sm:p-6"
               >
+                {n.imagem_url && (
+                  <img
+                    src={n.imagem_url}
+                    alt=""
+                    width={1200}
+                    height={630}
+                    loading="lazy"
+                    className="-mx-5 -mt-5 mb-4 aspect-[1200/630] w-[calc(100%+2.5rem)] max-w-none object-cover sm:-mx-6 sm:-mt-6 sm:w-[calc(100%+3rem)]"
+                  />
+                )}
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Newspaper className="h-3.5 w-3.5" aria-hidden="true" />
                   {dia(n.publicada_em)} · {n.fonte}

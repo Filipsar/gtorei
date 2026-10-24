@@ -526,6 +526,8 @@ export type Database = {
           criada_em: string
           fonte: string
           id: string
+          imagem_credito: string | null
+          imagem_url: string | null
           link: string
           publicada_em: string | null
           publicada_na_fonte: string | null
@@ -541,6 +543,8 @@ export type Database = {
           criada_em?: string
           fonte: string
           id?: string
+          imagem_credito?: string | null
+          imagem_url?: string | null
           link: string
           publicada_em?: string | null
           publicada_na_fonte?: string | null
@@ -556,6 +560,8 @@ export type Database = {
           criada_em?: string
           fonte?: string
           id?: string
+          imagem_credito?: string | null
+          imagem_url?: string | null
           link?: string
           publicada_em?: string | null
           publicada_na_fonte?: string | null

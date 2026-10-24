@@ -38,6 +38,8 @@ const noticia = (parcial: Partial<NoticiaPublicada> = {}): NoticiaPublicada => (
   link: 'https://br.pokernews.com/noticias/2026/10/monte-sua-grade-67935.htm',
   publicada_em: '2026-10-24T15:00:00.000Z',
   atualizada_em: null,
+  imagem_url: null,
+  imagem_credito: null,
   ...parcial,
 });
 
@@ -76,6 +78,22 @@ describe('páginas das notícias', () => {
     expect(html.match(/<p>/g)?.length).toBeGreaterThanOrEqual(2);
     expect(html).toContain('href="/noticias/outra-d4e5f6"');
     expect(html).not.toContain('href="/noticias/bsop-lanca-ferramenta-a1b2c3"');
+  });
+
+  it('com imagem: capa, crédito escapado, og:image e miniatura na lista', () => {
+    const imagem = 'https://x.supabase.co/storage/v1/object/public/noticias/abc/gerada-1.png';
+    const n = noticia({ imagem_url: imagem, imagem_credito: 'Foto: <PokerGO>' });
+    const html = paginaDaNoticia(n, []);
+    expect(html).toContain(`<figure class="capa"><img src="${imagem}"`);
+    expect(html).toContain('<figcaption>Foto: &lt;PokerGO&gt;</figcaption>');
+    expect(html).toContain(`<meta property="og:image" content="${imagem}">`);
+    expect(html).toContain('max-image-preview:large');
+    expect(html).toContain(`"image":["${imagem}"]`);
+    expect(paginaDaLista([n], 1)).toContain('class="miniatura"');
+    // Sem imagem: nem capa, e o compartilhamento usa a do site
+    const sem = paginaDaNoticia(noticia(), []);
+    expect(sem).not.toContain('<figure');
+    expect(sem).toContain('og-gtorei.png');
   });
 
   it('lista vazia não é indexada; com notícias, é', () => {

@@ -1,37 +1,70 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ExternalLink, Loader2, Newspaper, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { ExternalLink, ImagePlus, Loader2, Newspaper, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { MINIMO_DO_RESUMO, slugDaNoticia, type ItemDoFeed, type Noticia } from '@/lib/noticias';
+import { gerarImagemDaNoticia } from '@/lib/imagemDaNoticia';
+import {
+  MAXIMO_DA_IMAGEM,
+  MINIMO_DO_RESUMO,
+  ehImagemGerada,
+  slugDaNoticia,
+  type ItemDoFeed,
+  type Noticia,
+} from '@/lib/noticias';
 import { cn } from '@/lib/utils';
 
 type Filtro = Noticia['status'];
 interface Texto {
   titulo: string;
   resumo: string;
+  imagem_url: string | null;
+  imagem_credito: string;
+  /** Título com que a imagem gerada foi feita: mudou o título, ela é refeita */
+  tituloDaImagem: string | null;
 }
 
 const ROTULO: Record<Filtro, string> = { rascunho: 'Rascunhos', publicada: 'Publicadas', descartada: 'Descartadas' };
+const TIPOS_DE_IMAGEM = ['image/png', 'image/jpeg', 'image/webp'];
 
 const quando = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'sem data';
 
 const pronto = (t: Texto | undefined) => !!t && t.titulo.trim().length >= 10 && t.resumo.trim().length >= MINIMO_DO_RESUMO;
 
-/** Os campos que publicar grava (o endereço não muda depois de publicado) */
-function camposDePublicar(n: Noticia, t: Texto): Partial<Noticia> {
+/** Sobe a imagem para o bucket 'noticias' e devolve o endereço público */
+async function enviarImagem(id: string, arquivo: Blob, tipo: string, origem: 'gerada' | 'enviada'): Promise<string> {
+  const extensao = tipo === 'image/png' ? 'png' : tipo === 'image/webp' ? 'webp' : 'jpg';
+  const caminho = `${id}/${origem}-${Date.now()}.${extensao}`;
+  const { error } = await supabase.storage.from('noticias').upload(caminho, arquivo, { contentType: tipo });
+  if (error) throw error;
+  return supabase.storage.from('noticias').getPublicUrl(caminho).data.publicUrl;
+}
+
+/**
+ * Os campos que publicar grava. Sem imagem própria, entra a do GTORei com o
+ * título (gerada agora, ou refeita se o título mudou). O endereço (slug) não
+ * muda depois de publicado.
+ */
+async function camposDePublicar(n: Noticia, t: Texto): Promise<Partial<Noticia>> {
   const agora = new Date().toISOString();
+  const titulo = t.titulo.trim();
+  let imagem = t.imagem_url;
+  if (!imagem || (ehImagemGerada(imagem) && t.tituloDaImagem !== titulo)) {
+    imagem = await enviarImagem(n.id, await gerarImagemDaNoticia(titulo), 'image/jpeg', 'gerada');
+  }
   return {
     status: 'publicada',
-    titulo: t.titulo.trim(),
+    titulo,
     resumo: t.resumo.trim(),
-    slug: n.slug ?? slugDaNoticia(t.titulo, n.id),
+    slug: n.slug ?? slugDaNoticia(titulo, n.id),
     publicada_em: n.publicada_em ?? agora,
     atualizada_em: agora,
+    imagem_url: imagem,
+    imagem_credito: ehImagemGerada(imagem) ? null : t.imagem_credito.trim() || null,
   };
 }
 
@@ -40,7 +73,8 @@ function camposDePublicar(n: Noticia, t: Texto): Partial<Noticia> {
  * escreve título e resumo com as próprias palavras e publica em /noticias.
  * Dá para marcar várias, escrever os resumos em sequência e publicar todas de
  * uma vez. O trecho do feed é só para decidir: a página nunca mostra o texto
- * da fonte.
+ * da fonte, e a foto da fonte não é usada (sem imagem própria, entra a do
+ * GTORei).
  */
 export function AdminNoticias() {
   const [lista, setLista] = useState<Noticia[] | null>(null);
@@ -100,7 +134,16 @@ export function AdminNoticias() {
   // Trocar de aba limpa a seleção (cada aba tem as próprias ações)
   useEffect(() => setMarcadas(new Set()), [filtro]);
 
-  const textoDe = (n: Noticia): Texto => textos[n.id] ?? { titulo: n.titulo ?? n.titulo_fonte, resumo: n.resumo ?? '' };
+  // O rascunho começa com o título em branco: o da fonte aparece só como
+  // referência, para o título publicado ser em português e com as suas palavras
+  const textoDe = (n: Noticia): Texto =>
+    textos[n.id] ?? {
+      titulo: n.titulo ?? '',
+      resumo: n.resumo ?? '',
+      imagem_url: n.imagem_url ?? null,
+      imagem_credito: n.imagem_credito ?? '',
+      tituloDaImagem: n.titulo,
+    };
   const mudarTexto = (id: string, t: Texto) => setTextos((antes) => ({ ...antes, [id]: t }));
   const alternar = (conjunto: Set<string>, id: string) => {
     const novo = new Set(conjunto);
@@ -111,21 +154,46 @@ export function AdminNoticias() {
 
   /** Aplica os campos em várias de uma vez; devolve quantas deram certo */
   const aplicar = async (alvos: { n: Noticia; campos: Partial<Noticia> }[]) => {
-    setSalvando(true);
     const resultados = await Promise.all(alvos.map(({ n, campos }) => supabase.from('noticias').update(campos).eq('id', n.id)));
-    setSalvando(false);
     const certas = alvos.filter((_, i) => !resultados[i].error);
     const ids = new Set(certas.map(({ n }) => n.id));
     setAbertas((a) => new Set([...a].filter((id) => !ids.has(id))));
     setMarcadas((m) => new Set([...m].filter((id) => !ids.has(id))));
+    setTextos((t) => Object.fromEntries(Object.entries(t).filter(([id]) => !ids.has(id))));
     void carregar();
     return { certas: certas.length, falhas: alvos.length - certas.length };
   };
 
   const mudarUma = async (n: Noticia, campos: Partial<Noticia>, mensagem: string) => {
+    setSalvando(true);
     const { falhas } = await aplicar([{ n, campos }]);
+    setSalvando(false);
     if (falhas) toast.error('Não deu para salvar. Confira o título e o tamanho do resumo.');
     else toast.success(mensagem);
+  };
+
+  /** Publica (ou salva) as notícias dadas, gerando a imagem das que não têm */
+  const publicar = async (alvos: Noticia[]) => {
+    setSalvando(true);
+    const prontos: { n: Noticia; campos: Partial<Noticia> }[] = [];
+    let semImagem = 0;
+    // Uma de cada vez: cada imagem gerada é um canvas de 1200x630
+    for (const n of alvos) {
+      try {
+        prontos.push({ n, campos: await camposDePublicar(n, textoDe(n)) });
+      } catch {
+        semImagem += 1;
+      }
+    }
+    const { certas, falhas } = await aplicar(prontos);
+    setSalvando(false);
+    return { certas, falhas: falhas + semImagem };
+  };
+
+  const publicarUma = async (n: Noticia) => {
+    const { falhas } = await publicar([n]);
+    if (falhas) toast.error('Não deu para publicar. Confira o título, o resumo e a imagem (aplique a migration 20261024170000 se ainda não aplicou).');
+    else toast.success(n.status === 'publicada' ? 'Notícia atualizada.' : 'Notícia publicada.');
   };
 
   const visiveis = useMemo(() => lista?.filter((n) => n.status === filtro) ?? [], [lista, filtro]);
@@ -135,7 +203,7 @@ export function AdminNoticias() {
   const contagem = (s: Filtro) => lista?.filter((n) => n.status === s).length ?? 0;
 
   const publicarSelecionadas = async () => {
-    const { certas, falhas } = await aplicar(prontas.map((n) => ({ n, campos: camposDePublicar(n, textoDe(n)) })));
+    const { certas, falhas } = await publicar(prontas);
     const faltam = selecionadas.length - prontas.length;
     toast[falhas ? 'error' : 'success'](
       `${certas === 1 ? '1 publicada' : `${certas} publicadas`}` +
@@ -145,8 +213,40 @@ export function AdminNoticias() {
   };
 
   const emLote = async (status: Filtro, mensagem: string) => {
+    setSalvando(true);
     const { certas } = await aplicar(selecionadas.map((n) => ({ n, campos: { status } })));
+    setSalvando(false);
     toast.success(`${certas} ${mensagem}`);
+  };
+
+  /** Imagem enviada pelo admin: sobe já e fica no texto até publicar */
+  const receberImagem = async (n: Noticia, arquivo: File) => {
+    if (!TIPOS_DE_IMAGEM.includes(arquivo.type)) {
+      toast.error('Use PNG, JPEG ou WebP.');
+      return;
+    }
+    if (arquivo.size > MAXIMO_DA_IMAGEM) {
+      toast.error('A imagem precisa ter até 2 MB.');
+      return;
+    }
+    try {
+      const url = await enviarImagem(n.id, arquivo, arquivo.type, 'enviada');
+      mudarTexto(n.id, { ...textoDe(n), imagem_url: url, tituloDaImagem: null });
+    } catch {
+      toast.error('Não deu para enviar a imagem (aplique a migration 20261024170000 se ainda não aplicou).');
+    }
+  };
+
+  /** A imagem do GTORei agora, para ver antes de publicar */
+  const gerarAgora = async (n: Noticia) => {
+    const t = textoDe(n);
+    const titulo = t.titulo.trim() || n.titulo_fonte;
+    try {
+      const url = await enviarImagem(n.id, await gerarImagemDaNoticia(titulo), 'image/jpeg', 'gerada');
+      mudarTexto(n.id, { ...t, imagem_url: url, imagem_credito: '', tituloDaImagem: titulo });
+    } catch {
+      toast.error('Não deu para gerar a imagem (aplique a migration 20261024170000 se ainda não aplicou).');
+    }
   };
 
   return (
@@ -157,11 +257,11 @@ export function AdminNoticias() {
             <Newspaper className="h-5 w-5 text-primary" /> Notícias
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            As matérias de PokerNews Brasil, PokerNews e CardPlayer chegam aqui. Marque as que quer cobrir, escreva título e resumo com as suas palavras (o que aconteceu e o que muda para quem joga) e publique: cada uma vira página em{' '}
+            As matérias de PokerNews Brasil, PokerNews e CardPlayer chegam aqui. Marque as que quer cobrir, escreva título e resumo em português, com as suas palavras (o que aconteceu e o que muda para quem joga), e publique: cada uma vira página em{' '}
             <a href="/noticias" target="_blank" rel="noopener" className="underline underline-offset-2">
               /noticias
             </a>
-            , com link para a matéria original.
+            , com imagem e link para a matéria original.
           </p>
         </div>
         <Button variant="outline" onClick={() => void buscarNovas()} disabled={buscando}>
@@ -221,6 +321,9 @@ export function AdminNoticias() {
               onAbrir={() => setAbertas((a) => alternar(a, n.id))}
               onTexto={(t) => mudarTexto(n.id, t)}
               onMudar={mudarUma}
+              onPublicar={() => publicarUma(n)}
+              onEnviarImagem={(arquivo) => receberImagem(n, arquivo)}
+              onGerarImagem={() => gerarAgora(n)}
             />
           ))}
         </ul>
@@ -282,11 +385,29 @@ interface PropsDoItem {
   onAbrir: () => void;
   onTexto: (t: Texto) => void;
   onMudar: (n: Noticia, campos: Partial<Noticia>, mensagem: string) => Promise<void>;
+  onPublicar: () => Promise<void>;
+  onEnviarImagem: (arquivo: File) => Promise<void>;
+  onGerarImagem: () => Promise<void>;
 }
 
-function ItemDaNoticia({ n, texto, aberto, marcada, salvando, onMarcar, onAbrir, onTexto, onMudar }: PropsDoItem) {
+function ItemDaNoticia({ n, texto, aberto, marcada, salvando, onMarcar, onAbrir, onTexto, onMudar, onPublicar, onEnviarImagem, onGerarImagem }: PropsDoItem) {
   const tamanho = texto.resumo.trim().length;
   const ok = pronto(texto);
+  const arquivo = useRef<HTMLInputElement>(null);
+  const [mexendoNaImagem, setMexendoNaImagem] = useState(false);
+  const gerada = ehImagemGerada(texto.imagem_url);
+
+  const comImagem = async (acao: () => Promise<void>) => {
+    setMexendoNaImagem(true);
+    await acao();
+    setMexendoNaImagem(false);
+  };
+
+  const escolher = (e: ChangeEvent<HTMLInputElement>) => {
+    const escolhido = e.target.files?.[0];
+    e.target.value = '';
+    if (escolhido) void comImagem(() => onEnviarImagem(escolhido));
+  };
 
   return (
     <li className={cn('rounded-xl border bg-card p-4', marcada ? 'border-primary/60' : 'border-border')}>
@@ -340,10 +461,17 @@ function ItemDaNoticia({ n, texto, aberto, marcada, salvando, onMarcar, onAbrir,
           </div>
 
           {aberto && (
-            <div className="mt-4 space-y-3 border-t border-border pt-4">
+            <div className="mt-4 space-y-4 border-t border-border pt-4">
               <label className="block text-sm font-medium">
                 Título da notícia
-                <Input className="mt-1" value={texto.titulo} onChange={(e) => onTexto({ ...texto, titulo: e.target.value })} maxLength={140} />
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Original: {n.titulo_fonte}</span>
+                <Input
+                  className="mt-1"
+                  value={texto.titulo}
+                  onChange={(e) => onTexto({ ...texto, titulo: e.target.value })}
+                  maxLength={140}
+                  placeholder="Em português e com as suas palavras"
+                />
               </label>
               <label className="block text-sm font-medium">
                 Resumo
@@ -354,14 +482,60 @@ function ItemDaNoticia({ n, texto, aberto, marcada, salvando, onMarcar, onAbrir,
                   placeholder="Com as suas palavras: o que aconteceu, por que importa para quem joga torneio e o que tirar disso. Linha em branco separa parágrafos."
                 />
               </label>
+
+              {/* Imagem: a enviada (sua ou com permissão) ou a do GTORei */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Imagem</p>
+                <div className="flex flex-wrap items-start gap-3">
+                  {texto.imagem_url ? (
+                    <img src={texto.imagem_url} alt="" className="aspect-[1200/630] w-60 rounded-lg border border-border object-cover" />
+                  ) : (
+                    <p className="flex aspect-[1200/630] w-60 items-center justify-center rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
+                      Sem imagem: ao publicar, entra a imagem do GTORei com o título
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <input ref={arquivo} type="file" accept={TIPOS_DE_IMAGEM.join(',')} className="hidden" onChange={escolher} />
+                    <Button size="sm" variant="outline" onClick={() => arquivo.current?.click()} disabled={mexendoNaImagem}>
+                      <ImagePlus className="mr-2 h-4 w-4" /> Enviar imagem
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => void comImagem(onGerarImagem)} disabled={mexendoNaImagem}>
+                      {mexendoNaImagem ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      Gerar a do GTORei
+                    </Button>
+                    {texto.imagem_url && (
+                      <Button size="sm" variant="ghost" onClick={() => onTexto({ ...texto, imagem_url: null, tituloDaImagem: null })}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Remover
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {texto.imagem_url && !gerada && (
+                  <label className="block text-sm font-medium">
+                    Crédito da imagem
+                    <Input
+                      className="mt-1"
+                      value={texto.imagem_credito}
+                      onChange={(e) => onTexto({ ...texto, imagem_credito: e.target.value })}
+                      maxLength={120}
+                      placeholder="Ex.: Foto: Fulano / PokerGO (com permissão)"
+                    />
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                      Use só imagem sua ou com permissão de quem fez. A foto da matéria original é de lá.
+                    </span>
+                  </label>
+                )}
+                {gerada && texto.tituloDaImagem !== texto.titulo.trim() && texto.titulo.trim() && (
+                  <p className="text-xs text-muted-foreground">O título mudou: ao publicar, a imagem do GTORei é refeita com ele.</p>
+                )}
+              </div>
+
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className={cn('text-xs tabular-nums', tamanho < MINIMO_DO_RESUMO ? 'text-muted-foreground' : 'text-foreground')}>
                   {tamanho} caracteres {tamanho < MINIMO_DO_RESUMO && `(mínimo ${MINIMO_DO_RESUMO})`}
                 </span>
-                <Button
-                  onClick={() => void onMudar(n, camposDePublicar(n, texto), n.status === 'publicada' ? 'Notícia atualizada.' : 'Notícia publicada.')}
-                  disabled={!ok || salvando}
-                >
+                <Button onClick={() => void onPublicar()} disabled={!ok || salvando}>
+                  {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {n.status === 'publicada' ? 'Salvar' : 'Publicar esta'}
                 </Button>
               </div>

@@ -33,7 +33,16 @@ export interface Noticia {
   publicada_em: string | null;
   atualizada_em: string | null;
   criada_em: string;
+  /** Imagem enviada pelo admin ou gerada pelo GTORei (migration 20261024170000) */
+  imagem_url?: string | null;
+  imagem_credito?: string | null;
 }
+
+/** Imagem até este tamanho (o mesmo limite do bucket 'noticias') */
+export const MAXIMO_DA_IMAGEM = 2 * 1024 * 1024;
+
+/** A imagem do GTORei (gerada) leva este prefixo no nome; a enviada pelo admin, não */
+export const ehImagemGerada = (url: string | null | undefined) => !!url && url.includes('/gerada-');
 
 /** O que /api/rss devolve */
 export interface ItemDoFeed {

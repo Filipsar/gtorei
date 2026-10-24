@@ -34,6 +34,9 @@ export interface NoticiaPublicada {
   link: string;
   publicada_em: string;
   atualizada_em: string | null;
+  /** Enviada pelo admin ou gerada pelo GTORei; nula nas publicadas antes das imagens */
+  imagem_url: string | null;
+  imagem_credito: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -120,17 +123,29 @@ export function supabasePublico(): { url: string; chave: string } | null {
   return url && chave ? { url, chave } : null;
 }
 
-const COLUNAS = 'titulo,resumo,slug,fonte,link,publicada_em,atualizada_em';
+const COLUNAS_BASE = 'titulo,resumo,slug,fonte,link,publicada_em,atualizada_em';
+const COLUNAS = `${COLUNAS_BASE},imagem_url,imagem_credito`;
 
-/** Consulta as notícias publicadas. Sem a tabela (migration por aplicar), devolve lista vazia. */
+/** A imagem da notícia ou, sem ela, a do site */
+const imagemDe = (n: NoticiaPublicada) => n.imagem_url ?? `${SITE}/og-gtorei.png`;
+
+/**
+ * Consulta as notícias publicadas. Sem as colunas de imagem (migration
+ * 20261024170000 por aplicar), consulta de novo sem elas; sem a tabela,
+ * devolve lista vazia.
+ */
 export async function publicadas(filtro: string): Promise<NoticiaPublicada[]> {
   const sb = supabasePublico();
   if (!sb) return [];
-  const resposta = await fetch(`${sb.url}/rest/v1/noticias?select=${COLUNAS}&status=eq.publicada&${filtro}`, {
-    headers: { apikey: sb.chave, Authorization: `Bearer ${sb.chave}` },
-  });
+  const consultar = (colunas: string) =>
+    fetch(`${sb.url}/rest/v1/noticias?select=${colunas}&status=eq.publicada&${filtro}`, {
+      headers: { apikey: sb.chave, Authorization: `Bearer ${sb.chave}` },
+    });
+  let resposta = await consultar(COLUNAS);
+  if (!resposta.ok) resposta = await consultar(COLUNAS_BASE);
   if (!resposta.ok) return [];
-  return (await resposta.json()) as NoticiaPublicada[];
+  const lista = (await resposta.json()) as NoticiaPublicada[];
+  return lista.map((n) => ({ ...n, imagem_url: n.imagem_url ?? null, imagem_credito: n.imagem_credito ?? null }));
 }
 
 // ---------------------------------------------------------------------------
@@ -182,6 +197,11 @@ h1{font-size:clamp(26px,5vw,38px);line-height:1.2;margin:8px 0 12px}
 h2{font-size:22px;line-height:1.3;margin:0 0 8px}
 .meta{color:var(--apoio);font-size:14px;margin:0}
 .resumo p{margin:0 0 16px}
+.capa{margin:0 0 24px}
+.capa img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--borda)}
+.capa figcaption{color:var(--apoio);font-size:13px;margin-top:6px}
+.lista .miniatura{display:block;margin:-16px -16px 12px;border-radius:14px 14px 0 0;overflow:hidden;aspect-ratio:1200/630;background:var(--borda)}
+.lista .miniatura img{display:block;width:100%;height:100%;object-fit:cover}
 .fonte{border-top:1px solid var(--borda);padding-top:16px;color:var(--apoio);font-size:15px}
 .fonte a{color:var(--texto);text-decoration:underline;text-underline-offset:3px}
 .chamada{background:linear-gradient(135deg,rgba(245,185,0,.16),var(--cartao));border:1px solid rgba(245,185,0,.35);border-radius:16px;padding:20px;margin:32px 0}
@@ -207,6 +227,8 @@ interface Cabeca {
   indexar?: boolean;
   tipo?: 'website' | 'article';
   dadosEstruturados?: object[];
+  /** Imagem do compartilhamento (og:image); sem ela, a do site */
+  imagem?: string;
 }
 
 function documento(c: Cabeca, corpo: string): string {
@@ -222,14 +244,14 @@ function documento(c: Cabeca, corpo: string): string {
 <title>${escapar(c.titulo)}</title>
 <meta name="description" content="${escapar(c.descricao)}">
 <link rel="canonical" href="${canonica}">
-${c.indexar === false ? '<meta name="robots" content="noindex">' : ''}
+${c.indexar === false ? '<meta name="robots" content="noindex">' : '<meta name="robots" content="max-image-preview:large">'}
 <meta property="og:type" content="${c.tipo ?? 'website'}">
 <meta property="og:site_name" content="GTORei">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:title" content="${escapar(c.titulo)}">
 <meta property="og:description" content="${escapar(c.descricao)}">
 <meta property="og:url" content="${canonica}">
-<meta property="og:image" content="${SITE}/og-gtorei.png">
+<meta property="og:image" content="${escapar(c.imagem ?? `${SITE}/og-gtorei.png`)}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico">
 <style>${ESTILO}</style>
@@ -268,6 +290,13 @@ export function paginaDaNoticia(n: NoticiaPublicada, outras: NoticiaPublicada[])
 <article>
   <p class="meta">${escapar(dataPorExtenso(n.publicada_em))} · Fonte: ${escapar(n.fonte)}</p>
   <h1>${escapar(n.titulo)}</h1>
+  ${
+    n.imagem_url
+      ? `<figure class="capa"><img src="${escapar(n.imagem_url)}" alt="${escapar(n.titulo)}" width="1200" height="630" fetchpriority="high">${
+          n.imagem_credito ? `<figcaption>${escapar(n.imagem_credito)}</figcaption>` : ''
+        }</figure>`
+      : ''
+  }
   <div class="resumo">
 ${paragrafos(n.resumo)}
   </div>
@@ -290,6 +319,7 @@ ${
       descricao: chamada(n.resumo, 155),
       caminho,
       tipo: 'article',
+      imagem: imagemDe(n),
       dadosEstruturados: [
         {
           '@context': 'https://schema.org',
@@ -299,7 +329,7 @@ ${
           datePublished: n.publicada_em,
           dateModified: n.atualizada_em ?? n.publicada_em,
           mainEntityOfPage: `${SITE}${caminho}`,
-          image: [`${SITE}/og-gtorei.png`],
+          image: [imagemDe(n)],
           author: ORGANIZACAO,
           publisher: ORGANIZACAO,
           isBasedOn: n.link,
@@ -332,7 +362,11 @@ ${
     ? `<ul class="lista">${desta
         .map(
           (n) =>
-            `<li><p class="meta">${escapar(dataPorExtenso(n.publicada_em))} · ${escapar(n.fonte)}</p><h2><a href="/noticias/${n.slug}">${escapar(n.titulo)}</a></h2><p>${escapar(chamada(n.resumo, 220))}</p></li>`
+            `<li>${
+              n.imagem_url
+                ? `<a class="miniatura" href="/noticias/${n.slug}" tabindex="-1" aria-hidden="true"><img src="${escapar(n.imagem_url)}" alt="" width="1200" height="630" loading="lazy"></a>`
+                : ''
+            }<p class="meta">${escapar(dataPorExtenso(n.publicada_em))} · ${escapar(n.fonte)}</p><h2><a href="/noticias/${n.slug}">${escapar(n.titulo)}</a></h2><p>${escapar(chamada(n.resumo, 220))}</p></li>`
         )
         .join('')}</ul>`
     : '<p>As primeiras notícias chegam em breve.</p>'
