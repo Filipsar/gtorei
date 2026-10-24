@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { RankingApp } from '@/components/app/RankingApp';
+import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -124,7 +126,19 @@ const MONTH_NAMES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
+// No app: liga por elo e global do mês (src/components/app/RankingApp.tsx)
 export default function RankingPage() {
+  if (usarLayoutDoApp()) {
+    return (
+      <MainLayout>
+        <RankingApp />
+      </MainLayout>
+    );
+  }
+  return <RankingSite />;
+}
+
+function RankingSite() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [period] = useState<PeriodType>('monthly');

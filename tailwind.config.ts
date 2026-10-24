@@ -269,8 +269,28 @@ export default {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        // App: o rei sobe da borda de baixo para comentar a mão
+        "rei-sobe": {
+          "0%": { transform: "translateY(100%)" },
+          "70%": { transform: "translateY(-4%)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        // Estrelas do fim da lição: estouram uma depois da outra
+        "estrela-entra": {
+          "0%": { opacity: "0", transform: "scale(0) rotate(-40deg)" },
+          "60%": { opacity: "1", transform: "scale(1.35) rotate(8deg)" },
+          "100%": { opacity: "1", transform: "scale(1) rotate(0)" },
+        },
+        // Fogo azul atrás dos elos Diamante e Rei
+        "fogo-azul": {
+          "0%, 100%": { transform: "scaleY(1) translateY(0)", opacity: "0.85" },
+          "50%": { transform: "scaleY(1.12) translateY(-4%)", opacity: "1" },
+        },
       },
       animation: {
+        "rei-sobe": "rei-sobe 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "estrela-entra": "estrela-entra 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        "fogo-azul": "fogo-azul 1.6s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "collapsible-down": "collapsible-down 0.2s ease-out",

@@ -55,17 +55,17 @@ function PonteNativa() {
         if (!sessao) return;
         await supabase.auth.setSession(sessao);
         await Browser.close().catch(() => undefined);
-        navigate('/treinar', { replace: true });
+        navigate('/trilha', { replace: true });
       });
       remover = () => void h.remove();
     })();
     return () => remover?.();
   }, [navigate]);
 
-  // O app não tem página de apresentação: abre no treino, ou no login
+  // O app não tem página de apresentação: abre na trilha, ou no login
   useEffect(() => {
     if (loading || location.pathname !== '/') return;
-    navigate(user ? '/treinar' : '/auth', { replace: true });
+    navigate(user ? '/trilha' : '/auth', { replace: true });
   }, [loading, user, location.pathname, navigate]);
 
   // Compras do PRO pagas mas ainda não confirmadas (rede caiu, troca de celular)

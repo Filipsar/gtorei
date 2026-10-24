@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { PerfilApp } from '@/components/app/PerfilApp';
+import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -195,6 +197,23 @@ export default function ProfilePage() {
   }
 
   const levelImg = LEVEL_IMAGES[profileData.level] || levelIniciante;
+
+  // No app, o perfil refeito para celular (src/components/app/PerfilApp.tsx)
+  if (usarLayoutDoApp()) {
+    return (
+      <MainLayout>
+        <PerfilApp
+          dados={profileData}
+          proprio={isOwnProfile}
+          enviando={uploading}
+          imagemDoNivel={levelImg}
+          onEnviarCapa={handleBannerUpload}
+          onEnviarResultado={handleScreenshotUpload}
+          onRemoverResultado={removeScreenshot}
+        />
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

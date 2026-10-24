@@ -4,12 +4,17 @@ import { AppSidebar } from './AppSidebar';
 import { MaintenanceBanner } from './MaintenanceBanner';
 import { UpdatesPopup } from '@/components/ui/UpdatesPopup';
 import { Menu } from 'lucide-react';
+import { AppShell } from '@/components/app/AppShell';
+import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  // No app, abas embaixo no lugar da barra lateral (src/components/app/AppShell.tsx)
+  if (usarLayoutDoApp()) return <AppShell>{children}</AppShell>;
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background">

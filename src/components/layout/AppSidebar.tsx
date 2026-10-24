@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown, Smartphone } from 'lucide-react';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
+import { ADMIN_EMAIL } from '@/data/admin';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -23,7 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 
-const ADMIN_EMAIL = 'farubini2@gmail.com';
+
 
 const CHAVE_SECOES = 'gtorei_sidebar_secoes_fechadas';
 

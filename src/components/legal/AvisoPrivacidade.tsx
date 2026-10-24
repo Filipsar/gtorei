@@ -59,7 +59,8 @@ export function AvisoPrivacidade() {
       role="region"
       aria-label="Privacidade e cookies"
       className="fixed inset-x-0 z-[60] p-3 sm:p-4"
-      style={{ bottom: 'var(--altura-anuncio, 0px)' }}
+      // No app, acima das abas e da faixa de anúncio
+      style={{ bottom: 'calc(var(--altura-anuncio, 0px) + var(--altura-abas, 0px))' }}
     >
       <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card p-4 text-sm shadow-xl">
         {app ? (

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,17 @@ import { PostflopActions } from '@/components/poker/PostflopActions';
 import { useSupporter } from '@/hooks/useSupporter';
 import { EVENTO_MAO_REGISTRADA } from '@/hooks/useDailyChallenges';
 import { DailyChallengesCard } from '@/components/challenges/DailyChallengesCard';
-import { ehApp } from '@/lib/nativo/plataforma';
+import { ehApp, usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { useDificuldade } from '@/hooks/useDificuldade';
 import { ajustarPontos, limitarPontos, sortearMao } from '@/lib/dificuldade';
 import { DificuldadeControle } from '@/components/poker/DificuldadeControle';
 import { SimuladoResultado } from '@/components/train/SimuladoResultado';
+import { LicaoResultado } from '@/components/train/LicaoResultado';
+import { ReiComenta } from '@/components/train/ReiComenta';
+import { licaoPorId, type Licao } from '@/data/trilha';
+import { dueloPorId } from '@/data/duelo';
+import { explicarJogada } from '@/lib/explicacao';
+import { MAOS_POR_LICAO, proximaLicao, registrarResultado, type Estrelas } from '@/lib/trilha';
 import { Chip, OpcaoGrande, Secao } from '@/components/train/ConfigUI';
 import { ModeIcon } from '@/components/poker/ModeIcon';
 import {
@@ -25,6 +31,7 @@ import {
   MINIMO_PARA_XP,
   REGRA_DO_XP,
   TAMANHOS_SIMULADO,
+  acertou,
   type Formato,
   type RespostaSimulado,
   type ResultadoSimulado,
@@ -60,7 +67,7 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, ClipboardCheck } from 'lucide-react';
+import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, ClipboardCheck, Loader2, X } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
@@ -68,12 +75,14 @@ import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest
 import { useIsMobile } from '@/hooks/use-mobile';
 import { analyzeStreetAction, getVerdictColor, getVerdictBgColor, StreetAnalysis, StreetActionData } from '@/data/postflopAnalysis';
 
-type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning' | 'simuladoResultado';
+type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | 'postflop' | 'transitioning' | 'simuladoResultado' | 'licaoResultado';
 
 export default function TrainPage() {
   // Onboarding
   const { needsOnboarding, completeOnboarding } = useOnboardingStatus();
   const { needsLevelTest, completeLevelTest } = useLevelTestStatus();
+  // No app quem apresenta o treino é a trilha: sem tutorial nem teste de nível por cima
+  const semIntro = usarLayoutDoApp();
 
 
   // Mode state
@@ -94,15 +103,37 @@ export default function TrainPage() {
   const proximaMaoRef = useRef<() => void>(() => {});
   const emSimulado = formato === 'simulado';
 
+  // Lição da trilha do app (?licao=id, src/data/trilha.ts): spot fixo, 10 mãos
+  // com a resposta a cada uma, estrelas no fim
+  const [searchParams] = useSearchParams();
+  const licao = useMemo(() => licaoPorId(searchParams.get('licao')), [searchParams]);
+  // Duelo do app (?duelo=curto|medio|fundo, src/data/duelo.ts): heads-up sem
+  // fim marcado, com placar Você x Rei
+  const duelo = useMemo(() => dueloPorId(searchParams.get('duelo')), [searchParams]);
+  const preset = licao ?? duelo?.preset ?? null;
+  const [placar, setPlacar] = useState({ voce: 0, rei: 0 });
+  // No app o Rei comenta cada mão; o quadro completo abre em "Ver range"
+  const comentarioDoRei = usarLayoutDoApp();
+  const [detalhesAbertos, setDetalhesAbertos] = useState(false);
+  const [respostasLicao, setRespostasLicao] = useState<RespostaSimulado[]>([]);
+  const [fimDaLicao, setFimDaLicao] = useState<{ estrelas: Estrelas; liberou: Licao | null } | null>(null);
+  // Ligado junto com a configuração da lição: a mesa abre no render seguinte,
+  // quando startGame já enxerga o spot novo
+  const [licaoPendente, setLicaoPendente] = useState<string | null>(null);
+
   const cenarioBloqueado = useCallback(
     (s: Scenario) => CENARIOS_APOIADOR.includes(s) && !isSupporter,
     [isSupporter]
   );
   // O que o sorteio pode trazer: além do bloqueio de apoiador, o simulado não
-  // tem a Simulação (pós-flop com várias decisões por mão)
+  // tem a Simulação (pós-flop com várias decisões por mão), e a lição só tem
+  // os cenários dela
   const bloqueioDoSorteio = useCallback(
-    (s: Scenario) => cenarioBloqueado(s) || (emSimulado && CENARIOS_FORA_DO_SIMULADO.includes(s)),
-    [cenarioBloqueado, emSimulado]
+    (s: Scenario) =>
+      cenarioBloqueado(s) ||
+      (emSimulado && CENARIOS_FORA_DO_SIMULADO.includes(s)) ||
+      (preset !== null && !preset.cenarios.includes(s)),
+    [cenarioBloqueado, emSimulado, preset]
   );
   const modoBloqueado = useCallback(
     (m: ModeChoice) => MODOS_APOIADOR.includes(m) && !isSupporter,
@@ -386,6 +417,54 @@ export default function TrainPage() {
     setPhase('playing');
   }, [montarMao, scenario, randomPosition, randomStack, trainingMode, modoAleatorio, heroBounty, user, emSimulado]);
 
+  // Lição ou duelo novo (ou o mesmo de novo): monta o spot e pede a mesa
+  const chaveDoPreset = licao?.id ?? (duelo ? `duelo-${duelo.id}` : null);
+  useEffect(() => {
+    if (!preset || !chaveDoPreset) return;
+    setFormato('livre');
+    setModoAleatorio(false);
+    setTrainingMode(preset.modo);
+    setScenario(preset.cenarios[0]);
+    setRandomScenario(preset.cenarios.length > 1);
+    setSelectedPositions(preset.posicoes);
+    setRandomPosition(false);
+    setSelectedStacks(preset.stacks);
+    setRandomStack(false);
+    setSimulacaoMultiway(false);
+    setFinalTable(false);
+    setLicaoPendente(chaveDoPreset);
+  }, [preset, chaveDoPreset]);
+
+  useEffect(() => {
+    if (!licaoPendente) return;
+    setLicaoPendente(null);
+    setRespostasLicao([]);
+    setFimDaLicao(null);
+    setPlacar({ voce: 0, rei: 0 });
+    startGame();
+  }, [licaoPendente, startGame]);
+
+  // O painel do Rei fecha o quadro de detalhes junto quando a mão muda
+  useEffect(() => {
+    if (phase !== 'feedback') setDetalhesAbertos(false);
+  }, [phase]);
+
+  // Fecha a sessão no banco (o resumo dela é mantido pelo servidor)
+  const encerrarSessaoNoBanco = useCallback(() => {
+    endCurrentSession();
+    if (user && supabaseSessionId.current) {
+      supabase
+        .from('training_sessions')
+        .update({ ended_at: new Date().toISOString() })
+        .eq('id', supabaseSessionId.current)
+        .then(({ error }) => {
+          if (error) console.error('Error ending session:', error);
+        });
+    }
+    supabaseSessionId.current = null;
+    sessionPromise.current = null;
+  }, [user]);
+
   // Record a scored hand on the server (XP, level, session stats and ranking)
   const recordHand = useCallback(async (params: {
     hand: string;
@@ -504,7 +583,8 @@ export default function TrainPage() {
   const handleAction = useCallback((action: ActionType) => {
     if (!handState || !currentHandId) return;
 
-    if (isHandAlreadyPlayedState) {
+    // Na lição e no duelo, mão repetida é comum (o spot é fixo) e conta do mesmo jeito
+    if (isHandAlreadyPlayedState && !preset) {
       toast({
         title: "Mão já jogada!",
         description: "Esta mão já foi jogada nesta sessão. Você pode revisar, mas não ganhará pontos.",
@@ -562,6 +642,28 @@ export default function TrainPage() {
     feedback.points = limitarPontos(ajustarPontos(feedback.points, dificuldade.efetiva));
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
+
+    // Lição da trilha: toda resposta conta para as estrelas, até mão repetida.
+    // O XP segue a regra de sempre (mão repetida não dá ponto).
+    if (licao && scenario !== 'simulation') {
+      setRespostasLicao((antes) => [
+        ...antes,
+        {
+          mao: handName,
+          cenario: scenario,
+          posicao: handState.heroPosition,
+          stack: effectiveStack,
+          suaAcao: action,
+          acaoCerta: handData.primaryAction,
+          feedback: feedback.type,
+          evPerdido: feedback.evLoss,
+        },
+      ]);
+    }
+    // Duelo: acerto é ponto seu, erro é ponto do Rei
+    if (duelo && scenario !== 'simulation') {
+      setPlacar((p) => (isCorrect ? { ...p, voce: p.voce + 1 } : { ...p, rei: p.rei + 1 }));
+    }
 
     // Simulado: nada de resposta agora. A mão vai para o banco com 0 ponto
     // (o XP sai no fim, de claim_simulado) e a próxima entra direto.
@@ -716,7 +818,7 @@ export default function TrainPage() {
     // currentStackDistribution e currentUniqueHandId entram aqui porque são
     // lidos lá dentro: sem eles a função podia ficar com os valores da mão
     // anterior e gravar o stack efetivo — ou o ID — da mão errada.
-  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar, emSimulado, respostasSimulado, tamanhoSimulado, terminarSimulado]);
+  }, [handState, currentHandId, scenario, finalTable, isHandAlreadyPlayedState, trainingMode, heroBounty, currentBounties, user, handsPlayed, profile, checkAchievements, sessionScore, currentStackDistribution, currentUniqueHandId, recordHand, dificuldade.efetiva, dificuldade.registrar, emSimulado, respostasSimulado, tamanhoSimulado, terminarSimulado, licao, duelo, preset]);
 
   // Calculate postflop bonus/penalty from street verdicts
   const calculatePostflopBonus = useCallback((): number => {
@@ -901,8 +1003,28 @@ export default function TrainPage() {
     }, 500);
   }, [handState, selectedBetSize, applyPendingScore]);
 
+  // Fim da lição: guarda as estrelas, fecha a sessão e mostra o resultado
+  const terminarLicao = useCallback(() => {
+    if (!licao) return;
+    const acertos = respostasLicao.filter(acertou).length;
+    const r = registrarResultado(user?.id, licao.id, acertos, respostasLicao.length);
+    setFimDaLicao({ estrelas: r.estrelas, liberou: r.primeiraVez ? proximaLicao(licao.id) : null });
+    encerrarSessaoNoBanco();
+    setLastFeedback(null);
+    setPhase('licaoResultado');
+    // Mesma regra do fim de treino: tela cheia só entre treinos, e só no grátis
+    if (ehApp() && !isSupporter) {
+      void import('@/lib/nativo/anuncios').then(({ talvezMostrarIntersticial }) => talvezMostrarIntersticial());
+    }
+  }, [licao, respostasLicao, user, encerrarSessaoNoBanco, isSupporter]);
+
   // Next hand
   const nextHand = useCallback(() => {
+    // Lição com as 10 respondidas: em vez da próxima mão, o resultado
+    if (licao && respostasLicao.length >= MAOS_POR_LICAO) {
+      terminarLicao();
+      return;
+    }
     // Mesma regra do começo da sessão: no aleatório, cada mão sorteia o modo
     const modo = modoAleatorio ? sortearModo() : (trainingMode ?? 'rangeTraining');
     const { cenario: selectedScenario, posicao: pos, stack: stk, hand, cards, stackDist, estado } =
@@ -946,7 +1068,7 @@ export default function TrainPage() {
     setPendingSimulationScore(null);
     setSimulationStreetActions([]);
     setPhase('playing');
-  }, [montarMao, scenario, trainingMode, modoAleatorio, heroBounty]);
+  }, [montarMao, scenario, trainingMode, modoAleatorio, heroBounty, licao, respostasLicao.length, terminarLicao]);
   proximaMaoRef.current = nextHand;
 
   // Toggle favorite hand
@@ -1119,6 +1241,34 @@ export default function TrainPage() {
     return modoAleatorio && nome ? `Aleatório · ${nome}` : nome;
   };
 
+  // Fim da lição da trilha
+  if (licao && phase === 'licaoResultado' && fimDaLicao) {
+    return (
+      <MainLayout>
+        <LicaoResultado
+          licao={licao}
+          respostas={respostasLicao}
+          estrelas={fimDaLicao.estrelas}
+          liberou={fimDaLicao.liberou}
+          xp={sessionScore}
+          onContinuar={() => navigate('/trilha')}
+          onRepetir={() => setLicaoPendente(licao.id)}
+        />
+      </MainLayout>
+    );
+  }
+
+  // Lição pedida e mesa ainda montando: sem piscar a escolha de modo
+  if (preset && (phase === 'modeSelect' || phase === 'config')) {
+    return (
+      <MainLayout>
+        <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Montando a lição">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   // Fim do simulado: correção e XP
   if (phase === 'simuladoResultado') {
     return (
@@ -1169,8 +1319,8 @@ export default function TrainPage() {
             bloqueado={modoBloqueado}
           />
         </div>
-        {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
-        {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
+        {needsOnboarding && !semIntro && <OnboardingTutorial onComplete={completeOnboarding} />}
+        {!needsOnboarding && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
 
       </MainLayout>
     );
@@ -1414,8 +1564,70 @@ export default function TrainPage() {
   }
 
   // Playing/feedback phase
+  // A Simulação (pós-flop) tem fluxo próprio depois da nota: lá fica o quadro de sempre
+  const reiNaMao = comentarioDoRei && scenario !== 'simulation';
   return <MainLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col sm:block">
+        {licao ? (
+          // Lição: sair, o nome dela e quantas das 10 já foram. Ponto e
+          // dificuldade ficam de fora para a tela ser só a mão.
+          <div className="mb-4 flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              onClick={() => {
+                encerrarSessaoNoBanco();
+                navigate('/trilha');
+              }}
+              aria-label="Sair da lição e voltar à trilha"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{licao.titulo}</p>
+              {/* Barra própria: o trilho do Progress é azul e parecia cheio já no 0/10 */}
+              <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-300"
+                  style={{ width: `${(100 * Math.min(respostasLicao.length, MAOS_POR_LICAO)) / MAOS_POR_LICAO}%` }}
+                />
+              </div>
+            </div>
+            <span className="shrink-0 text-sm font-bold tabular-nums" aria-label={`${respostasLicao.length} de ${MAOS_POR_LICAO} mãos`}>
+              {Math.min(respostasLicao.length, MAOS_POR_LICAO)}/{MAOS_POR_LICAO}
+            </span>
+          </div>
+        ) : duelo ? (
+          // Duelo: placar Você x Rei, que conta toda resposta (até mão repetida)
+          <div className="mb-4 flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              onClick={() => {
+                encerrarSessaoNoBanco();
+                if (placar.voce + placar.rei > 0) {
+                  toast({ title: `Duelo encerrado: Você ${placar.voce} x ${placar.rei} Rei` });
+                }
+                navigate('/duelo');
+              }}
+              aria-label="Encerrar o duelo"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duelo · {duelo.titulo}</p>
+              <p className="mt-0.5 flex items-center gap-2 text-lg font-bold tabular-nums" aria-live="polite">
+                <span>Você {placar.voce}</span>
+                <span className="text-muted-foreground" aria-hidden="true">×</span>
+                <span>{placar.rei} Rei</span>
+              </p>
+            </div>
+            <img src="/mascote/rei-avatar.webp" alt="" aria-hidden="true" width={192} height={256} className="h-11 w-auto shrink-0" />
+          </div>
+        ) : (
+        <>
         {/* Header with session info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -1470,9 +1682,11 @@ export default function TrainPage() {
             className="h-2"
           />
         </div>
+        </>
+        )}
 
         {/* Already played warning */}
-        {isHandAlreadyPlayedState && phase === 'playing' && !emSimulado && <div className="mb-4 p-3 rounded-lg bg-primary/20 border border-primary/30 flex items-center gap-3">
+        {isHandAlreadyPlayedState && phase === 'playing' && !emSimulado && !preset && <div className="mb-4 p-3 rounded-lg bg-primary/20 border border-primary/30 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-primary flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm text-primary font-medium">
@@ -1612,14 +1826,18 @@ export default function TrainPage() {
             {/* Action buttons */}
             {phase === 'playing' && (
               <>
-                {/* Hero cards display above actions */}
+                {/* Cartas do herói com faixa própria (py e shrink-0): sem folga, em
+                    tela baixa ou com fonte grande do sistema, elas subiam na barra de
+                    informações e desciam nos botões */}
                 {handState.heroCards && handState.heroCards.length > 0 && (
-                  <div className="flex justify-center">
+                  <div className="flex shrink-0 justify-center py-2.5 sm:py-0">
                     <HandDisplay cards={handState.heroCards} size="sm" className="sm:hidden" />
                     <HandDisplay cards={handState.heroCards} size="md" className="hidden sm:flex" />
                   </div>
                 )}
-                <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} toCall={handState.villainAction?.amount} disabled={false} showRaiseSlider={false} scenario={scenario} />
+                <div className="shrink-0">
+                  <ActionButtons onAction={handleAction} pot={handState.pot} stack={handState.heroStack} toCall={handState.villainAction?.amount} disabled={false} showRaiseSlider={false} scenario={scenario} />
+                </div>
               </>
             )}
 
@@ -2029,13 +2247,32 @@ export default function TrainPage() {
           </div>}
 
         {/* Feedback modal */}
-        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback'} onClose={handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={currentStackDistribution?.effectiveStack || handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} villainPosition={handState.villainPosition} range={lastFeedback.range} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} uniqueHandId={currentUniqueHandId || undefined} previousResult={previousHandResult ? {
+        {/* App: o Rei comenta a mão; o quadro completo abre por cima em Ver range */}
+        {reiNaMao && lastFeedback && lastFeedback.handData && handState && phase === 'feedback' && !detalhesAbertos && (
+          <ReiComenta
+            explicacao={explicarJogada({
+              mao: lastFeedback.handData.hand,
+              posicao: handState.heroPosition,
+              stack: currentStackDistribution?.effectiveStack || handState.heroStack,
+              cenario: scenario,
+              suaAcao: lastFeedback.userAction,
+              handData: lastFeedback.handData,
+              range: lastFeedback.range,
+              tipo: lastFeedback.feedback.type,
+              evPerdido: lastFeedback.feedback.evLoss,
+            })}
+            pontos={isHandAlreadyPlayedState ? null : lastFeedback.feedback.points}
+            onProxima={nextHand}
+            onDetalhes={() => setDetalhesAbertos(true)}
+          />
+        )}
+        {lastFeedback && lastFeedback.handData && handState && <DecisionFeedback open={phase === 'feedback' && (!reiNaMao || detalhesAbertos)} onClose={reiNaMao ? () => setDetalhesAbertos(false) : handleFeedbackClose} onNextHand={nextHand} userAction={lastFeedback.userAction} handData={lastFeedback.handData} feedback={lastFeedback.feedback} sessionScore={sessionScore} handsPlayed={handsPlayed} scenario={scenario} position={handState.heroPosition} stack={currentStackDistribution?.effectiveStack || handState.heroStack} finalTable={finalTable} gameMode={getGameMode()} bountyMultiplier={getBountyMultiplier()} villainPosition={handState.villainPosition} range={lastFeedback.range} alreadyPlayed={isHandAlreadyPlayedState} isSimulation={scenario === 'simulation'} uniqueHandId={currentUniqueHandId || undefined} previousResult={previousHandResult ? {
         action: previousHandResult.action,
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
       } : undefined} />}
-      {needsOnboarding && <OnboardingTutorial onComplete={completeOnboarding} />}
-      {!needsOnboarding && needsLevelTest && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
+      {needsOnboarding && !semIntro && <OnboardingTutorial onComplete={completeOnboarding} />}
+      {!needsOnboarding && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
 
       </div>
     </MainLayout>;

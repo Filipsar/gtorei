@@ -163,6 +163,27 @@ passa por ele.
   fica em `~/.android/debug.keystore` desta máquina; compilando sempre aqui, a versão nova
   instala por cima. O Filipe envia e baixa o APK em /admin → App Android (bucket privado
   `app-teste`, migration `20261024120000_app_teste_storage.sql`).
+- Layout do app (24/10/2026): dentro do app, o `MainLayout` vira `AppShell`
+  (`src/components/app/`): barra do topo com nível e XP e cinco abas embaixo (Trilha,
+  Treinar, Desafios, Ranking, Mais), acima da faixa de anúncio. O app abre em `/trilha`:
+  níveis de torneio com fichas de poker como lições (`src/data/trilha.ts`), 10 mãos com
+  resposta a cada uma, passa com 7 acertos (`src/lib/trilha.ts`). A lição roda no
+  TrainPage por `?licao=id` e tem contador próprio (mão repetida conta para a lição, não
+  para o XP). O progresso da trilha fica no aparelho por enquanto. No site, `/trilha` e
+  `/mais` mandam para o treino. Para ver o layout do app no navegador em desenvolvimento:
+  `localStorage.gtorei_previa_app = '1'` (`usarLayoutDoApp()`; some no build). Fora da
+  trilha de propósito: vs 3-bet, Bounty, Simulação e Multiway. Guia de design usado: skill
+  ui-ux-pro-max, clonada em `../ui-ux-pro-max-skill`.
+  Abas do app: Trilha, Treinar, Duelo, Ranking, Mais (Desafios mora em Mais). Duelo
+  (`/duelo`, `src/data/duelo.ts`): heads-up por `?duelo=curto|medio|fundo`, placar Você x
+  Rei. No app, depois de cada mão o Rei comenta (`ReiComenta`, texto de
+  `src/lib/explicacao.ts`, tirado da mesma range que dá a nota); o quadro completo abre em
+  "Ver range". Sem tutorial nem teste de nível no app: a trilha faz esse papel.
+  Ligas por elo (24/10/2026, migration `20261024130000_ligas_por_elo.sql`): Bronze, Prata,
+  Ouro, Adamantio, Rúnico, Diamante, Rei. Semana do `rankings` weekly (domingo a sábado);
+  top 3 sobem, no Rei quem sai do top 10 cai. Sem pg_cron: a semana fecha na primeira
+  chamada de `get_liga()` depois do fim. Ranking e perfil do app em
+  `src/components/app/RankingApp.tsx` e `PerfilApp.tsx`; o site continua com os de antes.
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.
   Ao criar tabela nova com dados do usuário, incluir na lista `TABELAS` da função.
 - Políticas (22/10/2026): `/privacidade`, `/termos`, `/reembolso`, `/cookies` em

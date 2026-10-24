@@ -40,6 +40,9 @@ const ChallengesPage = lazyPage(() => import("./pages/ChallengesPage"));
 const ProPage = lazyPage(() => import("./pages/ProPage"));
 const AppReturnPage = lazyPage(() => import("./pages/AppReturnPage"));
 const LegalPage = lazyPage(() => import("./pages/LegalPage"));
+const TrilhaPage = lazyPage(() => import("./pages/TrilhaPage"));
+const MaisPage = lazyPage(() => import("./pages/MaisPage"));
+const DueloPage = lazyPage(() => import("./pages/DueloPage"));
 const AppDownloadPage = lazyPage(() => import("./pages/AppDownloadPage"));
 const DeleteAccountPage = lazyPage(() => import("./pages/DeleteAccountPage"));
 
@@ -85,6 +88,10 @@ const App = () => (
             <Route path="/desafios" element={<ProtectedRoute><ChallengesPage /></ProtectedRoute>} />
             <Route path="/pro" element={<ProtectedRoute><ProPage /></ProtectedRoute>} />
             <Route path="/app/retorno" element={<AppReturnPage />} />
+            {/* Só do app: no site elas mandam para o treino */}
+            <Route path="/trilha" element={<ProtectedRoute><TrilhaPage /></ProtectedRoute>} />
+            <Route path="/mais" element={<ProtectedRoute><MaisPage /></ProtectedRoute>} />
+            <Route path="/duelo" element={<ProtectedRoute><DueloPage /></ProtectedRoute>} />
             <Route path="/baixar-app" element={<AppDownloadPage />} />
             <Route path="/excluir-conta" element={<DeleteAccountPage />} />
             <Route path="/privacidade" element={<LegalPage doc="privacidade" />} />

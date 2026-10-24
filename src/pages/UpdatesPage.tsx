@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.24.3',
+    date: '24/10/2026',
+    type: 'fix',
+    title: 'Cartas no Lugar no Celular',
+    description: 'Em celular com tela mais baixa ou com a fonte do sistema maior, as suas cartas subiam por cima da barra de informações da mão e desciam sobre os botões de ação. Agora elas têm espaço próprio entre os dois.',
+  },
+  {
     version: '1.24.2',
     date: '24/10/2026',
     type: 'fix',

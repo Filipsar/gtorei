@@ -502,6 +502,24 @@ export type Database = {
         }
         Relationships: []
       }
+      liga_jogador: {
+        Row: {
+          atualizado_em: string
+          elo: number
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          elo?: number
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          elo?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -622,6 +640,7 @@ export type Database = {
       claim_period_challenge: { Args: { _periodo: string; _idx: number }; Returns: Json }
       claim_simulado: { Args: { _session_id: string; _dificuldade?: string }; Returns: Json }
       get_period_challenges: { Args: never; Returns: Json }
+      get_liga: { Args: never; Returns: Json }
       claim_referral: { Args: { _code: string }; Returns: string }
       complete_level_test: { Args: { _results: Json }; Returns: Json }
       get_daily_challenges: { Args: never; Returns: Json }
