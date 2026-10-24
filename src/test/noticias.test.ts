@@ -9,7 +9,7 @@ import {
   sitemap,
   type NoticiaPublicada,
 } from '../../api/_noticias';
-import { MINIMO_DO_RESUMO, slugDaNoticia } from '@/lib/noticias';
+import { MINIMO_DO_RESUMO, lerImportacao, slugDaNoticia } from '@/lib/noticias';
 
 // Itens no formato das fontes de verdade (conferido em 24/10/2026)
 const POKERNEWS = `<rss><channel><title>PokerNews</title>
@@ -112,6 +112,32 @@ describe('páginas das notícias', () => {
   it('escapa e corta no fim da palavra', () => {
     expect(escapar(`<a href="x">'&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;');
     expect(chamada('uma frase bem longa aqui', 12)).toBe('uma frase…');
+  });
+});
+
+describe('importação de resumos prontos', () => {
+  const resumo = 'Resumo de teste com tamanho suficiente para passar no mínimo exigido pelo banco. '.repeat(3);
+
+  it('aceita os itens bons e explica os ruins', () => {
+    const { itens, erros } = lerImportacao(
+      JSON.stringify({
+        gtorei_noticias: 1,
+        itens: [
+          { link: 'https://br.pokernews.com/a', fonte: 'PokerNews Brasil', titulo_fonte: 'Original', publicada_na_fonte: '2026-10-20T12:00:00Z', titulo: 'Título em português da notícia', resumo },
+          { link: 'javascript:alert(1)', titulo: 'Link ruim de propósito', resumo },
+          { link: 'https://x.com/b', titulo: 'Resumo curto demais', resumo: 'curto' },
+        ],
+      })
+    );
+    expect(itens).toHaveLength(1);
+    expect(itens[0]).toMatchObject({ fonte: 'PokerNews Brasil', titulo: 'Título em português da notícia' });
+    expect(erros).toHaveLength(2);
+    expect(erros[1]).toContain(`${MINIMO_DO_RESUMO}`);
+  });
+
+  it('texto que não é o arquivo de resumos não importa nada', () => {
+    expect(lerImportacao('isso não é json').itens).toHaveLength(0);
+    expect(lerImportacao('{"itens": []}').erros[0]).toContain('gtorei_noticias');
   });
 });
 

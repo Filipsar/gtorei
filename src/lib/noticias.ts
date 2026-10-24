@@ -44,6 +44,54 @@ export const MAXIMO_DA_IMAGEM = 2 * 1024 * 1024;
 /** A imagem do GTORei (gerada) leva este prefixo no nome; a enviada pelo admin, não */
 export const ehImagemGerada = (url: string | null | undefined) => !!url && url.includes('/gerada-');
 
+/**
+ * Resumo pronto para importar no /admin → Notícias. Quem prepara (o Claude,
+ * todo dia) entrega um JSON neste formato; a importação cria a notícia se o
+ * feed ainda não trouxe e preenche título e resumo dos rascunhos.
+ */
+export interface ResumoPronto {
+  link: string;
+  fonte: string;
+  titulo_fonte: string;
+  publicada_na_fonte: string | null;
+  titulo: string;
+  resumo: string;
+}
+
+export const VERSAO_DA_IMPORTACAO = 1;
+
+/** Lê o texto colado (ou o arquivo) e separa o que serve do que tem problema */
+export function lerImportacao(texto: string): { itens: ResumoPronto[]; erros: string[] } {
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(texto);
+  } catch {
+    return { itens: [], erros: ['O texto não é um JSON válido. Cole o conteúdo inteiro do arquivo.'] };
+  }
+  const pacote = bruto as { gtorei_noticias?: number; itens?: unknown };
+  if (pacote?.gtorei_noticias !== VERSAO_DA_IMPORTACAO || !Array.isArray(pacote.itens)) {
+    return { itens: [], erros: ['Formato desconhecido: falta "gtorei_noticias": 1 com a lista "itens".'] };
+  }
+  const itens: ResumoPronto[] = [];
+  const erros: string[] = [];
+  pacote.itens.forEach((cru, i) => {
+    const r = cru as Partial<ResumoPronto>;
+    const nome = typeof r?.titulo === 'string' && r.titulo ? `"${r.titulo.slice(0, 50)}"` : `item ${i + 1}`;
+    if (typeof r?.link !== 'string' || !/^https?:\/\//.test(r.link)) return void erros.push(`${nome}: link inválido`);
+    if (typeof r.titulo !== 'string' || r.titulo.trim().length < 10) return void erros.push(`${nome}: título curto demais`);
+    if (typeof r.resumo !== 'string' || r.resumo.trim().length < MINIMO_DO_RESUMO) return void erros.push(`${nome}: resumo com menos de ${MINIMO_DO_RESUMO} caracteres`);
+    itens.push({
+      link: r.link,
+      fonte: typeof r.fonte === 'string' && r.fonte ? r.fonte : new URL(r.link).hostname,
+      titulo_fonte: typeof r.titulo_fonte === 'string' && r.titulo_fonte ? r.titulo_fonte : r.titulo.trim(),
+      publicada_na_fonte: typeof r.publicada_na_fonte === 'string' ? r.publicada_na_fonte : null,
+      titulo: r.titulo.trim().slice(0, 140),
+      resumo: r.resumo.trim(),
+    });
+  });
+  return { itens, erros };
+}
+
 /** O que /api/rss devolve */
 export interface ItemDoFeed {
   fonte: string;

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { ExternalLink, ImagePlus, Loader2, Newspaper, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { ExternalLink, FileUp, ImagePlus, Loader2, Newspaper, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ import {
   MAXIMO_DA_IMAGEM,
   MINIMO_DO_RESUMO,
   ehImagemGerada,
+  lerImportacao,
   slugDaNoticia,
   type ItemDoFeed,
   type Noticia,
@@ -131,8 +133,60 @@ export function AdminNoticias() {
     void carregar().then(() => buscarNovas());
   }, [carregar, buscarNovas]);
 
-  // Trocar de aba limpa a seleção (cada aba tem as próprias ações)
-  useEffect(() => setMarcadas(new Set()), [filtro]);
+  const [importando, setImportando] = useState(false);
+  const [textoParaImportar, setTextoParaImportar] = useState('');
+
+  /**
+   * Resumos prontos: cria a notícia que o feed ainda não trouxe e preenche
+   * título e resumo dos rascunhos. As importadas ficam marcadas, prontas para
+   * "Publicar".
+   */
+  const importar = async (texto: string) => {
+    const { itens, erros } = lerImportacao(texto);
+    if (itens.length === 0) {
+      toast.error(erros[0] ?? 'Nada para importar.');
+      return;
+    }
+    setSalvando(true);
+    const { error } = await supabase.from('noticias').upsert(
+      itens.map((i) => ({ link: i.link, fonte: i.fonte, titulo_fonte: i.titulo_fonte, publicada_na_fonte: i.publicada_na_fonte })),
+      { onConflict: 'link', ignoreDuplicates: true }
+    );
+    const resultados = error
+      ? []
+      : await Promise.all(
+          itens.map((i) =>
+            supabase.from('noticias').update({ titulo: i.titulo, resumo: i.resumo }).eq('link', i.link).eq('status', 'rascunho').select('id')
+          )
+        );
+    const ids = resultados.flatMap((r) => r.data?.map((d) => d.id) ?? []);
+    setSalvando(false);
+    if (error) {
+      toast.error('Não deu para importar agora. Tente de novo.');
+      return;
+    }
+    // O texto que estava aberto no editor daria lugar ao importado
+    setTextos((t) => Object.fromEntries(Object.entries(t).filter(([id]) => !ids.includes(id))));
+    await carregar();
+    setFiltro('rascunho');
+    setMarcadas(new Set(ids));
+    setImportando(false);
+    setTextoParaImportar('');
+    const intactas = itens.length - ids.length;
+    toast.success(
+      `${ids.length === 1 ? '1 resumo importado' : `${ids.length} resumos importados`} e marcados para publicar` +
+        (intactas > 0 ? `; ${intactas} já publicadas ou descartadas ficaram como estavam` : '') +
+        (erros.length ? `; ${erros.length} com problema (${erros[0]})` : '') +
+        '.'
+    );
+  };
+
+  const escolherArquivoDeResumos = (e: ChangeEvent<HTMLInputElement>) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!arquivo) return;
+    void arquivo.text().then(setTextoParaImportar);
+  };
 
   // O rascunho começa com o título em branco: o da fonte aparece só como
   // referência, para o título publicado ser em português e com as suas palavras
@@ -203,7 +257,9 @@ export function AdminNoticias() {
   const contagem = (s: Filtro) => lista?.filter((n) => n.status === s).length ?? 0;
 
   const publicarSelecionadas = async () => {
-    const { certas, falhas } = await publicar(prontas);
+    // Da mais antiga para a mais nova na fonte: a mais nova sai por último e fica no topo da lista
+    const emOrdem = [...prontas].sort((a, b) => (a.publicada_na_fonte ?? '').localeCompare(b.publicada_na_fonte ?? ''));
+    const { certas, falhas } = await publicar(emOrdem);
     const faltam = selecionadas.length - prontas.length;
     toast[falhas ? 'error' : 'success'](
       `${certas === 1 ? '1 publicada' : `${certas} publicadas`}` +
@@ -264,11 +320,45 @@ export function AdminNoticias() {
             , com imagem e link para a matéria original.
           </p>
         </div>
-        <Button variant="outline" onClick={() => void buscarNovas()} disabled={buscando}>
-          {buscando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          Buscar novas
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setImportando(true)}>
+            <FileUp className="mr-2 h-4 w-4" /> Importar resumos
+          </Button>
+          <Button variant="outline" onClick={() => void buscarNovas()} disabled={buscando}>
+            {buscando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Buscar novas
+          </Button>
+        </div>
       </div>
+
+      {/* Resumos prontos (o arquivo do dia): colar o texto ou escolher o arquivo */}
+      <Dialog open={importando} onOpenChange={setImportando}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importar resumos prontos</DialogTitle>
+            <DialogDescription>
+              Cole o conteúdo do arquivo de resumos (ou escolha o arquivo). Cada notícia entra como rascunho com título e resumo
+              preenchidos e já marcada: é revisar e publicar. Publicadas e descartadas não mudam.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            className="min-h-[220px] font-mono text-xs"
+            value={textoParaImportar}
+            onChange={(e) => setTextoParaImportar(e.target.value)}
+            placeholder='{"gtorei_noticias": 1, "itens": [...]}'
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="cursor-pointer text-sm underline underline-offset-2">
+              <input type="file" accept=".json,application/json" className="hidden" onChange={escolherArquivoDeResumos} />
+              Escolher arquivo .json
+            </label>
+            <Button onClick={() => void importar(textoParaImportar)} disabled={salvando || !textoParaImportar.trim()}>
+              {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Importar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {aviso && <p className="rounded-lg border border-border bg-muted/40 p-3 text-sm">{aviso}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -279,7 +369,11 @@ export function AdminNoticias() {
               type="button"
               role="tab"
               aria-selected={filtro === s}
-              onClick={() => setFiltro(s)}
+              onClick={() => {
+                // Cada aba tem as próprias ações: trocar limpa a seleção
+                setFiltro(s);
+                setMarcadas(new Set());
+              }}
               className={cn(
                 'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
                 filtro === s ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:border-primary/40'
@@ -419,7 +513,9 @@ function ItemDaNoticia({ n, texto, aberto, marcada, salvando, onMarcar, onAbrir,
             {n.status === 'publicada' && ` · publicada em ${quando(n.publicada_em)}`}
             {n.status !== 'publicada' && ok && ' · resumo pronto'}
           </p>
-          <p className="mt-1 font-semibold">{n.status === 'publicada' ? n.titulo : n.titulo_fonte}</p>
+          {/* O título em português, quando já existe; o da fonte fica embaixo, menor */}
+          <p className="mt-1 font-semibold">{n.titulo ?? n.titulo_fonte}</p>
+          {n.titulo && n.status !== 'publicada' && <p className="text-xs text-muted-foreground">Original: {n.titulo_fonte}</p>}
           {n.status !== 'publicada' && n.trecho_fonte && (
             <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
               <span className="font-medium">Trecho da fonte (não vai para a página):</span> {n.trecho_fonte}

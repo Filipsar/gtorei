@@ -228,7 +228,17 @@ passa por ele.
   `gerada-` e é refeita quando o título muda). A foto do feed da fonte nunca é usada: é da
   agência ou do site de origem. O título do rascunho começa em branco (o da fonte aparece
   só como referência). `api/_noticias.ts` consulta sem as colunas de imagem se elas ainda
-  não existirem. A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
+  não existirem.
+  Resumos prontos (24/10/2026): o Filipe pediu que, com o chat do Claude aberto, os
+  resumos do dia saiam sozinhos. A rotina roda `node noticias/_ferramentas/baixar-materias.mjs
+  <desde> <saida>` (tira o que já foi resumido, publicado ou dispensado em
+  `noticias/_ferramentas/ignoradas.json`), escreve título e resumo com palavras próprias e
+  grava `noticias/AAAA-MM-DD.json` (`{"gtorei_noticias":1,"itens":[...]}`, lido por
+  `lerImportacao` em `src/lib/noticias.ts`). A pasta `noticias/` fica fora do git. No admin,
+  "Importar resumos" cria o que o feed ainda não trouxe, preenche só rascunhos e deixa as
+  importadas marcadas; publicar em lote segue a data da fonte. Nunca publicar sozinho nem
+  escrever no banco: quem publica é o Filipe. Dispensar propaganda, podcast, caso policial
+  ou alegação de crime e notícia repetida. A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
   `npx tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext
   --types node --skipLibCheck api/*.ts`. O `dev` do Vite não serve `api/`.
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.

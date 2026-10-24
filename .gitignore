@@ -40,3 +40,6 @@ dist-ssr
 
 # Sons originais (os usados estão em public/sons)
 sounds/
+
+# Resumos de notícias prontos para importar no /admin (gerados todo dia)
+/noticias/
