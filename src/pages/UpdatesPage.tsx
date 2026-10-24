@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.24.2',
+    date: '24/10/2026',
+    type: 'fix',
+    title: 'Mesa Arrumada no Celular',
+    description: 'No celular, as fichas apostadas ficavam em cima das cartas do vilão ou atrás do seu assento, e o botão do dealer sumia atrás do jogador. Agora cada aposta procura um lugar livre entre o assento e o pote, e no celular as fichas ficam em cima do valor, ocupando menos espaço.',
+  },
+  {
     version: '1.24.1',
     date: '23/10/2026',
     type: 'fix',

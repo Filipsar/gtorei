@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { carregarGsap, type Gsap } from '@/lib/motion';
 import { Position, POSITIONS } from '@/data/gtoRanges';
@@ -60,6 +60,49 @@ const raioAposta = (angulo: number) => (ehTopo(angulo) ? 26 : Math.sin(angulo) <
 const RAIO_BOTAO = 37;
 // Desloca o botao do dealer de lado: em cima do mesmo raio ele cobria a aposta
 const DESVIO_BOTAO = 0.2;
+// Menor raio a que a aposta ou o botão podem recuar: abaixo disso caem no pote
+const RAIO_MINIMO = 14;
+// Folga, em px, entre o assento (com as cartas) e o que fica na frente dele
+const FOLGA = 3;
+
+type Retangulo = { l: number; t: number; r: number; b: number };
+
+function retanguloEm(no: Element, origem: DOMRect, folga = 0): Retangulo {
+  const r = no.getBoundingClientRect();
+  return {
+    l: r.left - origem.left - folga,
+    t: r.top - origem.top - folga,
+    r: r.right - origem.left + folga,
+    b: r.bottom - origem.top + folga,
+  };
+}
+
+/**
+ * Raio em que um objeto de largura w e altura h, centrado no ângulo dado, sai
+ * de cima de todos os retângulos. Parte do raio preferido e recua para o centro.
+ *
+ * O raio fixo em % só funciona com a mesa larga: no celular ela tem ~330 px e o
+ * assento, com as cartas embaixo, ocupa quase o caminho todo até a aposta. As
+ * fichas caíam em cima das cartas do vilão e o valor apostado pelo herói ficava
+ * atrás do próprio assento.
+ */
+function raioLivre(angulo: number, preferido: number, w: number, h: number, caixa: DOMRect, obstaculos: Retangulo[]) {
+  // Sem lugar totalmente livre (pós-flop, com as cinco cartas no meio), fica no
+  // raio que cobre menos área
+  let melhor = { raio: preferido, area: Infinity };
+  for (let raio = preferido; raio >= RAIO_MINIMO; raio -= 0.5) {
+    const cx = (0.5 + (Math.cos(angulo) * raio) / 100) * caixa.width;
+    const cy = (0.5 + (Math.sin(angulo) * raio) / 100) * caixa.height;
+    const area = obstaculos.reduce((soma, o) => {
+      const dx = Math.min(cx + w / 2, o.r) - Math.max(cx - w / 2, o.l);
+      const dy = Math.min(cy + h / 2, o.b) - Math.max(cy - h / 2, o.t);
+      return soma + (dx > 0 && dy > 0 ? dx * dy : 0);
+    }, 0);
+    if (area === 0) return raio;
+    if (area < melhor.area) melhor = { raio, area };
+  }
+  return melhor.raio;
+}
 
 /**
  * Distribui os assentos na elipse com o herói sempre na base.
@@ -133,6 +176,7 @@ export function PokerTable({
   const apostaRefs = useRef(new Map<Position, HTMLDivElement | null>());
   const varreduraRefs = useRef<HTMLDivElement[]>([]);
   const assentoRefs = useRef(new Map<Position, HTMLDivElement | null>());
+  const centroRef = useRef<HTMLDivElement>(null);
   const gsapRef = useRef<Gsap | null>(null);
   const angulosRef = useRef(angulos);
   angulosRef.current = angulos;
@@ -142,6 +186,13 @@ export function PokerTable({
   const apostasAnteriores = useRef(new Map<Position, number>());
   const cartasAnteriores = useRef(0);
   const [varrendo, setVarrendo] = useState<{ position: Position; amount: number }[]>([]);
+
+  // Raios medidos na tela (aposta por posição e botão do dealer). Até a
+  // primeira medida vale o raio fixo; as animações leem pelo ref.
+  const [raios, setRaios] = useState<{ aposta: Partial<Record<Position, number>>; botao?: number }>({ aposta: {} });
+  const raiosRef = useRef(raios);
+  raiosRef.current = raios;
+  const raioDaAposta = (pos: Position, angulo: number) => raiosRef.current.aposta[pos] ?? raioAposta(angulo);
 
   useEffect(() => {
     let vivo = true;
@@ -252,7 +303,7 @@ export function PokerTable({
       const elemento = apostaRefs.current.get(pos);
       const angulo = angulosRef.current.get(pos);
       if (!elemento || angulo === undefined) return;
-      const { x, y } = deslocamento(angulo, RAIO_ASSENTO, raioAposta(angulo));
+      const { x, y } = deslocamento(angulo, RAIO_ASSENTO, raioDaAposta(pos, angulo));
       gsap.from(elemento, { x, y, scale: 0.7, opacity: 0, duration: 0.28, ease: 'power2.out' });
     });
 
@@ -265,6 +316,74 @@ export function PokerTable({
       setVarrendo(sumiram);
     }
   }, [chaveDasApostas]);
+
+  // Mede assentos e fichas e acha, para cada aposta e para o botão do dealer,
+  // o raio em que não ficam em cima do assento nem das cartas do jogador
+  const chaveDosAssentos = visiveis.join(',');
+  const qtdCartasDoVilao = villainCards?.length ?? 0;
+  const qtdExtras = extraOpponents?.length ?? 0;
+  useLayoutEffect(() => {
+    const mesa = mesaRef.current;
+    if (!mesa) return;
+
+    const medir = () => {
+      const caixa = mesa.getBoundingClientRect();
+      if (caixa.width === 0) return;
+
+      const pegadas = new Map<Position, Retangulo>();
+      assentoRefs.current.forEach((no, pos) => {
+        if (no) pegadas.set(pos, retanguloEm(no, caixa, FOLGA));
+      });
+
+      // Pote e cartas comunitárias, no meio: a aposta também não pode cobri-los
+      const centro = centroRef.current;
+      const meio = centro && centro.offsetWidth > 0 ? [retanguloEm(centro, caixa, FOLGA)] : [];
+
+      const aposta: Partial<Record<Position, number>> = {};
+      const fichas = new Map<Position, { w: number; h: number }>();
+      angulosRef.current.forEach((angulo, pos) => {
+        const pegada = pegadas.get(pos);
+        if (!pegada) return;
+        // offsetWidth, não o retângulo na tela: a ficha entra animada (escala
+        // 0,7) e, medida no meio da animação, parecia menor do que é
+        const ficha = apostaRefs.current.get(pos);
+        const tamanho = { w: ficha?.offsetWidth || 76, h: ficha?.offsetHeight || 20 };
+        fichas.set(pos, tamanho);
+        aposta[pos] = raioLivre(angulo, raioAposta(angulo), tamanho.w, tamanho.h, caixa, [pegada, ...meio]);
+      });
+
+      // O botão foge do assento de quem o tem e da aposta dele
+      let botao: number | undefined;
+      const assentos = chaveDosAssentos.split(',') as Position[];
+      const dono = assentos.includes('BTN') ? 'BTN' : assentos.includes('SB') ? 'SB' : undefined;
+      const anguloDono = dono ? angulosRef.current.get(dono) : undefined;
+      const pegadaDono = dono ? pegadas.get(dono) : undefined;
+      if (dono && anguloDono !== undefined && pegadaDono) {
+        const obstaculos = [pegadaDono, ...meio];
+        const raioDaFicha = aposta[dono];
+        const ficha = fichas.get(dono);
+        if (apostaRefs.current.get(dono) && raioDaFicha !== undefined && ficha) {
+          const cx = (0.5 + (Math.cos(anguloDono) * raioDaFicha) / 100) * caixa.width;
+          const cy = (0.5 + (Math.sin(anguloDono) * raioDaFicha) / 100) * caixa.height;
+          obstaculos.push({
+            l: cx - ficha.w / 2 - FOLGA,
+            t: cy - ficha.h / 2 - FOLGA,
+            r: cx + ficha.w / 2 + FOLGA,
+            b: cy + ficha.h / 2 + FOLGA,
+          });
+        }
+        botao = raioLivre(anguloDono + DESVIO_BOTAO, RAIO_BOTAO, 20, 20, caixa, obstaculos);
+      }
+
+      const novo = { aposta, botao };
+      setRaios((antes) => (JSON.stringify(antes) === JSON.stringify(novo) ? antes : novo));
+    };
+
+    medir();
+    const observador = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+    observador?.observe(mesa);
+    return () => observador?.disconnect();
+  }, [chaveDosAssentos, heroPosition, villainPosition, qtdCartasDoVilao, qtdExtras, chaveDasApostas, mesaCheia, pot, communityCards.length]);
 
   // As fichas que saíram da frente dos jogadores caem no pote
   useEffect(() => {
@@ -279,7 +398,7 @@ export function PokerTable({
     // Da aposta até o centro, para cada ficha que está sendo varrida
     const ateOPote = (i: number) => {
       const angulo = angulosRef.current.get(varrendo[i].position) ?? 0;
-      return deslocamento(angulo, raioAposta(angulo), 0);
+      return deslocamento(angulo, raioDaAposta(varrendo[i].position, angulo), 0);
     };
     gsap.to(nos, {
       x: (i: number) => -ateOPote(i).x,
@@ -343,7 +462,7 @@ export function PokerTable({
         </div>
 
         {/* Cartas comunitárias e pote, empilhados no centro */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[5] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5">
+        <div ref={centroRef} className="pointer-events-none absolute left-1/2 top-1/2 z-[5] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5">
           {mostrarComunitarias && <CommunityCards cards={communityCards} street={street} />}
           {pot > 0 && (
             <div
@@ -369,7 +488,7 @@ export function PokerTable({
         {anguloDoBotao !== undefined && (
           <div
             className="absolute z-[6] -translate-x-1/2 -translate-y-1/2"
-            style={pontoNaElipse(anguloDoBotao + DESVIO_BOTAO, RAIO_BOTAO)}
+            style={pontoNaElipse(anguloDoBotao + DESVIO_BOTAO, raios.botao ?? RAIO_BOTAO)}
           >
             <span
               className="flex h-5 w-5 items-center justify-center rounded-full border border-black/30 bg-white text-[10px] font-black text-black shadow-md"
@@ -388,7 +507,7 @@ export function PokerTable({
               key={`bet-${bet.position}`}
               ref={(no) => apostaRefs.current.set(bet.position, no)}
               className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-              style={pontoNaElipse(angulos.get(bet.position)!, raioAposta(angulos.get(bet.position)!))}
+              style={pontoNaElipse(angulos.get(bet.position)!, raioDaAposta(bet.position, angulos.get(bet.position)!))}
             >
               <PlayerBet amount={bet.amount} />
             </div>
@@ -405,7 +524,7 @@ export function PokerTable({
                 if (no) varreduraRefs.current[i] = no;
               }}
               className="pointer-events-none absolute z-[9] -translate-x-1/2 -translate-y-1/2"
-              style={pontoNaElipse(angulos.get(bet.position)!, raioAposta(angulos.get(bet.position)!))}
+              style={pontoNaElipse(angulos.get(bet.position)!, raioDaAposta(bet.position, angulos.get(bet.position)!))}
             >
               <PlayerBet amount={bet.amount} />
             </div>

@@ -86,14 +86,16 @@ export function ChipStack({ amount, position = 'center', className }: ChipStackP
 export function PlayerBet({ amount, className }: { amount: number; className?: string }) {
   if (amount <= 0) return null;
 
+  // No celular as fichas vão em cima do valor: lado a lado a aposta tinha
+  // ~90 px e, na mesa de 330 px, não cabia entre o assento e o pote
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div className={cn('flex flex-col items-center gap-0.5 sm:flex-row sm:gap-1', className)}>
       <div className="flex -space-x-1">
         {getChipStack(amount).slice(0, 4).map((chip, i) => (
           <div
             key={i}
             className={cn(
-              'w-4 h-4 rounded-full border shadow-sm',
+              'h-3 w-3 rounded-full border shadow-sm sm:h-4 sm:w-4',
               chip.color,
               chip.borderColor
             )}
@@ -101,7 +103,7 @@ export function PlayerBet({ amount, className }: { amount: number; className?: s
           />
         ))}
       </div>
-      <span className="text-xs font-medium text-primary bg-black/40 px-1.5 py-0.5 rounded">
+      <span className="whitespace-nowrap rounded bg-black/40 px-1 py-px text-[10px] font-medium leading-tight text-primary sm:px-1.5 sm:py-0.5 sm:text-xs">
         {amount}BB
       </span>
     </div>

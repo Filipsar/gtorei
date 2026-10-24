@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown, Smartphone } from 'lucide-react';
 import { ehApp } from '@/lib/nativo/plataforma';
+import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -260,6 +261,30 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="p-2">
+          {/* Convite para o teste do app Android, acima das seções para não
+              sumir dentro de uma seção fechada. Some dentro do próprio app. */}
+          {!app && TESTE_ANDROID_ABERTO && (
+            <SidebarMenu className="mb-2">
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={collapsed ? 'Baixar o app (Android)' : undefined} className="h-auto p-0">
+                  <NavLink
+                    to="/baixar-app"
+                    className="flex items-center gap-3 rounded-lg border border-primary/50 bg-primary/10 px-3 py-2.5 transition-colors hover:border-primary hover:bg-primary/15"
+                    activeClassName="border-primary bg-primary/20"
+                  >
+                    <Smartphone className="h-5 w-5 shrink-0 text-primary" />
+                    {!collapsed && (
+                      <span className="flex min-w-0 flex-col leading-tight">
+                        <span className="text-sm font-semibold text-sidebar-foreground">Baixar o app</span>
+                        <span className="text-xs text-sidebar-foreground/80">Android · teste no Google Play</span>
+                      </span>
+                    )}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          )}
+
           {/* Recolhida, a barra vira uma régua de ícones: cabeçalho de seção não
               caberia, e uma seção fechada esconderia itens sem deixar pista de
               como reabrir. Então lá tudo vira uma lista única. */}

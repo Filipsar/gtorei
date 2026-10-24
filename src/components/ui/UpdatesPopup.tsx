@@ -3,19 +3,20 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Instagram, ChevronLeft, ChevronRight, X, Sparkles, ListChecks } from 'lucide-react';
+import { Heart, Instagram, ChevronLeft, ChevronRight, X, ClipboardCheck, Smartphone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
+import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
+import { ehApp } from '@/lib/nativo/plataforma';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.20.0';
+const CURRENT_VERSION = '1.24.2';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
 const DONATE_URL = '/apoiar';
-const UPDATES_URL = '/atualizacoes';
 
 // Páginas abertas ao público (SEO e conteúdo): o popup não abre nelas
-const QUIET_PATHS = ['/iniciante', '/atualizacoes', '/gtoreiacessibilidade', '/apoiar'];
+const QUIET_PATHS = ['/iniciante', '/atualizacoes', '/gtoreiacessibilidade', '/apoiar', '/baixar-app'];
 
 type Slide = {
   icon: React.ReactNode;
@@ -84,19 +85,40 @@ export function UpdatesPopup() {
   };
 
   const slides: Slide[] = [
+    // Dentro do app o convite não faz sentido: quem vê já instalou
+    ...(TESTE_ANDROID_ABERTO && !ehApp()
+      ? [
+          {
+            icon: <Smartphone className="h-10 w-10" />,
+            iconBg: 'bg-primary/20 text-primary',
+            title: 'O GTORei tem app para Android',
+            titleClass: 'text-primary',
+            description:
+              'O app está em teste no Google Play e você pode baixar agora, com a mesma conta do site. Para o Google liberar o app para todo mundo, precisamos de testadores que fiquem inscritos por 14 dias seguidos. São três passos e leva dois minutos.',
+            badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
+            cta: (
+              <div className="mt-4 w-full flex justify-center">
+                <Button onClick={() => irPara('/baixar-app')}>
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Quero baixar o app
+                </Button>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
-      icon: <Sparkles className="h-10 w-10" />,
+      icon: <ClipboardCheck className="h-10 w-10" />,
       iconBg: 'bg-primary/20 text-primary',
-      title: 'Ranges de abertura recalculadas',
+      title: 'Simulado: a resposta só no fim',
       titleClass: 'text-primary',
       description:
-        'Toda abertura, do UTG ao small blind e de 8 a 100 BB, agora sai de um cálculo de EV com ante, com a escolha entre foldar, abrir pequeno ou ir de all-in. Com 100 BB o UTG passou de 11% para 15% das mãos, mais perto do que um solver de torneio faz. A explicação completa, com os limites do cálculo, fica em Atualizações, na barra lateral.',
-      badge: { label: 'NOVO', className: 'bg-feedback-best text-background' },
+        'Jogue 10, 20 ou 30 mãos seguidas sem ver se acertou. No fim vem a correção mão a mão e o XP pelos acertos, com bônus a partir de 80% de precisão. Está em Treinar.',
       cta: (
         <div className="mt-4 w-full flex justify-center">
-          <Button variant="outline" onClick={() => irPara(UPDATES_URL)}>
-            <ListChecks className="h-4 w-4 mr-2" />
-            Ver tudo em Atualizações
+          <Button variant="outline" onClick={() => irPara('/treinar')}>
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            Fazer um simulado
           </Button>
         </div>
       ),

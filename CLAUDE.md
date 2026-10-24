@@ -150,6 +150,19 @@ passa por ele.
   que vira apoiador no banco. Código nativo fica em `src/lib/nativo/` e só carrega dentro
   do app (`ehApp()`). No app somem o link da GGPoker e o Pix. O AAB nunca foi gerado:
   sai pelo GitHub Actions depois dos segredos do passo 3 do guia.
+  Teste fechado (24/10/2026): convite em `/baixar-app`, no menu lateral e no pop-up de
+  novidades, tudo ligado por `TESTE_ANDROID_ABERTO` em `src/data/appAndroid.ts`. A
+  entrada é o Grupo do Google cadastrado como testador; APK baixado do site não conta
+  para os 12 testadores por 14 dias. Quando o app for para a produção, trocar a página
+  pelo link direto da loja.
+  APK de teste (24/10/2026): JDK 21 e Android SDK em
+  `C:\Users\farub\AppData\Local\gtorei-android\` (fora do OneDrive). Com `JAVA_HOME` e
+  `ANDROID_HOME` apontando para `jdk` e `sdk` ali: `npm run build && npx cap sync android
+  && cd android && ./gradlew.bat assembleDebug -PVERSION_CODE=<AAMMDDHH> -PVERSION_NAME=<x.y.z-teste>`.
+  O app empacota o `dist`: mudança no site só chega ao app num APK novo. A chave de debug
+  fica em `~/.android/debug.keystore` desta máquina; compilando sempre aqui, a versão nova
+  instala por cima. O Filipe envia e baixa o APK em /admin → App Android (bucket privado
+  `app-teste`, migration `20261024120000_app_teste_storage.sql`).
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.
   Ao criar tabela nova com dados do usuário, incluir na lista `TABELAS` da função.
 - Políticas (22/10/2026): `/privacidade`, `/termos`, `/reembolso`, `/cookies` em

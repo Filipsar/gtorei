@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity } from 'lucide-react';
+import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fatiarPagina } from '@/lib/paginacao';
 import { MonthlyComparison } from '@/components/admin/MonthlyComparison';
 import { ReferralLevel5 } from '@/components/admin/ReferralLevel5';
+import { AppTeste } from '@/components/admin/AppTeste';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -74,7 +75,7 @@ const columnLabels: Record<ColumnKey, string> = {
   created_at: 'Cadastro',
 };
 
-type TabKey = 'jogadores' | 'dashboard';
+type TabKey = 'jogadores' | 'dashboard' | 'app';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -366,7 +367,7 @@ export default function AdminPage() {
     doc.save(`gtorei-relatorio-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}.pdf`);
   };
 
-  const tabLabel = activeTab === 'jogadores' ? 'Jogadores' : 'Dashboard';
+  const tabLabel = activeTab === 'jogadores' ? 'Jogadores' : activeTab === 'app' ? 'App Android' : 'Dashboard';
 
   return (
     <MainLayout>
@@ -385,6 +386,9 @@ export default function AdminPage() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('dashboard')}>
                 <Activity className="h-4 w-4 mr-2" /> Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('app')}>
+                <Smartphone className="h-4 w-4 mr-2" /> App Android
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -416,7 +420,10 @@ export default function AdminPage() {
           )}
         </div>
 
-        {loading ? (
+        {/* A aba do app não depende da lista de jogadores: abre sem esperar ela carregar */}
+        {activeTab === 'app' ? (
+          <AppTeste />
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
