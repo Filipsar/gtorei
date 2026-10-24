@@ -34,6 +34,9 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { RangePreview, VerdictPreview } from '@/components/home/HomePreviews';
+import { UltimasNoticias } from '@/components/home/UltimasNoticias';
+import { EloBadge } from '@/components/app/EloBadge';
+import { ELOS, ELO_REI } from '@/data/elos';
 
 // Conferidos no banco em 21/09/2026: 152 contas, 126 jogadores com mãos registradas,
 // 39.552 mãos. Arredondados para baixo — só ficam mais verdadeiros com o tempo.
@@ -97,7 +100,7 @@ export default function HomePage() {
     { icon: Brain, title: 'Análise com IA', desc: 'Faça upload do seu hand history e receba veredicto GTO + EV mão a mão por IA.', to: '/analise-ia', tag: 'Novo' },
     { icon: TableProperties, title: 'Tabelas de Range', desc: 'Matrizes 13x13 interativas com frequências de cada ação por spot.', to: '/tabelas', tag: 'Estudo' },
     { icon: BarChart3, title: 'Análise de Mãos', desc: 'Revise suas decisões street-by-street e entenda o porquê da linha ótima.', to: '/analise', tag: 'Review' },
-    { icon: Trophy, title: 'Ranking Global', desc: 'Suba de Iniciante até GTO Rei (250k XP) competindo com a comunidade.', to: '/ranking', tag: 'Competitivo' },
+    { icon: Trophy, title: 'Ligas e Ranking', desc: 'Dispute a liga do seu elo todo dia, de Bronze a Rei, e o ranking global do mês.', to: '/ranking', tag: 'Competitivo' },
     { icon: Award, title: 'Conquistas', desc: 'Desbloqueie achievements por precisão, volume e streaks de acertos.', to: '/conquistas', tag: 'Gamificação' },
     { icon: Users, title: 'Comunidade', desc: 'Compare resultados, siga jogadores e discuta mãos com outros estudantes.', to: '/comunidade', tag: 'Social' },
     { icon: BookOpen, title: 'Guia Iniciante', desc: 'Comece do zero com explicações de posições, ranges e fundamentos de torneio.', to: '/iniciante', tag: 'Iniciante' },
@@ -114,7 +117,7 @@ export default function HomePage() {
     { n: '01', title: 'Crie sua conta', desc: 'Cadastro grátis em segundos, com Google ou e-mail.' },
     { n: '02', title: 'Escolha o modo', desc: 'Selecione formato, stack e dificuldade do seu treino.' },
     { n: '03', title: 'Decida a ação', desc: 'O GTORei compara sua escolha com a linha calculada por EV.' },
-    { n: '04', title: 'Evolua', desc: 'Ganhe XP, suba de ranking e destrave conquistas.' },
+    { n: '04', title: 'Evolua', desc: 'Ganhe XP, suba de liga e destrave conquistas.' },
   ];
 
   return (
@@ -197,6 +200,8 @@ export default function HomePage() {
             <a href="#modos" className="hover:text-foreground transition-colors">Modos</a>
             <a href="#como-funciona" className="hover:text-foreground transition-colors">Como funciona</a>
             <a href="#comunidade" className="hover:text-foreground transition-colors">Comunidade</a>
+            {/* Página do servidor (api/noticias.ts): link comum, sem o roteador do SPA */}
+            <a href="/noticias" className="hover:text-foreground transition-colors">Notícias</a>
             <a href="#perguntas" className="hover:text-foreground transition-colors">Perguntas</a>
           </nav>
           <div className="flex items-center gap-2">
@@ -468,9 +473,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div data-reveal className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
             <p className="text-primary text-sm font-semibold uppercase tracking-wider mb-3">Comunidade</p>
-            <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Suba de Iniciante a GTO Rei</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-balance">Suba de liga todo dia</h2>
             <p className="text-muted-foreground text-lg">
-              Ganhe XP a cada decisão certa, destrave conquistas e dispute o topo do ranking mensal.
+              Ganhe XP a cada decisão certa e dispute a liga do seu elo: todo dia os primeiros sobem e os últimos caem.
             </p>
           </div>
 
@@ -486,13 +491,21 @@ export default function HomePage() {
               <p className="text-sm text-muted-foreground">de conquistas para precisão, volume e streaks</p>
             </Card>
             <Card data-reveal-item className="p-5 sm:p-7 bg-card border-border">
-              <Users className="h-8 w-8 text-primary mb-3 sm:mb-4" />
-              <p className="text-2xl sm:text-3xl font-bold mb-1">Ranking mensal</p>
-              <p className="text-sm text-muted-foreground">reset todo mês, novas chances de subir ao topo</p>
+              {/* A escada das ligas no lugar do ícone */}
+              <span className="mb-3 flex items-end gap-1 sm:mb-4" aria-hidden="true">
+                {ELOS.map((e) => (
+                  <EloBadge key={e.numero} elo={e.numero} tamanho={e.numero === ELO_REI ? 34 : 26} />
+                ))}
+              </span>
+              <p className="text-2xl sm:text-3xl font-bold mb-1">7 ligas</p>
+              <p className="text-sm text-muted-foreground">de Bronze a Rei, com disputa diária e o ranking global do mês</p>
             </Card>
           </div>
         </div>
       </section>
+
+      {/* NOTÍCIAS — a porta de entrada do Google para /noticias */}
+      <UltimasNoticias />
 
 
       {/* PERGUNTAS — o mesmo texto vai no FAQPage lá em cima; se mudar aqui, mudar lá */}
@@ -653,6 +666,7 @@ export default function HomePage() {
           {/* Link em vez de button: eram os únicos caminhos para as páginas públicas e,
               como onClick, nenhum robô conseguia seguir nem indexar o destino. */}
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <a href="/noticias" className="hover:text-foreground transition-colors">Notícias de poker</a>
             <Link to="/iniciante" className="hover:text-foreground transition-colors">Guia do iniciante</Link>
             <Link to="/atualizacoes" className="hover:text-foreground transition-colors">Atualizações</Link>
             <Link to="/apoiar" className="hover:text-foreground transition-colors">Apoiar</Link>

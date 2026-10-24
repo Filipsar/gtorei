@@ -217,7 +217,11 @@ passa por ele.
   escritos pelo admin (mínimo de 200 caracteres, conferido no banco). O trecho do feed
   nunca vai para a página: só manchete e link de outro site seria conteúdo raspado e
   prejudica o site inteiro no Google. Sitemap próprio em `/sitemap-noticias.xml` (citado no
-  `robots.txt`). A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
+  `robots.txt`; `/noticias` só entra nele quando há notícia publicada, porque vazia ela é
+  noindex). A porta de entrada pública é a página inicial: "Notícias" no menu do topo e no
+  rodapé e a seção "Últimas notícias" (`src/components/home/UltimasNoticias.tsx`, some sem
+  notícia publicada). Links para `/noticias` são `<a href>` comuns, nunca `Link` do roteador.
+  No admin dá para marcar várias, abrir os editores juntos e publicar as prontas em lote. A pasta `api/` fica fora do `tsconfig.app.json`; para checar os tipos:
   `npx tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext
   --types node --skipLibCheck api/*.ts`. O `dev` do Vite não serve `api/`.
 - Excluir conta (`/excluir-conta`, função `delete-account`): exigência da Play Store.

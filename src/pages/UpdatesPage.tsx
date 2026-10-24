@@ -26,7 +26,7 @@ const UPDATES: UpdateNote[] = [
     date: '24/10/2026',
     type: 'feature',
     title: 'Notícias de Poker',
-    description: 'Nova página de notícias, no menu Comunidade: o que acontece no poker, resumido em português pelo GTORei, com o que importa para quem joga torneio e o link para a matéria original. As primeiras chegam nos próximos dias.',
+    description: 'Nova página de notícias, aberta a todos e com link na página inicial e no menu Comunidade: o que acontece no poker, resumido em português pelo GTORei, com o que importa para quem joga torneio e o link para a matéria original. As primeiras chegam nos próximos dias.',
   },
   {
     version: '1.26.1',
