@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { z } from 'zod';
 import { SEO } from '@/components/seo/SEO';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
-import { ehApp } from '@/lib/nativo/plataforma';
+import { ehApp, usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { abrirLoginNoNavegador } from '@/lib/nativo/loginApp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,34 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { VERSAO_TERMOS } from '@/data/legal';
+import { loginSchema, signupSchema, type LoginForm, type SignupForm } from '@/lib/login';
+import { LoginApp } from '@/components/app/LoginApp';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
-// Password: min 8 chars, 1 uppercase, 1 symbol
-const passwordSchema = z.string().
-min(8, 'A senha deve ter no mínimo 8 caracteres').
-regex(/[A-Z]/, 'A senha deve conter pelo menos uma letra maiúscula').
-regex(/[!@#$%^&*(),.?":{}|<>]/, 'A senha deve conter pelo menos um símbolo');
-
-const loginSchema = z.object({
-  email: z.string().email('E-mail inválido'),
-  password: z.string().min(1, 'Senha obrigatória')
-});
-
-const signupSchema = z.object({
-  username: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(20, 'Nome deve ter no máximo 20 caracteres'),
-  email: z.string().email('E-mail inválido'),
-  password: passwordSchema,
-  confirmPassword: z.string(),
-  // Consentimento explícito: caixa desmarcada, obrigatória, só para Termos e
-  // Privacidade. Nada de marketing embutido no cadastro.
-  aceite: z.literal(true, { errorMap: () => ({ message: 'Para criar a conta, aceite os Termos e a Política de Privacidade' }) })
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'As senhas não coincidem',
-  path: ['confirmPassword']
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-type SignupForm = z.infer<typeof signupSchema>;
+// Regras dos formulários: as mesmas do login do app (src/lib/login.ts)
 
 // Parece invertido, mas não é: o endereço oficial do site é o www, e ainda assim
 // o redirect do OAuth sai no apex. O broker do Lovable valida o redirect_uri
@@ -151,6 +127,9 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  // No app, a tela de login feita para ele (src/components/app/LoginApp.tsx)
+  if (usarLayoutDoApp()) return <LoginApp />;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background flex items-center justify-center p-4 pt-16">

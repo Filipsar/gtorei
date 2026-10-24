@@ -13,6 +13,7 @@ import { CapturaConvite } from "@/components/referral/CapturaConvite";
 import { PonteApp } from "@/components/nativo/PonteApp";
 import { AvisoPrivacidade } from "@/components/legal/AvisoPrivacidade";
 import { ehApp } from "@/lib/nativo/plataforma";
+import { AberturaDoApp } from "@/components/app/AberturaDoApp";
 // A home entra direto no pacote principal: é a primeira tela de quem chega
 // pelo Google e a que conta na nota de velocidade. O resto carrega sob demanda.
 import HomePage from "./pages/HomePage";
@@ -66,7 +67,8 @@ const App = () => (
           <PonteApp />
           <Suspense fallback={<PageLoading />}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            {/* No app não há página de apresentação: a abertura espera o login e leva à trilha */}
+            <Route path="/" element={ehApp() ? <AberturaDoApp /> : <HomePage />} />
             <Route path="/auth" element={<AuthPage />} />
             {/* No app, conteúdo digital só se vende pelo Google Play (regra da loja): o Pix vira o PRO */}
             <Route path="/apoiar" element={ehApp() ? <Navigate to="/pro" replace /> : <DonatePage />} />
