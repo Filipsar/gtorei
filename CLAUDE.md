@@ -118,6 +118,20 @@ Célula que começa com `=`, `+`, `-` ou `@` vira fórmula ao abrir no Excel. O 
 `csvCell` em `src/pages/AdminPage.tsx` prefixa aspas simples — qualquer exportação nova
 passa por ele.
 
+### Hand history (análise com IA)
+
+`src/utils/handHistoryParser.ts` lê o cabeçalho por sala e o corpo da mão num núcleo só
+(`fillHandFromLines`). Até 25/10/2026 o GGPoker e o 888poker não importavam: o GG
+exporta `Poker Hand #TM…` (o parser procurava `GGPoker Hand #`) e o 888 escreve
+`( $2.13 )`, `[ 7d, Ah ]` e `raises [$0.06]`. Valor sempre por `numero()` — vírgula de
+milhar (`3,750`) virava 3. Os testes em `src/test/handHistoryParser.test.ts` têm uma mão
+real de cada sala; formato novo entra lá primeiro.
+
+O spot do herói (open, vs open, vs 3-bet...) sai de `src/lib/spotsDoHeroi.ts`, não da IA:
+ela dizia "melhorar vs 3-bet" para quem só tinha mãos vs open raise. A tela filtra do
+resumo o leak de spot que não está em nenhuma mão enviada. A função lê no máximo 30 mãos
+e 300 KB, então a tela escolhe as 30 em que o herói entrou no pote.
+
 ## Não fazer
 
 - Não prometer na interface o que não existe. Já houve texto de onboarding citando

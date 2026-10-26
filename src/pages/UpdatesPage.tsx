@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.27.2',
+    date: '25/10/2026',
+    type: 'fix',
+    title: 'Importação do GGPoker e 888poker',
+    description: 'Os históricos do GGPoker e do 888poker voltaram a ser lidos, inclusive com valores em milhar e arquivos grandes: a IA analisa até 30 mãos por vez, começando pelas que você jogou. A análise agora mostra em que spot você decidiu cada mão (open, vs open raise, vs 3-bet...), lido direto do arquivo, e não aponta mais leak de um spot que você nem jogou.',
+  },
+  {
     version: '1.27.1',
     date: '24/10/2026',
     type: 'improvement',

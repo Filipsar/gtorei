@@ -1,5 +1,5 @@
 import { anonimizarMaos } from '@/lib/anonimizarMaos';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Upload, FileText, Loader2, Brain, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { parseHandHistory, PLATFORM_INFO, type ParsedHand } from '@/utils/handHistoryParser';
+import { detectPlatform, parseHandHistory, PLATFORM_INFO, type ParsedHand } from '@/utils/handHistoryParser';
+import {
+  contarSpots,
+  escolherMaosParaAnalise,
+  filtrarPorSpots,
+  lerMaoDoHeroi,
+  NOME_DO_SPOT,
+  type SpotDoHeroi,
+} from '@/lib/spotsDoHeroi';
 import { supabase } from '@/integrations/supabase/client';
 import {
   LineChart,
@@ -47,12 +55,40 @@ const VERDICT_STYLE: Record<Verdict, { label: string; color: string; bg: string 
   blunder: { label: 'Blunder', color: 'text-feedback-blunder', bg: 'bg-feedback-blunder/20' },
 };
 
+// A função analyze-hand-history lê até 30 mãos e recusa pedido acima de
+// 300 KB. Um arquivo de sessão do GG passa disso fácil, e antes ia inteiro.
+const MAX_MAOS_NA_IA = 30;
+const MAX_BYTES_DO_PEDIDO = 280_000;
+
+/** Mãos que vão para a IA, com o spot de cada uma calculado aqui (a IA inventava) */
+function montarPedido(maos: ParsedHand[]) {
+  let escolhidas = escolherMaosParaAnalise(maos, MAX_MAOS_NA_IA);
+  const montar = (lista: ParsedHand[]) =>
+    anonimizarMaos(lista).map((m, i) => {
+      const l = lerMaoDoHeroi(lista[i]);
+      return {
+        ...m,
+        posicaoDoHeroi: l.posicao,
+        spotsDoHeroi: l.spots.map((s) => NOME_DO_SPOT[s]),
+        stackEfetivoBb: l.stackEfetivoBb,
+      };
+    });
+  let corpo = montar(escolhidas);
+  while (escolhidas.length > 1 && JSON.stringify({ hands: corpo }).length > MAX_BYTES_DO_PEDIDO) {
+    escolhidas = escolhidas.slice(0, Math.floor(escolhidas.length * 0.8));
+    corpo = montar(escolhidas);
+  }
+  return { escolhidas, corpo };
+}
+
 export function AIAnalysis() {
   const [parsed, setParsed] = useState<ParsedHand[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string>('');
+  const [enviadas, setEnviadas] = useState(0);
+  const [removidos, setRemovidos] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
@@ -67,11 +103,19 @@ export function AIAnalysis() {
     const text = await file.text();
     const hands = parseHandHistory(text);
     if (hands.length === 0) {
-      toast({ title: 'Nenhuma mão detectada', description: 'Verifique se o arquivo é um hand history válido.' });
+      const sala = detectPlatform(text.replace(/\r\n?/g, '\n'));
+      toast({
+        title: 'Nenhuma mão detectada',
+        description:
+          sala === 'unknown'
+            ? 'Não reconhecemos a sala. Envie o .txt exportado do PokerStars, GGPoker, 888poker, ACR, PartyPoker ou Winamax.'
+            : `O arquivo parece do ${PLATFORM_INFO[sala].name}, mas nenhuma mão foi lida. Exporte de novo o histórico como .txt.`,
+      });
       return;
     }
     setParsed(hands);
     setAnalysis(null);
+    setRemovidos(0);
     setFileName(file.name);
     toast({ title: 'Histórico carregado', description: `${hands.length} mão(s) detectada(s).` });
   };
@@ -92,8 +136,9 @@ export function AIAnalysis() {
     if (parsed.length === 0) return;
     setLoading(true);
     try {
+      const { escolhidas, corpo } = montarPedido(parsed);
       const { data, error } = await supabase.functions.invoke('analyze-hand-history', {
-        body: { hands: anonimizarMaos(parsed) },
+        body: { hands: corpo },
       });
       if (error) {
         // Em resposta 4xx/5xx o supabase-js só diz "non-2xx status code"; a
@@ -102,7 +147,17 @@ export function AIAnalysis() {
         throw new Error(corpo?.error ?? 'Tente novamente.');
       }
       if (data?.error) throw new Error(data.error);
-      setAnalysis(data.analysis as AnalysisResult);
+      const resultado = data.analysis as AnalysisResult;
+      // Leak de spot que não está em nenhuma mão enviada é invenção da IA
+      const presentes = new Set<SpotDoHeroi>(escolhidas.flatMap((m) => lerMaoDoHeroi(m).spots));
+      const leaks = filtrarPorSpots(resultado.overall?.leaks ?? [], presentes);
+      const recomendacoes = filtrarPorSpots(resultado.overall?.recommendations ?? [], presentes);
+      setAnalysis({
+        hands: resultado.hands ?? [],
+        overall: { evTotal: resultado.overall?.evTotal ?? 0, leaks: leaks.itens, recommendations: recomendacoes.itens },
+      });
+      setEnviadas(escolhidas.length);
+      setRemovidos(leaks.removidos + recomendacoes.removidos);
       toast({ title: 'Análise concluída!', description: 'Veja o resultado abaixo.' });
     } catch (e) {
       toast({
@@ -117,6 +172,7 @@ export function AIAnalysis() {
 
   const platform = parsed[0]?.platform;
   const platformInfo = platform ? PLATFORM_INFO[platform] : null;
+  const spotsDoArquivo = useMemo(() => contarSpots(parsed), [parsed]);
 
   const chartData =
     analysis?.hands.map((h, i) => ({
@@ -195,6 +251,31 @@ export function AIAnalysis() {
                   </>
                 )}
               </Button>
+            </div>
+          )}
+
+          {parsed.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {spotsDoArquivo.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Spots de pré-flop em que você decidiu (lidos das ações do arquivo):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {spotsDoArquivo.map(({ spot, maos }) => (
+                      <Badge key={spot} variant="outline" className="text-xs font-normal">
+                        {NOME_DO_SPOT[spot]}: <span className="font-semibold ml-1">{maos}</span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {parsed.length > MAX_MAOS_NA_IA && (
+                <p className="text-xs text-muted-foreground">
+                  A IA analisa até {MAX_MAOS_NA_IA} mãos por vez. Das {parsed.length} do arquivo, vão primeiro as
+                  em que você entrou no pote.
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -282,6 +363,11 @@ export function AIAnalysis() {
                   </ul>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground">
+                Baseado em {enviadas} mão(s).
+                {removidos > 0 &&
+                  ` ${removidos === 1 ? 'Uma observação da IA saiu' : `${removidos} observações da IA saíram`}: falavam de um spot que não aparece nessas mãos.`}
+              </p>
             </CardContent>
           </Card>
 
@@ -295,6 +381,7 @@ export function AIAnalysis() {
                 {analysis.hands.map((h, i) => {
                   const style = VERDICT_STYLE[h.verdict] ?? VERDICT_STYLE.correct;
                   const orig = parsed.find((p) => p.handId === h.handId);
+                  const leitura = orig ? lerMaoDoHeroi(orig) : null;
                   return (
                     <AccordionItem key={h.handId + i} value={`hand-${i}`}>
                       <AccordionTrigger className="hover:no-underline">
@@ -320,6 +407,15 @@ export function AIAnalysis() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-3 text-sm">
+                        {leitura && leitura.spots.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground font-medium">Spot: </span>
+                            {leitura.spots.map((s) => NOME_DO_SPOT[s]).join(' → ')}
+                            {leitura.posicao && ` · ${leitura.posicao}`}
+                            {leitura.stackEfetivoBb !== null &&
+                              ` · ${leitura.stackEfetivoBb.toLocaleString('pt-BR')} bb efetivos`}
+                          </div>
+                        )}
                         <div>
                           <span className="text-muted-foreground font-medium">Decisão: </span>
                           {h.summary}
