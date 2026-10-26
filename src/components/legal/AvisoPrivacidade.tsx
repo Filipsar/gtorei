@@ -3,20 +3,12 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ehApp } from '@/lib/nativo/plataforma';
 import {
+  avisoDePrivacidadePendente,
+  CHAVE_AVISO_DO_SITE_VISTO,
   EVENTO_ABRIR_PREFERENCIAS,
   lerConsentimento,
   salvarConsentimento,
 } from '@/lib/consentimento';
-
-const CHAVE_VISTO_SITE = 'gtorei_aviso_cookies_visto';
-
-function avisoDoSiteVisto(): boolean {
-  try {
-    return localStorage.getItem(CHAVE_VISTO_SITE) === '1';
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Aviso de privacidade e cookies, no rodapé da tela.
@@ -28,7 +20,7 @@ function avisoDoSiteVisto(): boolean {
  */
 export function AvisoPrivacidade() {
   const app = ehApp();
-  const [aberto, setAberto] = useState(() => (app ? lerConsentimento() === null : !avisoDoSiteVisto()));
+  const [aberto, setAberto] = useState(() => avisoDePrivacidadePendente(app));
 
   useEffect(() => {
     const abrir = () => setAberto(true);
@@ -40,7 +32,7 @@ export function AvisoPrivacidade() {
 
   const fecharSite = () => {
     try {
-      localStorage.setItem(CHAVE_VISTO_SITE, '1');
+      localStorage.setItem(CHAVE_AVISO_DO_SITE_VISTO, '1');
     } catch {
       // volta a aparecer na próxima visita
     }

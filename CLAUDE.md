@@ -132,6 +132,14 @@ ela dizia "melhorar vs 3-bet" para quem só tinha mãos vs open raise. A tela fi
 resumo o leak de spot que não está em nenhuma mão enviada. A função lê no máximo 30 mãos
 e 300 KB, então a tela escolhe as 30 em que o herói entrou no pote.
 
+### Pop-ups ao abrir o site
+
+Um por visita (`src/lib/avisoDoDiscord.ts`): o de novidades (`UpdatesPopup`) tem a vez e
+marca a visita; o do Discord (`DiscordPopup`, uma vez por dia no fuso de Brasília, até a
+pessoa clicar em entrar) só abre depois do tutorial e com o aviso de privacidade já
+respondido — no celular o aviso cobre o botão do pop-up. Pop-up novo segue as mesmas
+regras e usa `PAGINAS_SEM_POPUP`.
+
 ## Não fazer
 
 - Não prometer na interface o que não existe. Já houve texto de onboarding citando

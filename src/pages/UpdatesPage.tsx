@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.28.0',
+    date: '26/10/2026',
+    type: 'feature',
+    title: 'Servidor no Discord',
+    description: 'O GTORei agora tem servidor no Discord, para conversar sobre mãos, tirar dúvidas e acompanhar as novidades com a comunidade. Entre pelo convite: discord.gg/jrhjFbB5DX.',
+  },
+  {
     version: '1.27.2',
     date: '25/10/2026',
     type: 'fix',

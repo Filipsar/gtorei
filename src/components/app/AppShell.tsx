@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Route, Swords, Trophy, Zap, type LucideIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UpdatesPopup } from '@/components/ui/UpdatesPopup';
+import { DiscordPopup } from '@/components/ui/DiscordPopup';
 import { getLevelName } from '@/data/localStorage';
 import { cn } from '@/lib/utils';
 
@@ -88,6 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       {!emLicao && <Abas />}
       {!emLicao && <UpdatesPopup />}
+      {!emLicao && <DiscordPopup />}
     </div>
   );
 }

@@ -10,14 +10,12 @@ import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
 import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { cn } from '@/lib/utils';
+import { marcarPopupNestaVisita, PAGINAS_SEM_POPUP } from '@/lib/avisoDoDiscord';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
 const CURRENT_VERSION = '1.26.0';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
 const DONATE_URL = '/apoiar';
-
-// Páginas abertas ao público (SEO e conteúdo): o popup não abre nelas
-const QUIET_PATHS = ['/iniciante', '/atualizacoes', '/gtoreiacessibilidade', '/apoiar', '/baixar-app'];
 
 type Slide = {
   icon: React.ReactNode;
@@ -48,7 +46,7 @@ export function UpdatesPopup() {
   useEffect(() => {
     // Só para quem está logado e fora das páginas públicas de conteúdo
     if (!user) return;
-    if (QUIET_PATHS.includes(location.pathname)) return;
+    if (PAGINAS_SEM_POPUP.includes(location.pathname)) return;
 
     // Quem ainda não terminou o tutorial inicial não vê este pop-up. Dois
     // motivos: "as melhorias chegaram" não diz nada a quem chegou agora, e
@@ -69,8 +67,12 @@ export function UpdatesPopup() {
     }
     if (seen === CURRENT_VERSION) return;
 
-    // pequeno delay para não competir com a renderização inicial
-    const t = setTimeout(() => setOpen(true), 800);
+    // pequeno delay para não competir com a renderização inicial. Marca a
+    // visita para o aviso do Discord não abrir logo depois deste
+    const t = setTimeout(() => {
+      marcarPopupNestaVisita();
+      setOpen(true);
+    }, 800);
     return () => clearTimeout(t);
   }, [user, location.pathname]);
 

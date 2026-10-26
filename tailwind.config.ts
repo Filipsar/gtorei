@@ -294,8 +294,21 @@ export default {
           "0%, 100%": { transform: "scaleY(1) translateY(0)", opacity: "0.85" },
           "50%": { transform: "scaleY(1.12) translateY(-4%)", opacity: "1" },
         },
+        // Aviso do Discord: o rei pula de braços para cima e o confete cai
+        "rei-comemora": {
+          "0%, 100%": { transform: "translateY(0) rotate(0)" },
+          "30%": { transform: "translateY(-7%) rotate(-3deg)" },
+          "60%": { transform: "translateY(-3%) rotate(2deg)" },
+        },
+        "confete": {
+          "0%": { opacity: "0", transform: "translateY(-12px) rotate(0)" },
+          "15%": { opacity: "1" },
+          "100%": { opacity: "0", transform: "translateY(180px) rotate(540deg)" },
+        },
       },
       animation: {
+        "rei-comemora": "rei-sobe 0.45s cubic-bezier(0.22, 1, 0.36, 1) both, rei-comemora 0.9s ease-in-out 0.45s 3",
+        "confete": "confete 2.4s linear infinite",
         "rei-sobe": "rei-sobe 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
         "estrela-entra": "estrela-entra 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         "aviso-desce": "aviso-desce 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",

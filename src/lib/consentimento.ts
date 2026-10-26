@@ -39,6 +39,23 @@ export function salvarConsentimento(anunciosPersonalizados: boolean, agora = Dat
   return c;
 }
 
+/** No site o aviso só informa; fechar grava esta marca */
+export const CHAVE_AVISO_DO_SITE_VISTO = 'gtorei_aviso_cookies_visto';
+
+/**
+ * O aviso de privacidade ainda está no rodapé esperando resposta (no app, a
+ * escolha do anúncio; no site, o "Entendi"). Pop-up que abre nessa hora fica
+ * com o botão embaixo do aviso no celular.
+ */
+export function avisoDePrivacidadePendente(app: boolean): boolean {
+  if (app) return lerConsentimento() === null;
+  try {
+    return localStorage.getItem(CHAVE_AVISO_DO_SITE_VISTO) !== '1';
+  } catch {
+    return true;
+  }
+}
+
 /** Sem escolha registrada, vale o lado seguro: nada personalizado */
 export function podePersonalizarAnuncios(): boolean {
   return lerConsentimento()?.anunciosPersonalizados === true;
