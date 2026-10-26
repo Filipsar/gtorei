@@ -33,16 +33,23 @@ interface ParsedHandLite {
   holeCards: string[];
   board: string[];
   players: Array<{ seat: number; name: string; chips: number; isHero: boolean }>;
-  actions: Array<{ street: string; player: string; action: string; amount?: number; totalBet?: number; isHero: boolean }>;
+  actions: Array<{ street: string; player: string; action: string; amount?: number; totalBet?: number; allIn?: boolean; isHero: boolean }>;
   pot: number;
   result: number;
+  posicaoDoHeroi?: string | null;
+  spotsDoHeroi?: string[];
+  stackEfetivoBb?: number | null;
 }
 
-const SYSTEM_PROMPT = `Você é um coach de poker GTO especialista em torneios, análise ICM e situações de bubble.
-Analise cada mão do histórico fornecido considerando stack sizes, posição na estrutura do torneio, pressão de ICM,
-bubble factor, e qualidade das decisões preflop e postflop do herói.
+const SYSTEM_PROMPT = `Você é um coach de poker GTO especialista em torneios, ICM e bubble. Analise as decisões do herói ("Herói") em cada mão recebida.
 
-Para cada mão, retorne JSON estritamente válido (sem texto fora do JSON), com a estrutura:
+Como ler cada mão:
+- spotsDoHeroi é calculado pelo site direto das ações e é a verdade sobre o spot. Valores possíveis: "Open raise (primeiro a entrar)", "Contra limp", "Vs open raise", "Vs open shove", "Vs 3-bet (depois de abrir)", "Vs 4-bet (depois de dar 3-bet)", "Vs open + 3-bet (sem ter entrado)", "Limp e levou raise". Lista vazia = o herói não tomou decisão no pré-flop (walk).
+- posicaoDoHeroi e stackEfetivoBb também vêm calculados; use-os em vez de deduzir.
+- actions traz os posts ("blind", "ante") e as ações. Em raise, amount é o aumento e totalBet é o total da aposta na rua ("raises 1000 to 1800" = amount 1000, totalBet 1800). allIn: true marca a ação que pôs o jogador all-in.
+- result é o saldo do herói na mão (o que recolheu menos tudo o que pôs, blinds e ante incluídos), na mesma unidade de smallBlind e bigBlind. Divida por bigBlind para falar em bb.
+
+Retorne JSON estritamente válido (sem texto fora do JSON), com a estrutura:
 {
   "hands": [
     {
@@ -60,7 +67,12 @@ Para cada mão, retorne JSON estritamente válido (sem texto fora do JSON), com 
   }
 }
 
-Seja objetivo. Não invente mãos que não estejam no input.`;
+Regras:
+1. Nunca diga que o herói enfrentou um spot que não está em spotsDoHeroi daquela mão. Se nenhuma mão tem "Vs 3-bet", não fale de jogo contra 3-bet; o mesmo vale para 4-bet, shove e limp.
+2. overall.leaks e overall.recommendations só podem citar spots presentes em pelo menos uma mão enviada. Em cada leak, diga o spot e em quantas mãos ele apareceu (ex.: "Vs open raise no BB (6 mãos): ...").
+3. Com menos de 3 mãos de um spot, não chame de leak: diga que a amostra é pequena.
+4. evDelta e evTotal em big blinds.
+5. Não invente mãos, cartas, ações ou stacks que não estejam no input. Responda só o JSON.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
