@@ -92,6 +92,143 @@ export type Database = {
         }
         Relationships: []
       }
+      duelo_cartas: {
+        Row: {
+          board: string
+          cartas_a: string
+          cartas_b: string
+          duelo_id: string
+          mao: number
+        }
+        Insert: {
+          board: string
+          cartas_a: string
+          cartas_b: string
+          duelo_id: string
+          mao: number
+        }
+        Update: {
+          board?: string
+          cartas_a?: string
+          cartas_b?: string
+          duelo_id?: string
+          mao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duelo_cartas_duelo_id_fkey"
+            columns: ["duelo_id"]
+            isOneToOne: false
+            referencedRelation: "duelos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duelo_fila: {
+        Row: {
+          entrou_em: string
+          user_id: string
+          visto_em: string
+        }
+        Insert: {
+          entrou_em?: string
+          user_id: string
+          visto_em?: string
+        }
+        Update: {
+          entrou_em?: string
+          user_id?: string
+          visto_em?: string
+        }
+        Relationships: []
+      }
+      duelos: {
+        Row: {
+          acertos_a: number
+          acertos_b: number
+          atualizado_em: string
+          ausencias_a: number
+          ausencias_b: number
+          avatar_a: string | null
+          avatar_b: string | null
+          criado_em: string
+          decisoes_a: number
+          decisoes_b: number
+          elo_a: number
+          elo_b: number
+          estado: Json
+          id: string
+          jogador_a: string
+          jogador_b: string
+          mao: number
+          motivo_fim: string | null
+          nome_a: string
+          nome_b: string
+          saldo_a: number
+          saldo_b: number
+          status: string
+          total_maos: number
+          ultima: Json | null
+          vencedor: string | null
+        }
+        Insert: {
+          acertos_a?: number
+          acertos_b?: number
+          atualizado_em?: string
+          ausencias_a?: number
+          ausencias_b?: number
+          avatar_a?: string | null
+          avatar_b?: string | null
+          criado_em?: string
+          decisoes_a?: number
+          decisoes_b?: number
+          elo_a?: number
+          elo_b?: number
+          estado: Json
+          id?: string
+          jogador_a: string
+          jogador_b: string
+          mao?: number
+          motivo_fim?: string | null
+          nome_a: string
+          nome_b: string
+          saldo_a?: number
+          saldo_b?: number
+          status?: string
+          total_maos?: number
+          ultima?: Json | null
+          vencedor?: string | null
+        }
+        Update: {
+          acertos_a?: number
+          acertos_b?: number
+          atualizado_em?: string
+          ausencias_a?: number
+          ausencias_b?: number
+          avatar_a?: string | null
+          avatar_b?: string | null
+          criado_em?: string
+          decisoes_a?: number
+          decisoes_b?: number
+          elo_a?: number
+          elo_b?: number
+          estado?: Json
+          id?: string
+          jogador_a?: string
+          jogador_b?: string
+          mao?: number
+          motivo_fim?: string | null
+          nome_a?: string
+          nome_b?: string
+          saldo_a?: number
+          saldo_b?: number
+          status?: string
+          total_maos?: number
+          ultima?: Json | null
+          vencedor?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -122,6 +259,192 @@ export type Database = {
           scenario?: string
           stack?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      liga_dia: {
+        Row: {
+          dia: string
+          processado_em: string
+        }
+        Insert: {
+          dia: string
+          processado_em?: string
+        }
+        Update: {
+          dia?: string
+          processado_em?: string
+        }
+        Relationships: []
+      }
+      liga_historico: {
+        Row: {
+          elo_antes: number
+          elo_depois: number
+          posicao: number
+          semana: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          elo_antes: number
+          elo_depois: number
+          posicao: number
+          semana: string
+          user_id: string
+          xp: number
+        }
+        Update: {
+          elo_antes?: number
+          elo_depois?: number
+          posicao?: number
+          semana?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      liga_historico_dia: {
+        Row: {
+          dia: string
+          elo_antes: number
+          elo_depois: number
+          posicao: number
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          dia: string
+          elo_antes: number
+          elo_depois: number
+          posicao: number
+          user_id: string
+          xp: number
+        }
+        Update: {
+          dia?: string
+          elo_antes?: number
+          elo_depois?: number
+          posicao?: number
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      liga_jogador: {
+        Row: {
+          atualizado_em: string
+          elo: number
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          elo?: number
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          elo?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      liga_semana: {
+        Row: {
+          processada_em: string
+          semana: string
+        }
+        Insert: {
+          processada_em?: string
+          semana: string
+        }
+        Update: {
+          processada_em?: string
+          semana?: string
+        }
+        Relationships: []
+      }
+      noticias: {
+        Row: {
+          atualizada_em: string | null
+          criada_em: string
+          fonte: string
+          id: string
+          imagem_credito: string | null
+          imagem_url: string | null
+          link: string
+          publicada_em: string | null
+          publicada_na_fonte: string | null
+          resumo: string | null
+          slug: string | null
+          status: string
+          titulo: string | null
+          titulo_fonte: string
+          trecho_fonte: string | null
+        }
+        Insert: {
+          atualizada_em?: string | null
+          criada_em?: string
+          fonte: string
+          id?: string
+          imagem_credito?: string | null
+          imagem_url?: string | null
+          link: string
+          publicada_em?: string | null
+          publicada_na_fonte?: string | null
+          resumo?: string | null
+          slug?: string | null
+          status?: string
+          titulo?: string | null
+          titulo_fonte: string
+          trecho_fonte?: string | null
+        }
+        Update: {
+          atualizada_em?: string | null
+          criada_em?: string
+          fonte?: string
+          id?: string
+          imagem_credito?: string | null
+          imagem_url?: string | null
+          link?: string
+          publicada_em?: string | null
+          publicada_na_fonte?: string | null
+          resumo?: string | null
+          slug?: string | null
+          status?: string
+          titulo?: string | null
+          titulo_fonte?: string
+          trecho_fonte?: string | null
+        }
+        Relationships: []
+      }
+      period_challenge_claims: {
+        Row: {
+          chave: string
+          idx: number
+          inicio: string
+          periodo: string
+          resgatado_em: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          chave: string
+          idx: number
+          inicio: string
+          periodo: string
+          resgatado_em?: string
+          user_id: string
+          xp: number
+        }
+        Update: {
+          chave?: string
+          idx?: number
+          inicio?: string
+          periodo?: string
+          resgatado_em?: string
+          user_id?: string
+          xp?: number
         }
         Relationships: []
       }
@@ -502,78 +825,6 @@ export type Database = {
         }
         Relationships: []
       }
-      liga_jogador: {
-        Row: {
-          atualizado_em: string
-          elo: number
-          user_id: string
-        }
-        Insert: {
-          atualizado_em?: string
-          elo?: number
-          user_id: string
-        }
-        Update: {
-          atualizado_em?: string
-          elo?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
-      noticias: {
-        Row: {
-          atualizada_em: string | null
-          criada_em: string
-          fonte: string
-          id: string
-          imagem_credito: string | null
-          imagem_url: string | null
-          link: string
-          publicada_em: string | null
-          publicada_na_fonte: string | null
-          resumo: string | null
-          slug: string | null
-          status: string
-          titulo: string | null
-          titulo_fonte: string
-          trecho_fonte: string | null
-        }
-        Insert: {
-          atualizada_em?: string | null
-          criada_em?: string
-          fonte: string
-          id?: string
-          imagem_credito?: string | null
-          imagem_url?: string | null
-          link: string
-          publicada_em?: string | null
-          publicada_na_fonte?: string | null
-          resumo?: string | null
-          slug?: string | null
-          status?: string
-          titulo?: string | null
-          titulo_fonte: string
-          trecho_fonte?: string | null
-        }
-        Update: {
-          atualizada_em?: string | null
-          criada_em?: string
-          fonte?: string
-          id?: string
-          imagem_credito?: string | null
-          imagem_url?: string | null
-          link?: string
-          publicada_em?: string | null
-          publicada_na_fonte?: string | null
-          resumo?: string | null
-          slug?: string | null
-          status?: string
-          titulo?: string | null
-          titulo_fonte?: string
-          trecho_fonte?: string | null
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -645,7 +896,51 @@ export type Database = {
           xp: number
         }[]
       }
+      _desafios_do_periodo: {
+        Args: { _inicio: string; _periodo: string }
+        Returns: {
+          chave: string
+          descricao: string
+          idx: number
+          meta: number
+          tipo: string
+          titulo: string
+          xp: number
+        }[]
+      }
+      _duelo_acoes_validas: {
+        Args: { _e: Json; _quem: string }
+        Returns: string[]
+      }
+      _duelo_aplicar: {
+        Args: { _acao: string; _id: string; _quem: string }
+        Returns: undefined
+      }
+      _duelo_baralho: { Args: never; Returns: string }
+      _duelo_conferir_prazo: { Args: { _id: string }; Returns: undefined }
+      _duelo_fechar_mao: {
+        Args: { _e: Json; _id: string; _levou_no_fold: string }
+        Returns: undefined
+      }
+      _duelo_forca: { Args: { _cartas: string }; Returns: number }
+      _duelo_nova_mao: {
+        Args: { _duelo: string; _mao: number; _pausa: string; _sb: string }
+        Returns: Json
+      }
+      _duelo_pontos: { Args: { _cat: number; _ks: number[] }; Returns: number }
+      _duelo_sequencia: { Args: { _mask: number }; Returns: number }
+      _duelo_visao: { Args: { _id: string; _uid: string }; Returns: Json }
+      _fechar_dia_da_liga: { Args: { _dia: string }; Returns: undefined }
+      _fim_periodo: {
+        Args: { _inicio: string; _periodo: string }
+        Returns: string
+      }
       _hoje_brasilia: { Args: never; Returns: string }
+      _inicio_periodo: {
+        Args: { _periodo: string; _ref: string }
+        Returns: string
+      }
+      _processar_ligas_do_dia: { Args: never; Returns: undefined }
       _progresso_desafios: {
         Args: { _dia: string; _uid: string }
         Returns: {
@@ -659,6 +954,24 @@ export type Database = {
           titulo: string
           xp: number
         }[]
+      }
+      _progresso_periodo: {
+        Args: { _inicio: string; _periodo: string; _uid: string }
+        Returns: {
+          chave: string
+          concluido: boolean
+          descricao: string
+          idx: number
+          meta: number
+          precisao: number
+          progresso: number
+          titulo: string
+          xp: number
+        }[]
+      }
+      _regra_do_elo: {
+        Args: { _elo: number }
+        Returns: Record<string, unknown>
       }
       _sequencia_desafios: { Args: { _uid: string }; Returns: number }
       _validar_indicacao: { Args: { _referred: string }; Returns: undefined }
@@ -691,21 +1004,35 @@ export type Database = {
       }
       calc_level: { Args: { _xp: number }; Returns: number }
       claim_daily_challenge: { Args: { _idx: number }; Returns: Json }
-      claim_period_challenge: { Args: { _periodo: string; _idx: number }; Returns: Json }
-      claim_simulado: { Args: { _session_id: string; _dificuldade?: string }; Returns: Json }
-      get_period_challenges: { Args: never; Returns: Json }
-      get_liga: { Args: never; Returns: Json }
-      duelo_atual: { Args: never; Returns: string | null }
-      duelo_procurar: { Args: never; Returns: Json }
-      duelo_sair_fila: { Args: never; Returns: string | null }
-      duelo_estado: { Args: { _duelo: string }; Returns: Json }
-      duelo_agir: { Args: { _duelo: string; _mao: number; _acao: string; _acertou?: boolean | null }; Returns: Json }
-      duelo_desistir: { Args: { _duelo: string }; Returns: Json }
+      claim_period_challenge: {
+        Args: { _idx: number; _periodo: string }
+        Returns: Json
+      }
       claim_referral: { Args: { _code: string }; Returns: string }
+      claim_simulado: {
+        Args: { _dificuldade?: string; _session_id: string }
+        Returns: Json
+      }
       complete_level_test: { Args: { _results: Json }; Returns: Json }
+      duelo_agir: {
+        Args: {
+          _acao: string
+          _acertou?: boolean
+          _duelo: string
+          _mao: number
+        }
+        Returns: Json
+      }
+      duelo_atual: { Args: never; Returns: string }
+      duelo_desistir: { Args: { _duelo: string }; Returns: Json }
+      duelo_estado: { Args: { _duelo: string }; Returns: Json }
+      duelo_procurar: { Args: never; Returns: Json }
+      duelo_sair_fila: { Args: never; Returns: string }
       get_daily_challenges: { Args: never; Returns: Json }
+      get_liga: { Args: never; Returns: Json }
       get_my_referral_code: { Args: never; Returns: string }
       get_my_referrals: { Args: never; Returns: Json }
+      get_period_challenges: { Args: never; Returns: Json }
       get_period_start: { Args: { period_type: string }; Returns: string }
       has_role: {
         Args: {
