@@ -101,10 +101,20 @@ async function rodar(db: SupabaseClient, chaveIa: string) {
     .filter((it) => it.data && Date.parse(it.data) >= desde);
   if (doFeed.length === 0) return relatorio;
 
-  // 2. Só o que nunca passou por aqui (publicada, rascunho ou descartada)
-  const { data: conhecidas, error: e1 } = await db.from('noticias').select('link').in('link', doFeed.map((i) => i.link));
+  // 2. Só o que ninguém trabalhou ainda. O /admin grava os itens do feed como
+  // rascunho cru (sem resumo e sem motivo) ao buscar as matérias: esses o robô
+  // aproveita, senão abrir o admin escondia as notícias do dia
+  const { data: conhecidas, error: e1 } = await db
+    .from('noticias')
+    .select('id, link, status, resumo, motivo')
+    .in('link', doFeed.map((i) => i.link));
   if (e1) throw e1;
-  const jaVistos = new Set((conhecidas ?? []).map((n) => n.link));
+  const crus = new Map<string, string>();
+  const jaVistos = new Set<string>();
+  for (const n of conhecidas ?? []) {
+    if (n.status === 'rascunho' && !n.resumo && !n.motivo) crus.set(n.link, n.id);
+    else jaVistos.add(n.link);
+  }
   const novas = doFeed.filter((it) => !jaVistos.has(it.link));
   relatorio.novas = novas.length;
   if (novas.length === 0) return relatorio;
@@ -125,12 +135,17 @@ async function rodar(db: SupabaseClient, chaveIa: string) {
   if (!triagem?.itens) throw new Error('triagem sem resposta');
   const decisao = new Map(triagem.itens.map((d) => [d.i, d]));
 
-  const registrar = (it: ItemDaFonte, extra: Record<string, unknown>) =>
-    db
+  // Grava o link novo, ou toma o rascunho cru do admin. No cru, o "motivo is
+  // null" é a reserva: duas rodadas juntas não pegam a mesma matéria
+  const registrar = (it: ItemDaFonte, extra: Record<string, unknown>) => {
+    const id = crus.get(it.link);
+    if (id) return db.from('noticias').update(extra).eq('id', id).is('motivo', null).is('resumo', null).select('id').maybeSingle();
+    return db
       .from('noticias')
       .insert({ link: it.link, fonte: it.fonte, titulo_fonte: it.titulo, trecho_fonte: it.trecho, publicada_na_fonte: it.data, ...extra })
       .select('id')
       .maybeSingle();
+  };
 
   const paraResumir: ItemDaFonte[] = [];
   for (const [i, it] of novas.entries()) {
@@ -180,8 +195,10 @@ async function rodar(db: SupabaseClient, chaveIa: string) {
       }
     }
     if (!resposta?.titulo || !resposta.resumo) {
-      // Falha da IA: libera o link para a próxima rodada tentar de novo
-      await db.from('noticias').delete().eq('id', id);
+      // Falha da IA: libera o link para a próxima rodada tentar de novo (o
+      // rascunho do admin volta a ser cru; o do robô sai)
+      if (crus.has(it.link)) await db.from('noticias').update({ motivo: null }).eq('id', id);
+      else await db.from('noticias').delete().eq('id', id);
       continue;
     }
 
