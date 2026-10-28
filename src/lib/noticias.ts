@@ -36,6 +36,8 @@ export interface Noticia {
   /** Imagem enviada pelo admin ou gerada pelo GTORei (migration 20261024170000) */
   imagem_url?: string | null;
   imagem_credito?: string | null;
+  /** Por que o robô descartou ou deixou como rascunho (migration 20261028120000) */
+  motivo?: string | null;
 }
 
 /** Imagem até este tamanho (o mesmo limite do bucket 'noticias') */

@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.29.0',
+    date: '28/10/2026',
+    type: 'improvement',
+    title: 'Tour com o Rei e Teste de Nível Novo',
+    description: 'O tutorial que abria sozinho virou um tour: o Rei leva você por cada página do GTORei e explica o que tem lá. Ele fica no menu lateral nos primeiros dias da conta e depois em Configurações, para rever quando quiser. O teste de nível também ganhou o Rei, que dá as cartas, reage a cada mão e comemora o seu resultado.',
+  },
+  {
     version: '1.28.0',
     date: '26/10/2026',
     type: 'feature',

@@ -27,6 +27,7 @@ import { SEO } from '@/components/seo/SEO';
 import { useAuth } from '@/contexts/AuthContext';
 import { ADMIN_EMAIL } from '@/data/admin';
 import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
+import { tour, tourFeito, tourNoMenu } from '@/lib/tour';
 
 interface Item {
   titulo: string;
@@ -110,6 +111,22 @@ export default function MaisPage() {
           </span>
           <User className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
         </Link>
+
+        {/* Tour nos primeiros dias da conta; depois ele mora nas Configurações */}
+        {user && tourNoMenu(user.created_at, tourFeito()) && (
+          <button
+            type="button"
+            onClick={tour.iniciar}
+            className="flex w-full items-center gap-3 rounded-2xl border border-primary/50 bg-primary/10 p-4 text-left transition-colors active:bg-primary/20"
+          >
+            <img src="/mascote/rei-avatar.webp" alt="" aria-hidden="true" width={192} height={256} className="h-12 w-auto shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">Tour do GTORei</span>
+              <span className="block text-sm text-muted-foreground">O Rei mostra cada parte do app</span>
+            </span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        )}
 
         {grupos.map((g) => (
           <section key={g.titulo} aria-labelledby={`mais-${g.titulo}`}>

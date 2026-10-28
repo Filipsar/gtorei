@@ -6,6 +6,9 @@
     },
     "api/sitemap-noticias.ts": {
       "includeFiles": ".env"
+    },
+    "api/capa.ts": {
+      "includeFiles": "{.env,api/_arquivos/**}"
     }
   },
   "redirects": [

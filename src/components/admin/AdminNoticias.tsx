@@ -516,6 +516,9 @@ function ItemDaNoticia({ n, texto, aberto, marcada, salvando, onMarcar, onAbrir,
           {/* O título em português, quando já existe; o da fonte fica embaixo, menor */}
           <p className="mt-1 font-semibold">{n.titulo ?? n.titulo_fonte}</p>
           {n.titulo && n.status !== 'publicada' && <p className="text-xs text-muted-foreground">Original: {n.titulo_fonte}</p>}
+          {n.status !== 'publicada' && n.motivo && (
+            <p className="mt-1 text-xs text-feedback-inaccuracy">Robô: {n.motivo}</p>
+          )}
           {n.status !== 'publicada' && n.trecho_fonte && (
             <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
               <span className="font-medium">Trecho da fonte (não vai para a página):</span> {n.trecho_fonte}

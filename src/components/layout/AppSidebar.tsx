@@ -23,6 +23,7 @@ import { SettingsModal } from './SettingsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
+import { tour, tourFeito, tourNoMenu } from '@/lib/tour';
 
 
 
@@ -293,6 +294,27 @@ export function AppSidebar() {
                       </span>
                     )}
                   </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          )}
+
+          {/* Tour nos primeiros dias da conta; depois ele mora nas Configurações */}
+          {user && tourNoMenu(user.created_at, tourFeito()) && (
+            <SidebarMenu className="mb-2">
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={tour.iniciar}
+                  tooltip={collapsed ? 'Tour do GTORei' : undefined}
+                  className="h-auto cursor-pointer gap-3 rounded-lg border border-primary/50 bg-primary/10 px-3 py-2 transition-colors hover:border-primary hover:bg-primary/15"
+                >
+                  <img src="/mascote/rei-avatar.webp" alt="" aria-hidden="true" width={192} height={256} className="h-7 w-auto shrink-0" />
+                  {!collapsed && (
+                    <span className="flex min-w-0 flex-col leading-tight">
+                      <span className="text-sm font-semibold text-sidebar-foreground">Tour do GTORei</span>
+                      <span className="text-xs text-sidebar-foreground/80">O Rei mostra cada página</span>
+                    </span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

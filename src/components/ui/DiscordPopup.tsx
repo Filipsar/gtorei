@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
+import { introPendente } from '@/lib/testeDeNivel';
+import { tourAtivo } from '@/lib/tour';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { avisoDePrivacidadePendente } from '@/lib/consentimento';
 import {
@@ -46,13 +47,13 @@ export function DiscordPopup() {
   useEffect(() => {
     if (!user) return;
     if (PAGINAS_SEM_POPUP.includes(location.pathname)) return;
-    // Pop-up do Radix por cima do tutorial congela o tutorial (ver UpdatesPopup)
-    if (!jaViuOnboarding()) return;
+    // Pop-up do Radix por cima do teste de nível congela o teste (ver UpdatesPopup)
+    if (introPendente() || tourAtivo()) return;
     if (!avisoDoDiscordPendente()) return;
     // Depois do de novidades, que abre em 800 ms: se ele abriu, este fica para outra
     // visita. Com o aviso de privacidade aberto, espera a próxima página
     const t = setTimeout(() => {
-      if (jaTevePopupNestaVisita() || !avisoDoDiscordPendente() || avisoDePrivacidadePendente(ehApp())) return;
+      if (jaTevePopupNestaVisita() || !avisoDoDiscordPendente() || avisoDePrivacidadePendente(ehApp()) || tourAtivo()) return;
       marcarPopupNestaVisita();
       marcarAvisoVistoHoje();
       setOpen(true);

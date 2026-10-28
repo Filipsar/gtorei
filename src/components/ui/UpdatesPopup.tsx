@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, Instagram, ChevronLeft, ChevronRight, X, Smartphone, Trophy } from 'lucide-react';
 import { EloBadge } from '@/components/app/EloBadge';
 import { useAuth } from '@/contexts/AuthContext';
-import { jaViuOnboarding } from '@/components/onboarding/OnboardingTutorial';
+import { introPendente } from '@/lib/testeDeNivel';
+import { tourAtivo } from '@/lib/tour';
 import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { cn } from '@/lib/utils';
@@ -48,16 +49,18 @@ export function UpdatesPopup() {
     if (!user) return;
     if (PAGINAS_SEM_POPUP.includes(location.pathname)) return;
 
-    // Quem ainda não terminou o tutorial inicial não vê este pop-up. Dois
+    // Conta nova com o teste de nível por fazer não vê este pop-up. Dois
     // motivos: "as melhorias chegaram" não diz nada a quem chegou agora, e
     // este é um modal do Radix — ao abrir, ele marca o body com
-    // pointer-events: none e congela o tutorial e o teste de nível, que são
-    // overlays comuns. Marcar a versão como vista evita que ele pule na cara
-    // do usuário no instante em que o tutorial termina.
-    if (!jaViuOnboarding()) {
+    // pointer-events: none e congela o teste de nível, que é overlay comum.
+    // Marcar a versão como vista evita que ele pule na cara do usuário no
+    // instante em que o teste termina.
+    if (introPendente()) {
       marcarVersaoVista();
       return;
     }
+    // No meio do tour, fica para a próxima visita
+    if (tourAtivo()) return;
 
     let seen: string | null = null;
     try {

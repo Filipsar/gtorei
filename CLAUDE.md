@@ -136,9 +136,29 @@ e 300 KB, então a tela escolhe as 30 em que o herói entrou no pote.
 
 Um por visita (`src/lib/avisoDoDiscord.ts`): o de novidades (`UpdatesPopup`) tem a vez e
 marca a visita; o do Discord (`DiscordPopup`, uma vez por dia no fuso de Brasília, até a
-pessoa clicar em entrar) só abre depois do tutorial e com o aviso de privacidade já
-respondido — no celular o aviso cobre o botão do pop-up. Pop-up novo segue as mesmas
-regras e usa `PAGINAS_SEM_POPUP`.
+pessoa clicar em entrar) só abre depois do teste de nível (`introPendente()` em
+`src/lib/testeDeNivel.ts`), fora do tour e com o aviso de privacidade já respondido — no
+celular o aviso cobre o botão do pop-up. Pop-up novo segue as mesmas regras e usa
+`PAGINAS_SEM_POPUP`.
+
+### Tour e teste de nível (28/10/2026)
+
+O tutorial em pop-up saiu. No lugar, o tour (`src/lib/tour.ts` + `TourGuiado`, montado
+no App porque o layout remonta a cada página): o Rei leva de página em página, roteiro
+do site e do app separados (duelo só existe no app). Entrada no menu lateral (site) ou no
+Mais (app) nos primeiros `DIAS_NO_MENU` dias da conta e até fazer o tour; sempre em
+Configurações. O teste de nível continua pop-up no Treinar do site, agora com o Rei, e
+espera o tour acabar. Pose nova do Rei: o teste `tour.test.ts` confere que o arquivo existe.
+
+### Notícias automáticas (28/10/2026)
+
+O Filipe pediu notícias sem revisão. A edge function `noticias-automaticas` (agendada pelo
+pg_cron, migration `20261028120000`) lê os feeds, a IA faz a triagem e o resumo, e
+`checarResumo` (em `logica.ts`, testada no vitest) barra número ou porcentagem que não
+está na matéria, frase copiada e formato errado: o que não passa fica rascunho com o
+motivo em /admin. Foto só do Wikimedia Commons com licença livre e crédito; sem foto, a
+arte vem de `/api/capa?slug=` (satori + resvg, só para notícia publicada). A rotina que
+rodava no chat (`noticias/` local) deixa de ser necessária quando a função estiver no ar.
 
 ## Não fazer
 

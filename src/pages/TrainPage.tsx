@@ -71,7 +71,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, ClipboardCheck, Loader2, X } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
-import { OnboardingTutorial, useOnboardingStatus } from '@/components/onboarding/OnboardingTutorial';
+import { usePassoDoTour } from '@/lib/tour';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
 
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -81,7 +81,8 @@ type GamePhase = 'modeSelect' | 'config' | 'playing' | 'feedback' | 'review' | '
 
 export default function TrainPage() {
   // Onboarding
-  const { needsOnboarding, completeOnboarding } = useOnboardingStatus();
+  // Durante o tour o teste espera: ele cobriria a página que o rei está mostrando
+  const emTour = usePassoDoTour() !== null;
   const { needsLevelTest, completeLevelTest } = useLevelTestStatus();
   // No app quem apresenta o treino é a trilha: sem tutorial nem teste de nível por cima
   const semIntro = usarLayoutDoApp();
@@ -1313,8 +1314,7 @@ export default function TrainPage() {
             bloqueado={modoBloqueado}
           />
         </div>
-        {needsOnboarding && !semIntro && <OnboardingTutorial onComplete={completeOnboarding} />}
-        {!needsOnboarding && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
+        {!emTour && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
 
       </MainLayout>
     );
@@ -2254,8 +2254,7 @@ export default function TrainPage() {
         feedback: previousHandResult.feedback as any,
         points: previousHandResult.points
       } : undefined} />}
-      {needsOnboarding && !semIntro && <OnboardingTutorial onComplete={completeOnboarding} />}
-      {!needsOnboarding && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
+      {!emTour && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
 
       </div>
     </MainLayout>;

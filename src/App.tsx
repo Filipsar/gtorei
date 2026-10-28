@@ -12,6 +12,7 @@ import { lazyPage } from "@/lib/lazyPage";
 import { CapturaConvite } from "@/components/referral/CapturaConvite";
 import { PonteApp } from "@/components/nativo/PonteApp";
 import { AvisoDeDesafio } from "@/components/challenges/AvisoDeDesafio";
+import { TourGuiado } from "@/components/onboarding/TourGuiado";
 import { AvisoPrivacidade } from "@/components/legal/AvisoPrivacidade";
 import { ehApp } from "@/lib/nativo/plataforma";
 import { AberturaDoApp } from "@/components/app/AberturaDoApp";
@@ -67,6 +68,7 @@ const App = () => (
           <CapturaConvite />
           <PonteApp />
           <AvisoDeDesafio />
+          <TourGuiado />
           <Suspense fallback={<PageLoading />}>
           <Routes>
             {/* No app não há página de apresentação: a abertura espera o login e leva à trilha */}

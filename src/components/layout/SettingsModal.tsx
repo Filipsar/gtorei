@@ -14,6 +14,7 @@ import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { abrirPreferenciasDePrivacidade } from '@/lib/consentimento';
+import { tour } from '@/lib/tour';
 
 const PREDEFINED_AVATARS = [
   '🃏', '♠️', '♥️', '♦️', '♣️', '👑', '🎰', '🎲', 
@@ -316,9 +317,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <p className="text-xs text-muted-foreground">{t.settings.onboardingDesc}</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => {
-                localStorage.removeItem('gtorei_onboarding_completed_v2');
                 onOpenChange(false);
-                window.location.href = '/treinar';
+                tour.iniciar();
               }}>
                 {t.settings.review}
               </Button>
