@@ -373,6 +373,7 @@ export type Database = {
           imagem_credito: string | null
           imagem_url: string | null
           link: string
+          motivo: string | null
           publicada_em: string | null
           publicada_na_fonte: string | null
           resumo: string | null
@@ -390,6 +391,7 @@ export type Database = {
           imagem_credito?: string | null
           imagem_url?: string | null
           link: string
+          motivo?: string | null
           publicada_em?: string | null
           publicada_na_fonte?: string | null
           resumo?: string | null
@@ -407,6 +409,7 @@ export type Database = {
           imagem_credito?: string | null
           imagem_url?: string | null
           link?: string
+          motivo?: string | null
           publicada_em?: string | null
           publicada_na_fonte?: string | null
           resumo?: string | null
