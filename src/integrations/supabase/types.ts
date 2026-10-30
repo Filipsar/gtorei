@@ -421,6 +421,30 @@ export type Database = {
         }
         Relationships: []
       }
+      noticias_execucoes: {
+        Row: {
+          erro: string | null
+          fim: string | null
+          id: string
+          inicio: string
+          relatorio: Json | null
+        }
+        Insert: {
+          erro?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string
+          relatorio?: Json | null
+        }
+        Update: {
+          erro?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string
+          relatorio?: Json | null
+        }
+        Relationships: []
+      }
       period_challenge_claims: {
         Row: {
           chave: string
