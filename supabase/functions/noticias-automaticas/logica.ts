@@ -133,7 +133,7 @@ Se servir, responda só JSON: {"titulo":"...","resumo":"...","jogador_principal"
 
 Regras do título: em português, até 140 caracteres, com o fato principal (quem, o quê, quanto).
 Regras do resumo:
-- Exatamente três parágrafos separados por uma linha em branco, entre 900 e 1.300 caracteres no total.
+- Exatamente três parágrafos separados por uma linha em branco, entre 900 e 1.300 caracteres no total (conte: acima de 1.700 o texto é recusado).
 - Os dois primeiros contam o que aconteceu, só com fatos que estão na matéria. Números exatamente como na matéria (pode trocar o separador: $245,000 vira US$ 245.000 ou US$ 245 mil). Não converta moeda, não arredonde para outro número, não calcule porcentagem nem equidade.
 - Palavras próprias: nada de traduzir ou copiar frases da fonte, nada de citação longa.
 - O terceiro parágrafo começa exatamente com "O que fica para o seu torneio:" (ou "O que fica para o seu jogo:") e liga a notícia ao treino no GTORei, sem afirmação estratégica absoluta ("sempre", "nunca", "o certo é").
@@ -238,7 +238,9 @@ export function numerosForaDaFonte(texto: string, fonte: string): string[] {
 export function checarResumo(titulo: string, resumo: string, fonte: string): string[] {
   const erros: string[] = [];
   if (!titulo || titulo.length > 140) erros.push(`título com ${titulo?.length ?? 0} caracteres (máximo 140)`);
-  if (resumo.length < 880 || resumo.length > 1350) erros.push(`resumo com ${resumo.length} caracteres (pedido: 900 a 1.300)`);
+  // Pede 900 a 1.300, aceita até 1.700: a IA passa do pedido com frequência (28/10: quatro resumos
+  // de 1.413 a 1.677 caracteres barrados) e um pouco mais longo não é erro de conteúdo
+  if (resumo.length < 880 || resumo.length > 1700) erros.push(`resumo com ${resumo.length} caracteres (máximo 1.700)`);
   const paragrafos = resumo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   if (paragrafos.length !== 3) erros.push(`resumo com ${paragrafos.length} parágrafos (pedido: 3)`);
   if (!/^O que fica para o seu (torneio|jogo):/.test(paragrafos[paragrafos.length - 1] ?? ''))

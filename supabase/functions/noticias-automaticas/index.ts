@@ -50,6 +50,9 @@ async function buscarTexto(url: string, ms = 10000): Promise<string> {
   }
 }
 
+// O que a IA recusou nesta rodada, para o registro em noticias_execucoes
+const errosDaIa: string[] = [];
+
 async function perguntar<T>(chave: string, sistema: string, usuario: string): Promise<T | null> {
   const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
@@ -64,7 +67,9 @@ async function perguntar<T>(chave: string, sistema: string, usuario: string): Pr
     }),
   });
   if (!r.ok) {
-    console.error('Gateway de IA', r.status, await r.text());
+    const corpo = await r.text();
+    console.error('Gateway de IA', r.status, corpo);
+    errosDaIa.push(`IA respondeu ${r.status}: ${corpo.slice(0, 200)}`);
     return null;
   }
   const j = await r.json();
@@ -245,9 +250,23 @@ Deno.serve(async (req) => {
   if (!url || !servico || !chaveIa) return new Response('Serviço indisponível', { status: 500 });
 
   const db = createClient(url, servico, { auth: { persistSession: false } });
-  const trabalho = rodar(db, chaveIa)
-    .then((r) => console.log('Notícias automáticas:', JSON.stringify(r)))
-    .catch((e) => console.error('Notícias automáticas falharam:', e));
+  // Cada rodada fica registrada em noticias_execucoes (migration 20261030120000):
+  // o log da função só o Lovable mostra, e em 29 e 30/10 rodadas falharam sem rastro
+  errosDaIa.length = 0;
+  const trabalho = (async () => {
+    const { data: execucao } = await db.from('noticias_execucoes').insert({}).select('id').maybeSingle();
+    const fechar = (extra: Record<string, unknown>) =>
+      execucao ? db.from('noticias_execucoes').update({ fim: new Date().toISOString(), ...extra }).eq('id', execucao.id) : null;
+    try {
+      const r = await rodar(db, chaveIa);
+      console.log('Notícias automáticas:', JSON.stringify(r));
+      await fechar({ relatorio: { ...r, erros_da_ia: errosDaIa } });
+    } catch (e) {
+      console.error('Notícias automáticas falharam:', e);
+      const msg = e instanceof Error ? e.message : JSON.stringify(e);
+      await fechar({ erro: [msg, ...errosDaIa].join(' | ').slice(0, 2000) });
+    }
+  })();
 
   if (typeof EdgeRuntime !== 'undefined') {
     EdgeRuntime.waitUntil(trabalho);
