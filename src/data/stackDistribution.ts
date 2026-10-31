@@ -95,6 +95,13 @@ export function getStackDistribution(
   const positions = availablePositions || POSITIONS;
   const all: Record<Position, number> = {} as Record<Position, number>;
 
+  // Cash: todo mundo senta com o stack do herói (100 BB), como numa mesa de cash
+  // com recompra. A range calculada é para stacks iguais.
+  if (mode === 'cash') {
+    for (const pos of positions) all[pos] = heroStack;
+    return { hero: heroStack, villain: heroStack, effectiveStack: heroStack, all };
+  }
+
   // Generate stacks for all positions
   for (const pos of positions) {
     if (pos === heroPosition) {

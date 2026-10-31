@@ -4,6 +4,7 @@ import { LayoutGrid, Route, Swords, Trophy, Zap, type LucideIcon } from 'lucide-
 import { useAuth } from '@/contexts/AuthContext';
 import { UpdatesPopup } from '@/components/ui/UpdatesPopup';
 import { DiscordPopup } from '@/components/ui/DiscordPopup';
+import { IndiquePopup } from '@/components/ui/IndiquePopup';
 import { getLevelName } from '@/data/localStorage';
 import { cn } from '@/lib/utils';
 
@@ -89,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       {!emLicao && <Abas />}
       {!emLicao && <UpdatesPopup />}
+      {!emLicao && <IndiquePopup />}
       {!emLicao && <DiscordPopup />}
     </div>
   );

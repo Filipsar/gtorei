@@ -72,6 +72,7 @@ import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, ClipboardCheck, Loader2, X } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { usePassoDoTour } from '@/lib/tour';
+import { ADMIN_EMAIL } from '@/data/admin';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
 
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -245,7 +246,7 @@ export default function TrainPage() {
   // Get current game mode
   const getGameMode = (modo: TrainingMode | null = trainingMode): GameMode => {
     const map: Record<TrainingMode, GameMode> = {
-      rangeTraining: '8max', hu: 'hu', threeHand: 'threehand', bounty: 'bounty',
+      rangeTraining: '8max', hu: 'hu', threeHand: 'threehand', bounty: 'bounty', cash: 'cash',
     };
     return modo ? map[modo] : '8max';
   };
@@ -1225,6 +1226,7 @@ export default function TrainPage() {
         case 'hu': return 'HU (1x1)';
         case 'threeHand': return 'Three Hand (1x1x1)';
         case 'bounty': return 'Modo Bounty';
+        case 'cash': return 'Cash 6-max · 100 BB';
         default: return '';
       }
     })();
@@ -1312,6 +1314,8 @@ export default function TrainPage() {
               handleModeSelect('rangeTraining');
             }}
             bloqueado={modoBloqueado}
+            // Cash ainda em construção (31/10/2026): só o admin vê
+            mostrarCash={user?.email === ADMIN_EMAIL}
           />
         </div>
         {!emTour && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}
@@ -1331,14 +1335,15 @@ export default function TrainPage() {
     };
     const nomeCenario = SCENARIOS.find(s => s.id === scenario)?.label;
     // Mesa final só se escolhe fora do simulado e fora do Bounty (lá é sempre ICM)
-    const escolheMesaFinal = trainingMode !== 'bounty' && !emSimulado;
+    // Cash não tem mesa final nem ICM
+    const escolheMesaFinal = trainingMode !== 'bounty' && trainingMode !== 'cash' && !emSimulado;
     const resumo = emSimulado ? [
       'cenário, posição, stack e mesa final sorteados a cada mão',
       ...(trainingMode === 'bounty' ? [`bounty $${heroBounty}`] : []),
     ].join(' · ') : [
       randomScenario ? 'Cenário aleatório' : nomeCenario,
       randomPosition ? 'posição aleatória' : selectedPositions.join(', '),
-      randomStack ? 'stack aleatório' : `${selectedStacks.join(', ')} BB`,
+      trainingMode === 'cash' ? '100 BB' : randomStack ? 'stack aleatório' : `${selectedStacks.join(', ')} BB`,
       ...(trainingMode === 'bounty' ? [`bounty $${heroBounty}`] : []),
       ...(finalTable && trainingMode !== 'bounty' ? ['mesa final'] : []),
     ].join(' · ');
@@ -1500,7 +1505,8 @@ export default function TrainPage() {
               </div>
             </Secao>
 
-            {/* Stack */}
+            {/* Stack (o cash é sempre 100 BB) */}
+            {trainingMode !== 'cash' && (
             <Secao titulo="Stack (BB)">
               <div className="flex flex-wrap gap-2">
                 <Chip ativo={randomStack} onClick={() => setRandomStack(!randomStack)}>
@@ -1523,6 +1529,7 @@ export default function TrainPage() {
                 ))}
               </div>
             </Secao>
+            )}
             </>)}
 
             {/* Mais opções */}

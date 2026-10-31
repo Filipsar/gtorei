@@ -59,6 +59,7 @@ const ASSENTOS_POR_MODO: Record<ModeChoice, number> = {
   hu: 2,
   threeHand: 3,
   bounty: 8,
+  cash: 6,
   // No aleatório a mesa é a cheia, mas os lugares ficam por definir: quem vai
   // sentar depende do modo que sair na mão.
   random: 8,

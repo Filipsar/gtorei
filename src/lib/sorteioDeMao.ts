@@ -10,7 +10,7 @@ import { POSITIONS, STACK_SIZES, Position, Scenario } from '@/data/gtoRanges';
  * cegas, uma hora sai essa combinação e a mão nasce sem herói.
  */
 
-export type TrainingMode = 'rangeTraining' | 'hu' | 'threeHand' | 'bounty';
+export type TrainingMode = 'rangeTraining' | 'hu' | 'threeHand' | 'bounty' | 'cash';
 
 /** O que dá para escolher na tela: os modos e mais o sorteio entre eles. */
 export type ModeChoice = TrainingMode | 'random';
@@ -31,6 +31,8 @@ export const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
   hu: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation'],
   threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet', 'simulation'],
   bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'],
+  // Cash (beta, 31/10/2026): só o que já tem range calculada para cash
+  cash: ['openRaise', 'vsOpenRaise'],
 };
 
 export const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
@@ -38,7 +40,11 @@ export const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
   hu: ['SB', 'BB'],
   threeHand: ['BTN', 'SB', 'BB'],
   bounty: POSITIONS,
+  cash: ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
 };
+
+/** Cash é sempre 100 BB (a range calculada é desse stack) */
+export const STACK_DO_CASH = 100;
 
 export function sortearModo(sorteio: () => number = Math.random): TrainingMode {
   return MODOS_SORTEAVEIS[Math.floor(sorteio() * MODOS_SORTEAVEIS.length)];
@@ -175,5 +181,6 @@ export function sortearConfiguracaoDaMao(o: OpcoesDeSorteio): ConfiguracaoDaMao 
       ? STACK_SIZES
       : o.stacksEscolhidos;
 
-  return { cenario, posicao, stack: um(stacks), multiway: multiwayEm(cenario) };
+  const stack = o.modo === 'cash' ? STACK_DO_CASH : um(stacks);
+  return { cenario, posicao, stack, multiway: multiwayEm(cenario) };
 }

@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import { getCashRange } from '@/data/ranges/engine';
+import { sortearConfiguracaoDaMao } from '@/lib/sorteioDeMao';
+import type { Position, RangeData } from '@/data/ranges/types';
+
+const combos = (h: string) => (h.length === 2 ? 6 : h.endsWith('s') ? 4 : 12);
+/** % dos 1326 combos que fazem alguma coisa além de foldar */
+function largura(r: RangeData): number {
+  let s = 0;
+  for (const m of r.hands) s += (combos(m.hand) * (100 - (m.actions.find((a) => a.action === 'fold')?.frequency ?? 100))) / 100;
+  return (100 * s) / 1326;
+}
+const acao = (r: RangeData, mao: string) => r.hands.find((h) => h.hand === mao)!.primaryAction;
+
+describe('cash 6-max 100 BB (beta)', () => {
+  it('abre mais quanto mais perto do botão', () => {
+    const abre = (['UTG', 'HJ', 'CO', 'BTN'] as Position[]).map((p) => largura(getCashRange('openRaise', p)!));
+    for (let i = 1; i < abre.length; i++) expect(abre[i]).toBeGreaterThan(abre[i - 1]);
+    // Faixa de cash com rake: UTG entre 13% e 20%, botão entre 33% e 48%
+    expect(abre[0]).toBeGreaterThan(13);
+    expect(abre[0]).toBeLessThan(20);
+    expect(abre[3]).toBeGreaterThan(33);
+    expect(abre[3]).toBeLessThan(48);
+  });
+
+  it('mãos óbvias saem certas', () => {
+    for (const p of ['UTG', 'HJ', 'CO', 'BTN', 'SB'] as Position[]) {
+      expect(acao(getCashRange('openRaise', p)!, 'AA')).toBe('raise');
+      expect(acao(getCashRange('openRaise', p)!, '72o')).toBe('fold');
+    }
+    expect(acao(getCashRange('vsOpenRaise', 'BB', 'BTN')!, 'AA')).toBe('raise');
+  });
+
+  it('o big blind defende mais contra o botão do que contra o UTG', () => {
+    expect(largura(getCashRange('vsOpenRaise', 'BB', 'BTN')!)).toBeGreaterThan(largura(getCashRange('vsOpenRaise', 'BB', 'UTG')!));
+  });
+
+  it('fora do big blind a resposta é 3-bet ou fold (o modelo não tem pagar)', () => {
+    const r = getCashRange('vsOpenRaise', 'BTN', 'CO')!;
+    expect(r.hands.every((h) => !h.actions.some((a) => a.action === 'call' && a.frequency > 0))).toBe(true);
+  });
+
+  it('cenário sem cálculo de cash devolve null (cai no corte do 6-max)', () => {
+    expect(getCashRange('vs3bet', 'CO', 'BTN')).toBeNull();
+  });
+
+  it('o sorteio do cash é sempre 100 BB, em posição do 6-max', () => {
+    for (let i = 0; i < 50; i++) {
+      const c = sortearConfiguracaoDaMao({
+        modo: 'cash', aleatorio: false, cenarioEscolhido: 'openRaise', cenarioAleatorio: true,
+        posicoesEscolhidas: [], posicaoAleatoria: true, stacksEscolhidos: [25], stackAleatorio: false, multiwayLigado: false,
+      });
+      expect(c.stack).toBe(100);
+      expect(['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB']).toContain(c.posicao);
+      expect(['openRaise', 'vsOpenRaise']).toContain(c.cenario);
+    }
+  });
+});

@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.30.0',
+    date: '31/10/2026',
+    type: 'feature',
+    title: 'Indique e Ganhe PRO e Notícias de Cara Nova',
+    description: 'Agora indicar amigos dá PRO: com 15 indicados você ganha 7 dias de PRO, e com 100 o PRO fica para sempre. A página de notícias virou um portal, com a faixa dos últimos resultados no topo, a manchete do dia em destaque e as maiores premiações do mês ao lado.',
+  },
+  {
     version: '1.29.0',
     date: '28/10/2026',
     type: 'improvement',

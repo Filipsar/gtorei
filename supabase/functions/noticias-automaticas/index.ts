@@ -26,9 +26,11 @@ import {
   lerRss,
   pedidoDeResumo,
   pedidoDeTriagem,
+  resultadoConferido,
   slugDaNoticia,
   textoDaMateria,
   type ItemDaFonte,
+  type ResultadoDaNoticia,
 } from './logica.ts';
 
 // Matérias das últimas 36 h; no máximo 4 resumos por rodada (cabe no tempo da função)
@@ -182,7 +184,14 @@ async function rodar(db: SupabaseClient, chaveIa: string) {
       continue;
     }
 
-    type Resposta = { titulo?: string; resumo?: string; jogador_principal?: string | null; descartar?: string };
+    type Resposta = {
+      titulo?: string;
+      resumo?: string;
+      jogador_principal?: string | null;
+      resultado?: ResultadoDaNoticia | null;
+      relevancia?: number;
+      descartar?: string;
+    };
     const fonte = `${it.titulo}\n${it.trecho}\n${texto}`;
     let resposta = await perguntar<Resposta>(chaveIa, PROMPT_RESUMO, pedidoDeResumo(it, texto, publicadas));
     if (resposta?.descartar) {
@@ -236,6 +245,12 @@ async function rodar(db: SupabaseClient, chaveIa: string) {
       relatorio.rascunhos.push(titulo);
       continue;
     }
+    // Faixa de resultados e manchete: em separado, porque sem a migration
+    // 20261031130000 as colunas não existem e a notícia já está no ar
+    const resultado = resultadoConferido(resposta.resultado, fonte);
+    const relevancia = [1, 2, 3].includes(Number(resposta.relevancia)) ? Number(resposta.relevancia) : 1;
+    const { error: erroResultado } = await db.from('noticias').update({ ...(resultado ?? {}), relevancia }).eq('id', id);
+    if (erroResultado) console.warn('Sem colunas de resultado', erroResultado.message);
     publicadas.push(titulo);
     relatorio.publicadas.push(titulo);
   }

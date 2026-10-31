@@ -13,13 +13,16 @@ interface TrainingModeSelectorProps {
   onSimulado?: () => void;
   /** Se este jogador não tem acesso ao modo (bloqueio de apoiador) */
   bloqueado?: (mode: ModeChoice) => boolean;
+  /** Mostra a mesa de cash (beta, por enquanto só para o admin) */
+  mostrarCash?: boolean;
 }
 
-const MESAS: { id: ModeChoice; titulo: string; detalhe: string; descricao: string }[] = [
+const MESAS: { id: ModeChoice; titulo: string; detalhe: string; descricao: string; beta?: boolean }[] = [
   { id: 'rangeTraining', titulo: 'Treino de Range', detalhe: '8-max', descricao: 'Mesa completa, todas as posições e cenários.' },
   { id: 'hu', titulo: 'Heads-Up', detalhe: '1 x 1', descricao: 'Só você e um oponente: ranges bem mais largas.' },
   { id: 'threeHand', titulo: 'Three Hand', detalhe: '3 jogadores', descricao: 'Fim de torneio, blinds pressionando.' },
   { id: 'bounty', titulo: 'Bounty', detalhe: 'PKO + ICM', descricao: 'A recompensa de cada cabeça muda a range.' },
+  { id: 'cash', titulo: 'Cash', detalhe: '6-max · 100 BB', descricao: 'Sem ante e com rake: abrir e responder à abertura.', beta: true },
 ];
 
 /**
@@ -27,7 +30,7 @@ const MESAS: { id: ModeChoice; titulo: string; detalhe: string; descricao: strin
  * Cartão inteiro clicável, com foco visível; o cadeado leva ao apoio em vez de
  * um cartão morto que não diz como destravar.
  */
-export function TrainingModeSelector({ onSelect, onSimulado, bloqueado }: TrainingModeSelectorProps) {
+export function TrainingModeSelector({ onSelect, onSimulado, bloqueado, mostrarCash = false }: TrainingModeSelectorProps) {
   const aleatorioTravado = bloqueado?.('random') ?? false;
 
   return (
@@ -75,7 +78,7 @@ export function TrainingModeSelector({ onSelect, onSimulado, bloqueado }: Traini
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ou escolha a mesa</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          {MESAS.map((m) => {
+          {MESAS.filter((m) => m.id !== 'cash' || mostrarCash).map((m) => {
             const travado = bloqueado?.(m.id) ?? false;
             return (
               <button
@@ -99,6 +102,7 @@ export function TrainingModeSelector({ onSelect, onSimulado, bloqueado }: Traini
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold">{m.titulo}</span>
                     <span className="whitespace-nowrap rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-muted-foreground">{m.detalhe}</span>
+                    {m.beta && <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">Beta</span>}
                   </span>
                   <span className="mt-0.5 block text-sm text-muted-foreground">{m.descricao}</span>
                   {travado && <span className="mt-1 block text-xs font-medium text-primary">Para apoiadores</span>}

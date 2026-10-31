@@ -37,6 +37,12 @@ export interface NoticiaPublicada {
   /** Enviada pelo admin ou gerada pelo GTORei; nula nas publicadas antes das imagens */
   imagem_url: string | null;
   imagem_credito: string | null;
+  /** Resultado de torneio (migration 20261031130000); nulos quando não é resultado */
+  torneio?: string | null;
+  vencedor?: string | null;
+  premio?: string | null;
+  premio_usd?: number | null;
+  relevancia?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +131,7 @@ export function supabasePublico(): { url: string; chave: string } | null {
 
 const COLUNAS_BASE = 'titulo,resumo,slug,fonte,link,publicada_em,atualizada_em';
 const COLUNAS = `${COLUNAS_BASE},imagem_url,imagem_credito`;
+const COLUNAS_RESULTADO = `${COLUNAS},torneio,vencedor,premio,premio_usd,relevancia`;
 
 /** A imagem da notícia ou, sem ela, a do site */
 const imagemDe = (n: NoticiaPublicada) => n.imagem_url ?? `${SITE}/og-gtorei.png`;
@@ -141,7 +148,9 @@ export async function publicadas(filtro: string): Promise<NoticiaPublicada[]> {
     fetch(`${sb.url}/rest/v1/noticias?select=${colunas}&status=eq.publicada&${filtro}`, {
       headers: { apikey: sb.chave, Authorization: `Bearer ${sb.chave}` },
     });
-  let resposta = await consultar(COLUNAS);
+  // Sem a migration das colunas de resultado (ou de imagem), tenta com menos colunas
+  let resposta = await consultar(COLUNAS_RESULTADO);
+  if (!resposta.ok) resposta = await consultar(COLUNAS);
   if (!resposta.ok) resposta = await consultar(COLUNAS_BASE);
   if (!resposta.ok) return [];
   const lista = (await resposta.json()) as NoticiaPublicada[];
@@ -215,6 +224,52 @@ h2{font-size:22px;line-height:1.3;margin:0 0 8px}
 .lista p{margin:0;color:var(--apoio);font-size:15px}
 .paginas{display:flex;justify-content:space-between;margin-top:24px}
 .paginas a{color:var(--ouro)}
+main.largo{max-width:1120px}
+.faixa{display:flex;align-items:stretch;background:var(--cartao);border:1px solid var(--borda);border-radius:12px;overflow:hidden;margin:4px 0 20px}
+.faixa-rotulo{flex:none;display:flex;align-items:center;background:var(--ouro);color:#111;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding:0 14px}
+.faixa-trilho{flex:1;overflow:hidden;position:relative}
+.faixa-rolo{display:flex;width:max-content;animation:rolar 45s linear infinite}
+.faixa-trilho ul{list-style:none;margin:0;padding:10px 32px 10px 0;display:flex;gap:32px}
+.faixa-trilho:hover .faixa-rolo,.faixa-trilho:focus-within .faixa-rolo{animation-play-state:paused}
+.faixa-trilho li{white-space:nowrap;font-size:14px}
+.faixa-trilho a{text-decoration:none;color:var(--apoio)}
+.faixa-trilho a b{color:var(--texto)}
+.faixa-trilho a em{font-style:normal;color:var(--ouro);font-weight:700}
+@keyframes rolar{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.faixa-trilho{overflow-x:auto}.faixa-rolo{animation:none}.faixa-trilho ul[aria-hidden]{display:none}}
+.portal{display:grid;gap:24px}
+@media (min-width:900px){.portal{grid-template-columns:minmax(0,1fr) 320px}}
+.manchete{background:var(--cartao);border:1px solid var(--borda);border-radius:16px;overflow:hidden}
+.manchete .miniatura{display:block;aspect-ratio:1200/630;background:var(--borda)}
+.manchete img{display:block;width:100%;height:100%;object-fit:cover}
+.manchete div{padding:18px 20px 20px}
+.manchete h2{font-size:clamp(22px,3.2vw,30px);line-height:1.2;margin:6px 0 10px}
+.manchete h2 a,.destaques h3 a{text-decoration:none}
+.manchete h2 a:hover,.destaques h3 a:hover{text-decoration:underline}
+.manchete p{margin:0;color:var(--apoio)}
+.selo{display:inline-block;background:rgba(245,185,0,.15);color:var(--ouro);border:1px solid rgba(245,185,0,.4);border-radius:999px;font-size:12px;font-weight:700;padding:2px 10px;margin-right:6px}
+.destaques{display:grid;gap:12px;margin-top:12px}
+@media (min-width:600px){.destaques{grid-template-columns:1fr 1fr}}
+.destaques article{background:var(--cartao);border:1px solid var(--borda);border-radius:14px;overflow:hidden}
+.destaques .miniatura{display:block;aspect-ratio:1200/630;background:var(--borda)}
+.destaques img{display:block;width:100%;height:100%;object-fit:cover}
+.destaques div{padding:12px 14px 14px}
+.destaques h3{font-size:17px;line-height:1.3;margin:4px 0 0}
+.secao{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--ouro);margin:28px 0 0}
+.grade{grid-template-columns:1fr}
+@media (min-width:600px){.grade{grid-template-columns:1fr 1fr}}
+.lateral{display:grid;gap:16px;align-content:start}
+.premios{background:var(--cartao);border:1px solid var(--borda);border-radius:16px;padding:16px}
+.premios h2{font-size:17px;margin:0 0 10px}
+.premios ol{list-style:none;margin:0;padding:0;counter-reset:p}
+.premios li{counter-increment:p;display:grid;grid-template-columns:24px 1fr;gap:2px 8px;padding:10px 0;border-top:1px solid var(--borda)}
+.premios li:first-child{border-top:0}
+.premios li::before{content:counter(p);grid-row:span 2;font-weight:800;color:var(--ouro)}
+.premios a{text-decoration:none;font-weight:700}
+.premios a:hover{text-decoration:underline}
+.premios small{color:var(--apoio);font-size:13px}
+.premios .valor{color:var(--ouro)}
+.lateral .chamada{margin:0}
 footer{border-top:1px solid var(--borda);color:var(--apoio);font-size:14px;text-align:center;padding:24px 16px}
 footer a{color:var(--apoio)}
 a:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
@@ -229,6 +284,8 @@ interface Cabeca {
   dadosEstruturados?: object[];
   /** Imagem do compartilhamento (og:image); sem ela, a do site */
   imagem?: string;
+  /** Página larga (a lista com faixa e coluna lateral) */
+  largo?: boolean;
 }
 
 function documento(c: Cabeca, corpo: string): string {
@@ -262,7 +319,7 @@ ${ld}
   <a class="marca" href="/"><img src="/logo-128.png" alt="" width="32" height="32"><span>GTO<b>Rei</b></span></a>
   <nav aria-label="Principal"><a href="/noticias">Notícias</a><a href="/iniciante">Guia do iniciante</a><a class="cta" href="/">Treinar grátis</a></nav>
 </header>
-<main>
+<main${c.largo ? ' class="largo"' : ''}>
 ${corpo}
 </main>
 <footer>GTORei · treinador de poker GTO grátis em português · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></footer>
@@ -350,37 +407,105 @@ ${
 
 export const POR_PAGINA = 20;
 
-/** Lista. `lista` traz até POR_PAGINA + 1 itens: o excedente só diz que há página seguinte. */
-export function paginaDaLista(lista: NoticiaPublicada[], pagina: number): string {
+/** O que a primeira página da lista mostra além das notícias */
+export interface ExtrasDaLista {
+  /** Resultados recentes (com vencedor e prêmio), para a faixa do topo */
+  resultados?: NoticiaPublicada[];
+  /** Maiores premiações do mês, já em ordem */
+  premios?: NoticiaPublicada[];
+}
+
+const miniatura = (n: NoticiaPublicada, carregar: 'lazy' | 'eager' = 'lazy') =>
+  n.imagem_url
+    ? `<a class="miniatura" href="/noticias/${n.slug}" tabindex="-1" aria-hidden="true"><img src="${escapar(n.imagem_url)}" alt="" width="1200" height="630" loading="${carregar}"></a>`
+    : '';
+
+const meta = (n: NoticiaPublicada) =>
+  `<p class="meta">${n.torneio ? `<span class="selo">${escapar(n.torneio)}</span>` : ''}${escapar(dataPorExtenso(n.publicada_em))} · ${escapar(n.fonte)}</p>`;
+
+/** Faixa que rola com os últimos resultados; a lista vai duas vezes para o laço não ter emenda */
+function faixa(resultados: NoticiaPublicada[]): string {
+  const itens = resultados
+    .filter((r) => r.vencedor && r.premio)
+    .map(
+      (r) =>
+        `<li><a href="/noticias/${r.slug}">🏆 <b>${escapar(r.vencedor!)}</b>${r.torneio ? ` · ${escapar(r.torneio)}` : ''} · <em>${escapar(r.premio!)}</em></a></li>`,
+    )
+    .join('');
+  if (!itens) return '';
+  return `<section class="faixa" aria-label="Últimos resultados"><span class="faixa-rotulo">Últimos resultados</span><div class="faixa-trilho"><div class="faixa-rolo"><ul>${itens}</ul><ul aria-hidden="true">${itens.replace(/<a /g, '<a tabindex="-1" ')}</ul></div></div></section>`;
+}
+
+function quadroDePremios(premios: NoticiaPublicada[]): string {
+  const itens = premios
+    .filter((p) => p.vencedor && p.premio)
+    .slice(0, 5)
+    .map(
+      (p) =>
+        `<li><a href="/noticias/${p.slug}">${escapar(p.vencedor!)}</a><small><span class="valor">${escapar(p.premio!)}</span>${p.torneio ? ` · ${escapar(p.torneio)}` : ''}</small></li>`,
+    )
+    .join('');
+  return itens ? `<section class="premios" aria-labelledby="premios"><h2 id="premios">Maiores prêmios do mês</h2><ol>${itens}</ol></section>` : '';
+}
+
+/**
+ * Lista. `lista` traz até POR_PAGINA + 1 itens: o excedente só diz que há
+ * página seguinte. A primeira página é a de portal: faixa de resultados,
+ * manchete (a de maior relevância, empate fica com a mais nova), dois
+ * destaques, o resto em grade e, ao lado, as maiores premiações do mês.
+ */
+export function paginaDaLista(lista: NoticiaPublicada[], pagina: number, extras: ExtrasDaLista = {}): string {
   const desta = lista.slice(0, POR_PAGINA);
   const temMais = lista.length > POR_PAGINA;
   const caminho = pagina > 1 ? `/noticias?pagina=${pagina}` : '/noticias';
-  const corpo = `<h1>Notícias de poker</h1>
-<p class="meta">O que aconteceu no poker, com resumo do GTORei e o link para a matéria original.${pagina > 1 ? ` Página ${pagina}.` : ''}</p>
+
+  const cartao = (n: NoticiaPublicada) =>
+    `<li>${miniatura(n)}${meta(n)}<h2><a href="/noticias/${n.slug}">${escapar(n.titulo)}</a></h2><p>${escapar(chamada(n.resumo, 180))}</p></li>`;
+
+  let conteudo: string;
+  if (!desta.length) {
+    conteudo = '<p>As primeiras notícias chegam em breve.</p>';
+  } else if (pagina > 1) {
+    conteudo = `<ul class="lista grade">${desta.map(cartao).join('')}</ul>`;
+  } else {
+    const relev = (n: NoticiaPublicada) => n.relevancia ?? 1;
+    const manchete = desta.reduce((a, b) => (relev(b) > relev(a) ? b : a), desta[0]);
+    const resto = desta.filter((n) => n !== manchete);
+    const destaques = [...resto].sort((a, b) => relev(b) - relev(a)).slice(0, 2);
+    const demais = resto.filter((n) => !destaques.includes(n));
+    conteudo = `<article class="manchete">${miniatura(manchete, 'eager')}<div>${meta(manchete)}<h2><a href="/noticias/${manchete.slug}">${escapar(manchete.titulo)}</a></h2><p>${escapar(chamada(manchete.resumo, 260))}</p></div></article>
 ${
-  desta.length
-    ? `<ul class="lista">${desta
-        .map(
-          (n) =>
-            `<li>${
-              n.imagem_url
-                ? `<a class="miniatura" href="/noticias/${n.slug}" tabindex="-1" aria-hidden="true"><img src="${escapar(n.imagem_url)}" alt="" width="1200" height="630" loading="lazy"></a>`
-                : ''
-            }<p class="meta">${escapar(dataPorExtenso(n.publicada_em))} · ${escapar(n.fonte)}</p><h2><a href="/noticias/${n.slug}">${escapar(n.titulo)}</a></h2><p>${escapar(chamada(n.resumo, 220))}</p></li>`
-        )
-        .join('')}</ul>`
-    : '<p>As primeiras notícias chegam em breve.</p>'
+  destaques.length
+    ? `<div class="destaques">${destaques
+        .map((n) => `<article>${miniatura(n)}<div>${meta(n)}<h3><a href="/noticias/${n.slug}">${escapar(n.titulo)}</a></h3></div></article>`)
+        .join('')}</div>`
+    : ''
 }
+${demais.length ? `<h2 class="secao">Últimas notícias</h2><ul class="lista grade">${demais.map(cartao).join('')}</ul>` : ''}`;
+  }
+
+  const corpo = `<h1>Notícias de poker</h1>
+<p class="meta">Resultados, torneios e o que muda para quem joga, resumidos pelo GTORei com o link para a matéria original.${pagina > 1 ? ` Página ${pagina}.` : ''}</p>
+${pagina === 1 ? faixa(extras.resultados ?? []) : ''}
+<div class="portal">
+<div class="principal">
+${conteudo}
 <nav class="paginas" aria-label="Páginas">
   <span>${pagina > 1 ? `<a href="${pagina === 2 ? '/noticias' : `/noticias?pagina=${pagina - 1}`}">← Mais recentes</a>` : ''}</span>
   <span>${temMais ? `<a href="/noticias?pagina=${pagina + 1}">Anteriores →</a>` : ''}</span>
 </nav>
-${CHAMADA_PARA_TREINAR}`;
+</div>
+<aside class="lateral" aria-label="Destaques do mês">
+${pagina === 1 ? quadroDePremios(extras.premios ?? []) : ''}
+${CHAMADA_PARA_TREINAR}
+</aside>
+</div>`;
   return documento(
     {
       titulo: pagina > 1 ? `Notícias de poker, página ${pagina} | GTORei` : 'Notícias de poker | GTORei',
-      descricao: 'Notícias de poker resumidas em português pelo GTORei, com o que importa para quem joga torneio e o link para a matéria original.',
+      descricao: 'Notícias de poker resumidas em português pelo GTORei: resultados, torneios e o que importa para quem joga, com o link para a matéria original.',
       caminho,
+      largo: true,
       // Lista vazia não vai para o Google
       indexar: desta.length > 0,
     },

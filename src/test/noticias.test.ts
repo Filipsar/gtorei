@@ -115,6 +115,48 @@ describe('páginas das notícias', () => {
   });
 });
 
+describe('lista com cara de portal', () => {
+  const kovalski = noticia({
+    titulo: 'Fabiano Kovalski vence o GGMillion$',
+    slug: 'kovalski-ef31c9',
+    torneio: 'GGMillion$ US$ 10.000',
+    vencedor: 'Fabiano Kovalski',
+    premio: 'US$ 464.794',
+    premio_usd: 464794,
+    relevancia: 3,
+    publicada_em: '2026-10-28T15:00:00.000Z',
+  });
+  const comum = noticia({ titulo: 'Notícia comum mais nova', slug: 'comum-a1b2c3', publicada_em: '2026-10-30T15:00:00.000Z' });
+
+  it('abre com a manchete de maior relevância, mesmo não sendo a mais nova', () => {
+    const html = paginaDaLista([comum, kovalski], 1, { resultados: [kovalski], premios: [kovalski] });
+    const manchete = html.slice(html.indexOf('class="manchete"'), html.indexOf('</article>', html.indexOf('class="manchete"')));
+    expect(manchete).toContain('Fabiano Kovalski vence o GGMillion$');
+    expect(html).toContain('class="faixa"');
+    expect(html).toContain('<b>Fabiano Kovalski</b> · GGMillion$ US$ 10.000 · <em>US$ 464.794</em>');
+    expect(html).toContain('Maiores prêmios do mês');
+  });
+
+  it('sem resultado de torneio, não mostra faixa nem quadro', () => {
+    const html = paginaDaLista([comum], 1, { resultados: [comum], premios: [] });
+    expect(html).not.toContain('class="faixa"');
+    expect(html).not.toContain('Maiores prêmios do mês');
+    expect(html).toContain('class="manchete"');
+  });
+
+  it('da página 2 em diante é só a grade', () => {
+    const html = paginaDaLista([comum, kovalski], 2, { resultados: [kovalski], premios: [kovalski] });
+    expect(html).not.toContain('class="faixa"');
+    expect(html).not.toContain('class="manchete"');
+    expect(html).toContain('class="lista grade"');
+  });
+
+  it('a cópia da faixa (para o laço) não entra no Tab', () => {
+    const html = paginaDaLista([kovalski], 1, { resultados: [kovalski] });
+    expect(html).toMatch(/<ul aria-hidden="true"><li><a tabindex="-1" href/);
+  });
+});
+
 describe('importação de resumos prontos', () => {
   const resumo = 'Resumo de teste com tamanho suficiente para passar no mínimo exigido pelo banco. '.repeat(3);
 

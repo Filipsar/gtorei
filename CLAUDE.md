@@ -160,6 +160,32 @@ motivo em /admin. Foto só do Wikimedia Commons com licença livre e crédito; s
 arte vem de `/api/capa?slug=` (satori + resvg, só para notícia publicada). A rotina que
 rodava no chat (`noticias/` local) deixa de ser necessária quando a função estiver no ar.
 
+### PRO por indicação (31/10/2026)
+
+15 indicados válidos dão 7 dias de PRO (tabela `pro_temporario`, uma vez por conta) e 100
+dão PRO permanente (linha em `supporters`). `is_supporter` olha as duas. A semana não vai
+para `supporters` de propósito: a compra no Google Play grava lá com "ignore se existir" e
+o PRO pago ficaria preso a uma linha que vence. Migration `20261031120000`. A função
+`analyze-hand-history` ainda olha só `supporters` (limite de IA).
+
+### Notícias: portal e resultado (31/10/2026)
+
+`/noticias` (página 1) tem faixa de últimos resultados, manchete (`relevancia` 3 > 2 > 1,
+empate fica com a mais nova), destaques e quadro das maiores premiações do mês. Os dados
+vêm das colunas `torneio`, `vencedor`, `premio`, `premio_usd`, `relevancia` (migration
+`20261031130000`); sem elas a página sai sem faixa e sem quadro. O robô só grava o
+resultado se `resultadoConferido` achar o vencedor e o prêmio na matéria. Repetição de
+notícia: conferir o assunto, não só o link — a mesma final vem de fontes diferentes.
+
+### Cash (beta, 31/10/2026)
+
+Modo `cash` (6-max, 100 BB, todo mundo com 100 BB), visível só para o admin. Abertura e
+resposta à abertura vêm de `MODALIDADE=cash node scripts/build-open-ev.mjs && node
+scripts/emit-cash-ts.mjs` (sem ante, rake 5% com teto de 3 BB no pote disputado), em
+`cash.generated.ts`, lidas por `getCashRange`. Limitação do modelo: fora do BB a resposta
+é 3-bet ou fold (sem flat). Próximos passos: vs 3-bet com 4-bet pequeno, flat em
+posição, pós-flop de cash, tabelas de range do cash e abrir para todos.
+
 ## Não fazer
 
 - Não prometer na interface o que não existe. Já houve texto de onboarding citando

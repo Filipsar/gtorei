@@ -4,6 +4,7 @@ import {
   escolherFotoDoCommons,
   lerJsonDaIa,
   numerosForaDaFonte,
+  resultadoConferido,
   slugDaNoticia,
   textoDaMateria,
   trechosCopiados,
@@ -50,6 +51,23 @@ describe('checagem do resumo automático', () => {
     const erros = checarResumo('Título', [P1, P2].join('\n\n'), FONTE_COM_2005);
     expect(erros.some((e) => e.includes('parágrafos'))).toBe(true);
     expect(erros.some((e) => e.includes('O que fica'))).toBe(true);
+  });
+});
+
+describe('resultado para a faixa de notícias', () => {
+  it('aceita vencedor e prêmio que estão na matéria', () => {
+    expect(resultadoConferido({ torneio: 'Victorian Champs A$ 2.500', vencedor: 'Hun Wei Lee', premio: 'US$ 245.000', premio_usd: 245000 }, FONTE)).toEqual({
+      torneio: 'Victorian Champs A$ 2.500',
+      vencedor: 'Hun Wei Lee',
+      premio: 'US$ 245.000',
+      premio_usd: 245000,
+    });
+  });
+
+  it('deixa o resultado de fora se o prêmio ou o vencedor não batem com a matéria', () => {
+    expect(resultadoConferido({ vencedor: 'Hun Wei Lee', premio: 'US$ 250.000' }, FONTE)).toBeNull();
+    expect(resultadoConferido({ vencedor: 'Fulano Silva', premio: 'US$ 245.000' }, FONTE)).toBeNull();
+    expect(resultadoConferido(null, FONTE)).toBeNull();
   });
 });
 

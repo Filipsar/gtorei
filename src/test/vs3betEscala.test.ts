@@ -19,6 +19,7 @@ const POSICOES: Record<GameMode, Position[]> = {
   hu: ['SB', 'BB'],
   threehand: ['BTN', 'SB', 'BB'],
   bounty: ['UTG', 'UTG1', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
+  cash: ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
 };
 
 const freq = (h: HandData, acao: string) => h.actions.find((a) => a.action === acao)?.frequency ?? 0;

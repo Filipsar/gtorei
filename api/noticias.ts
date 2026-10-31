@@ -29,7 +29,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const pagina = Math.max(1, Math.min(500, Number.parseInt(url.searchParams.get('pagina') ?? '1', 10) || 1));
     const lista = await publicadas(`order=publicada_em.desc&offset=${(pagina - 1) * POR_PAGINA}&limit=${POR_PAGINA + 1}`);
     if (pagina > 1 && lista.length === 0) return responder(res, 404, paginaNaoEncontrada());
-    return responder(res, 200, paginaDaLista(lista, pagina));
+    if (pagina > 1) return responder(res, 200, paginaDaLista(lista, pagina));
+
+    // Faixa de últimos resultados e quadro do mês (sem a migration das colunas, vêm vazios)
+    const mes = new Date(Date.now() - 30 * 86400000).toISOString();
+    const [resultados, premios] = await Promise.all([
+      publicadas('vencedor=not.is.null&premio=not.is.null&order=publicada_em.desc&limit=12'),
+      publicadas(`premio_usd=not.is.null&publicada_em=gte.${mes}&order=premio_usd.desc&limit=5`),
+    ]);
+    return responder(res, 200, paginaDaLista(lista, pagina, { resultados, premios }));
   } catch {
     // Banco fora do ar: a lista sai vazia (e sem indexar) em vez de erro 500
     return responder(res, 200, paginaDaLista([], 1));

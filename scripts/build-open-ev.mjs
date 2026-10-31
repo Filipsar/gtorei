@@ -58,7 +58,16 @@ const COMBOS = HANDS.map((h) => (h.length === 2 ? 6 : h.endsWith('s') ? 4 : 12))
 const TOTAL_COMBOS = COMBOS.reduce((a, b) => a + b, 0); // 1326
 
 // ── Parâmetros do modelo ───────────────────────────────────────────────────
-const ANTE = 1;              // ante de big blind, em BB
+// Cash (MODALIDADE=cash, 31/10/2026): sem ante, 6-max, 100 BB e rake sobre o
+// pote disputado. Torneio continua igual (ante de 1 BB, sem rake).
+const CASH = process.env.MODALIDADE === 'cash';
+const ANTE = CASH ? 0 : 1;   // ante de big blind, em BB
+// Rake de sala online de micro e low stakes: 5% do pote com teto de 3 BB, só
+// em pote disputado (foi ao flop ou ao showdown). Pote levado no pré-flop sem
+// disputa não paga ("no flop, no drop").
+const RAKE = CASH ? 0.05 : 0;
+const TETO_RAKE = CASH ? 3 : 0;
+const semRake = (pote) => pote - Math.min(RAKE * pote, TETO_RAKE);
 const POTE_INICIAL = 0.5 + 1 + ANTE;
 // Multiplicam a jogabilidade da mão. Escolhidos para a realização MÉDIA bater
 // com a literatura: quem abre e joga em posição realiza ~100-110% da equity
@@ -74,13 +83,13 @@ const GAP_ALVO = 0.004;      // fração de combos fora da melhor resposta para 
 // Com passo fixo a range oscilava entre duas formas e não assentava.
 const passo = (iter) => Math.max(0.01, 2 / (iter + 4));
 
-const MESAS = {
+const MESAS = CASH ? { '6max': ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'] } : {
   '8max': ['UTG', 'UTG1', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
   '6max': ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
   threehand: ['BTN', 'SB', 'BB'],
   hu: ['SB', 'BB'],
 };
-const STACKS = [8, 9, 10, 12, 14, 17, 20, 25, 30, 35, 40, 50, 60, 80, 100];
+const STACKS = CASH ? [100] : [8, 9, 10, 12, 14, 17, 20, 25, 30, 35, 40, 50, 60, 80, 100];
 
 const postado = (pos) => (pos === 'SB' ? 0.5 : pos === 'BB' ? 1 : 0);
 const ehBlind = (pos) => pos === 'SB' || pos === 'BB';
@@ -257,23 +266,23 @@ function resolver(modo, S) {
       for (let i = 0; i < N; i++) {
         let evJ = 0, segue = 1;
         for (const c of ctx) {
-          evJ += segue * c.j * (c.eqCJ[i] * (2 * S + c.morto) - S);
+          evJ += segue * c.j * (c.eqCJ[i] * semRake(2 * S + c.morto) - S);
           segue *= 1 - c.j;
         }
         evJ += segue * (POTE_INICIAL - ph);
 
         let evR = 0; segue = 1;
         ctx.forEach((c, k) => {
-          const pago = fatia(c.eqCR[i], i, c.ip, S) * (2 * r + c.morto) - r;
+          const pago = fatia(c.eqCR[i], i, c.ip, S) * semRake(2 * r + c.morto) - r;
           // contra o 3-bet all-in
-          const evCU = c.eqUR[i] * (2 * S + c.morto) - S;
+          const evCU = c.eqUR[i] * semRake(2 * S + c.morto) - S;
           alvoResp[k].CU[i] = alvo([-r, evCU])[1];
           const melhorU = Math.max(-r, evCU);
           // contra o 3-bet pequeno
           let melhor3 = 0;
           if (c.T) {
-            const evC3 = fatia(c.eqTR[i], i, c.ip, S) * (2 * c.T + c.morto) - c.T;
-            const evJ4 = (1 - c.q4) * (c.T + c.morto) + c.q4 * (c.eqT4[i] * (2 * S + c.morto) - S);
+            const evC3 = fatia(c.eqTR[i], i, c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
+            const evJ4 = (1 - c.q4) * (c.T + c.morto) + c.q4 * (c.eqT4[i] * semRake(2 * S + c.morto) - S);
             const a = alvo([-r, evC3, evJ4]);
             alvoResp[k].C3[i] = a[1]; alvoResp[k].J4[i] = a[2];
             melhor3 = Math.max(-r, evC3, evJ4);
@@ -313,18 +322,18 @@ function resolver(modo, S) {
         const alvoCJ = new Float64Array(N), alvoC4 = new Float64Array(N);
         for (let i = 0; i < N; i++) {
           const evF = -c.pv;
-          const evC = podePagarAbertura(c.v) ? fatia(eqR[i], i, !c.ip, S) * (2 * r + c.morto) - r : NUNCA;
-          const evU = (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * (2 * S + c.morto) - S);
+          const evC = podePagarAbertura(c.v) ? fatia(eqR[i], i, !c.ip, S) * semRake(2 * r + c.morto) - r : NUNCA;
+          const evU = (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * semRake(2 * S + c.morto) - S);
           let ev3 = NUNCA;
           if (c.T) {
-            const evPago3 = fatia(eqC3[i], i, !c.ip, S) * (2 * c.T + c.morto) - c.T;
-            const evPagaJ4 = eqJ4[i] * (2 * S + c.morto) - S;
+            const evPago3 = fatia(eqC3[i], i, !c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
+            const evPagaJ4 = eqJ4[i] * semRake(2 * S + c.morto) - S;
             alvoC4[i] = alvo([-c.T, evPagaJ4])[1];
             ev3 = pf * (r + c.morto) + pc * evPago3 + pj * Math.max(-c.T, evPagaJ4);
           }
           const a = alvo([evF, evC, ev3, evU]);
           alvoCR[i] = a[1]; alvoTR[i] = a[2]; alvoUR[i] = a[3];
-          alvoCJ[i] = alvo([evF, eqJ[i] * (2 * S + c.morto) - S])[1];
+          alvoCJ[i] = alvo([evF, eqJ[i] * semRake(2 * S + c.morto) - S])[1];
         }
         gap += aproxima(x.cR, alvoCR) + aproxima(x.uR, alvoUR) + aproxima(x.cJ, alvoCJ); nos += 3;
         if (c.T) { gap += aproxima(x.tR, alvoTR) + aproxima(x.vC4, alvoC4); nos += 2; }
@@ -371,7 +380,7 @@ const evB64 = (e) => Buffer.from(new Int8Array(Array.from(e, (x) => Math.max(-12
 
 const saida = {
   abertura: {}, resposta: {}, largura: {}, gap: {},
-  parametros: { ANTE, REAL_EM_POSICAO, REAL_FORA, MARGEM },
+  parametros: { ANTE, RAKE, TETO_RAKE, REAL_EM_POSICAO, REAL_FORA, MARGEM },
 };
 const [soModo, soStack] = process.argv.slice(2);
 const t0 = Date.now();
@@ -402,7 +411,11 @@ if (soModo) {
   process.exit(0);
 }
 
-writeFileSync('scripts/.cache/open-ev.json', JSON.stringify(saida));
+writeFileSync(CASH ? 'scripts/.cache/open-ev-cash.json' : 'scripts/.cache/open-ev.json', JSON.stringify(saida));
+if (CASH) {
+  for (const [k, v] of Object.entries(saida.largura)) console.log(k.padEnd(18), 'abre', String(v.abre).padStart(5) + '%');
+  process.exit(0);
+}
 console.log(`\npronto em ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 console.log('\n% de combos que abrem (raise + all-in), 8-max');
 console.log('pos   ' + STACKS.map((s) => String(s).padStart(6)).join(''));

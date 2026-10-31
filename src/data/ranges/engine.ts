@@ -8,6 +8,7 @@ import {
 import { HAND_ORDER } from './handorder.generated';
 import { PF_HANDS, PF_SHOVE, PF_CALL, PF_STACKS, decodePF } from './pushfold.generated';
 import { OE_HANDS, OE_STACKS, OE_ABERTURA } from './openev.generated';
+import { CASH_ABERTURA, CASH_HANDS, CASH_RESPOSTA } from './cash.generated';
 
 // ============================================================
 // HAND STRENGTH CALCULATION
@@ -136,6 +137,9 @@ const MODE_CONFIGS: Record<GameMode, ModeConfigMap> = {
     BB:  { openRaise: { raise: 0 },  vsOpenRaise: { raise: 12, call: 28 },vs3bet: { allin: 6, call: 12 }, vsOpenShove: { call: 30 } },
   },
   bounty: { ...EIGHT_MAX_BASE },
+  // Cash: abertura e resposta à abertura vêm calculadas (getCashRange); o resto
+  // ainda cai no corte do 6-max
+  cash: SIX_MAX_BASE,
 };
 
 // ============================================================
@@ -435,7 +439,7 @@ function comboCount(h: { pair: boolean; suited: boolean }): number {
 }
 
 const MODE_KEY: Record<GameMode, string> = {
-  '8max': '8max', '6max': '6max', hu: 'hu', threehand: 'threehand', bounty: '8max',
+  '8max': '8max', '6max': '6max', hu: 'hu', threehand: 'threehand', bounty: '8max', cash: '6max',
 };
 
 // Tabela tem stacks discretos; entre dois valores, interpola
@@ -580,6 +584,59 @@ function getSolvedRange(
 }
 
 // ============================================================
+// CASH 6-MAX 100 BB (cash.generated.ts, 31/10/2026)
+// ============================================================
+
+/**
+ * Abertura (fold ou abrir) e resposta à abertura (fold, pagar ou 3-bet) do
+ * cash, calculadas por EV sem ante e com rake. Sem saber quem abriu, a
+ * resposta é a média de todos os que podem abrir antes do herói. Outros
+ * cenários devolvem null e caem no corte do 6-max.
+ */
+export function getCashRange(scenario: Scenario, position: Position, villainPosition?: Position): RangeData | null {
+  const porMao = new Map<string, ActionFrequency[]>();
+  if (scenario === 'openRaise') {
+    const a = CASH_ABERTURA[position];
+    if (!a) return null;
+    const r = decodePF(a.r), er = decodePF(a.er, true);
+    CASH_HANDS.forEach((h, i) => {
+      const f = Math.max(0, Math.min(100, r[i]));
+      porMao.set(h, [
+        { action: 'raise', frequency: f, ev: Number((er[i] / 10).toFixed(2)) },
+        { action: 'fold', frequency: 100 - f, ev: 0 },
+      ]);
+    });
+  } else if (scenario === 'vsOpenRaise') {
+    const chaves = villainPosition
+      ? [`${position}|vs${villainPosition}`]
+      : Object.keys(CASH_RESPOSTA).filter((k) => k.startsWith(`${position}|vs`));
+    const tabelas = chaves.map((k) => CASH_RESPOSTA[k]).filter(Boolean);
+    if (tabelas.length === 0) return null;
+    const c = tabelas.map((x) => decodePF(x.c)), t3 = tabelas.map((x) => decodePF(x.t));
+    CASH_HANDS.forEach((h, i) => {
+      const media = (v: number[][]) => Math.round(v.reduce((s, x) => s + x[i], 0) / v.length);
+      let call = media(c), raise = media(t3);
+      if (call + raise > 100) { if (call >= raise) call = 100 - raise; else raise = 100 - call; }
+      porMao.set(h, [
+        { action: 'raise', frequency: raise },
+        { action: 'call', frequency: call },
+        { action: 'fold', frequency: 100 - call - raise },
+      ]);
+    });
+  } else {
+    return null;
+  }
+
+  const hands: HandData[] = getSortedHands('cash').map((entry) => {
+    const actions = (porMao.get(entry.hand) ?? [{ action: 'fold', frequency: 100 }]).filter(
+      (a) => a.frequency > 0 || a.action === 'fold',
+    ) as ActionFrequency[];
+    return { hand: entry.hand, actions, primaryAction: pickPrimaryAction(actions), suited: entry.suited, pair: entry.pair };
+  });
+  return { scenario, position, stack: 100, finalTable: false, hands };
+}
+
+// ============================================================
 // RANGE GENERATION
 // ============================================================
 
@@ -593,6 +650,11 @@ export function generateModeRange(
   multiwayPlayers: number = 3,
   villainPosition?: Position
 ): RangeData {
+  if (gameMode === 'cash') {
+    const cash = getCashRange(scenario, position, villainPosition);
+    if (cash) return cash;
+  }
+
   // Stack curto sem bounty e fora de mesa final: usa a range calculada por EV
   const solved = getSolvedRange(gameMode, scenario, position, stack, finalTable, bountyMultiplier, villainPosition);
   if (solved) return solved;

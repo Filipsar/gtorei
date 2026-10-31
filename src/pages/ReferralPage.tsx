@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Copy, Gift, Share2, Users, UserPlus, Clock, Award } from 'lucide-react';
+import { Check, Copy, Gift, Share2, Users, UserPlus, Clock, Award, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,8 @@ export default function ReferralPage() {
   const [resumo, setResumo] = useState<ResumoIndicacao | null>(null);
   const [indisponivel, setIndisponivel] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [semanaAte, setSemanaAte] = useState<string | null>(null);
+  const semanaAtiva = !!semanaAte && new Date(semanaAte).getTime() > Date.now();
 
   useEffect(() => {
     let cancelado = false;
@@ -49,6 +51,12 @@ export default function ReferralPage() {
         setResumo(res.data as unknown as ResumoIndicacao);
       },
     );
+    // Até quando vai a semana de PRO dos 15 indicados (sem a migration, nada aparece)
+    void (supabase.rpc as unknown as (f: string) => Promise<{ data: { semana_ate: string | null } | null }>)(
+      'get_my_referral_pro',
+    ).then(({ data }) => {
+      if (!cancelado && data?.semana_ate) setSemanaAte(data.semana_ate);
+    });
     return () => {
       cancelado = true;
     };
@@ -169,6 +177,17 @@ export default function ReferralPage() {
               </CardContent>
             </Card>
 
+            {semanaAtiva && semanaAte && (
+              <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm">
+                <Crown className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                <p>
+                  Você ganhou o PRO pelos 15 indicados. Ele vale até{' '}
+                  <strong>{new Date(semanaAte).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</strong>.
+                  Com 100 indicados, fica para sempre.
+                </p>
+              </div>
+            )}
+
             {/* Níveis */}
             <div>
               <h2 className="text-heading-xs mb-3">Níveis</h2>
@@ -199,6 +218,12 @@ export default function ReferralPage() {
                                 ? 'Concorre a US$ 100 no mês'
                                 : 'Conquista Embaixador'}
                           </p>
+                          {n.pro && (
+                            <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                              <Crown className="h-3 w-3" aria-hidden="true" />
+                              {n.pro === 'permanente' ? 'PRO permanente' : 'PRO por 7 dias'}
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -225,7 +250,10 @@ export default function ReferralPage() {
                 </div>
                 <div className="flex gap-3">
                   <Award className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <p>Ao completar cada nível, o XP e a conquista caem na sua conta na hora.</p>
+                  <p>
+                    Ao completar cada nível, o XP e a conquista caem na sua conta na hora. Com 15 indicados você ganha 7 dias
+                    de PRO; com 100, o PRO fica para sempre.
+                  </p>
                 </div>
               </CardContent>
             </Card>

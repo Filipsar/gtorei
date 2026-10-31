@@ -129,7 +129,8 @@ Entre duas versões da mesma notícia, resuma só a mais completa.`;
 export const PROMPT_RESUMO = `Você escreve notícias de poker em português do Brasil para o site GTORei, a partir de uma matéria de outro site.
 ${PUBLICO}
 Se, lendo a matéria inteira, ela não servir, responda {"descartar":"<motivo curto>"}.
-Se servir, responda só JSON: {"titulo":"...","resumo":"...","jogador_principal":"<nome completo do jogador central da notícia, ou null>"}.
+Se servir, responda só JSON: {"titulo":"...","resumo":"...","jogador_principal":"<nome completo do jogador central da notícia, ou null>","resultado":<null ou {"torneio":"<nome curto com buy-in, até 40 caracteres, ex.: GGMillion$ US$ 10.000>","vencedor":"<quem ganhou o maior prêmio citado>","premio":"<como na matéria, ex.: US$ 464.794>","premio_usd":<o mesmo em dólares, só número; null se a moeda não for dólar>}>,"relevancia":<1, 2 ou 3>}.
+"resultado" só quando a notícia é o resultado de um torneio. "relevancia": 3 para título de brasileiro em série grande, WSOP, BSOP ou mudança de sala que afeta todo mundo; 2 para resultado grande ou brasileiro em mesa final; 1 para o resto.
 
 Regras do título: em português, até 140 caracteres, com o fato principal (quem, o quê, quanto).
 Regras do resumo:
@@ -233,6 +234,30 @@ export function numerosForaDaFonte(texto: string, fonte: string): string[] {
     if (!daFonte.some((s) => Math.abs(s - v) <= Math.max(s * 0.01, 0.5))) fora.push(m[1]);
   }
   return fora;
+}
+
+export interface ResultadoDaNoticia {
+  torneio?: string | null;
+  vencedor?: string | null;
+  premio?: string | null;
+  premio_usd?: number | null;
+}
+
+/**
+ * Dados da faixa de resultados (migration 20261031130000), só se baterem com a
+ * matéria: prêmio com número que não está na fonte, ou vencedor que não
+ * aparece nela, faz o resultado inteiro ficar de fora (a notícia sai assim mesmo).
+ */
+export function resultadoConferido(r: ResultadoDaNoticia | null | undefined, fonte: string): Required<ResultadoDaNoticia> | null {
+  if (!r?.vencedor || !r.premio) return null;
+  const vencedor = r.vencedor.trim().slice(0, 60);
+  const premio = r.premio.trim().slice(0, 30);
+  const sobrenome = palavras(vencedor).at(-1) ?? '';
+  if (!sobrenome || !palavras(fonte).includes(sobrenome)) return null;
+  if (numerosForaDaFonte(premio, fonte).length) return null;
+  const usd = typeof r.premio_usd === 'number' && Number.isFinite(r.premio_usd) && r.premio_usd >= 0 ? r.premio_usd : null;
+  if (usd !== null && numerosForaDaFonte(String(usd), fonte).length) return null;
+  return { torneio: r.torneio?.trim().slice(0, 80) || null, vencedor, premio, premio_usd: usd };
 }
 
 export function checarResumo(titulo: string, resumo: string, fonte: string): string[] {

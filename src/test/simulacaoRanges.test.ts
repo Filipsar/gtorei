@@ -16,6 +16,7 @@ const MODO_DE_JOGO: Record<TrainingMode, GameMode> = {
   hu: 'hu',
   threeHand: 'threehand',
   bounty: 'bounty',
+  cash: 'cash',
 };
 
 const MODOS = Object.keys(MODO_DE_JOGO) as TrainingMode[];

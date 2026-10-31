@@ -20,14 +20,16 @@ export interface NivelIndicacao {
   /** XP pago ao chegar no nível; o 5 paga o sorteio, não XP */
   xp: number;
   conquista: string;
+  /** PRO que o nível dá (migration 20261031120000_pro_por_indicacao) */
+  pro?: '7 dias' | 'permanente';
 }
 
 export const NIVEIS_INDICACAO: NivelIndicacao[] = [
   { nivel: 1, nome: 'Primeiro Convite', indicados: 1, xp: 150, conquista: 'indica_1' },
   { nivel: 2, nome: 'Anfitrião', indicados: 5, xp: 500, conquista: 'indica_5' },
-  { nivel: 3, nome: 'Recrutador', indicados: 15, xp: 1500, conquista: 'indica_15' },
+  { nivel: 3, nome: 'Recrutador', indicados: 15, xp: 1500, conquista: 'indica_15', pro: '7 dias' },
   { nivel: 4, nome: 'Líder de Mesa', indicados: 40, xp: 4000, conquista: 'indica_40' },
-  { nivel: 5, nome: 'Embaixador GTORei', indicados: 100, xp: 0, conquista: 'indica_100' },
+  { nivel: 5, nome: 'Embaixador GTORei', indicados: 100, xp: 0, conquista: 'indica_100', pro: 'permanente' },
 ];
 
 /** Mesmo cálculo de referral_tier no banco */

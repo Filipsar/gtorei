@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Heart, Instagram, LayoutGrid, Spade, X } from 'lucide-react';
+import { ArrowRight, Brain, Gift, Heart, Instagram, LayoutGrid, Spade, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ehApp } from '@/lib/nativo/plataforma';
 
@@ -34,6 +34,15 @@ const BANNER_MESSAGES: BannerMessage[] = [
     ctaShort: 'Apoiar',
     // Fica mais tempo que as outras: é a única que pede algo de volta
     dwell: 8000,
+  },
+  {
+    text: 'Indique e ganhe: com 15 amigos, 7 dias de PRO; com 100, PRO para sempre.',
+    shortText: 'Indique amigos e ganhe PRO',
+    icon: <Gift className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    link: '/indicar',
+    cta: 'Pegar meu link',
+    ctaShort: 'Indicar',
+    dwell: 7000,
   },
   {
     text: 'Mesa refeita: você senta sempre embaixo e a mesa gira em volta',
