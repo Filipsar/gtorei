@@ -183,8 +183,12 @@ Modo `cash` (6-max, 100 BB, todo mundo com 100 BB), visível só para o admin. A
 resposta à abertura vêm de `MODALIDADE=cash node scripts/build-open-ev.mjs && node
 scripts/emit-cash-ts.mjs` (sem ante, rake 5% com teto de 3 BB no pote disputado), em
 `cash.generated.ts`, lidas por `getCashRange`. Limitação do modelo: fora do BB a resposta
-é 3-bet ou fold (sem flat). Próximos passos: vs 3-bet com 4-bet pequeno, flat em
-posição, pós-flop de cash, tabelas de range do cash e abrir para todos.
+é 3-bet ou fold (sem flat). Vs 3-bet (31/10): o herói larga, paga ou dá 4-bet pequeno (2,2x);
+o all-in fica para o 5-bet do vilão. O 4-bet all-in do herói foi tirado no cash porque o
+modelo empurrava AA a A5s 100% (sem pós-flop resolvido, a range que paga all-in sai
+apertada demais), e o pote de 4-bet usa realização por SPR (`fatiaSpr`). Sem 4-bet de
+blefe no modelo. No treino, a mão do vs 3-bet sai da range de abertura (`maoQueAbre`).
+Próximos passos: flat em posição, pós-flop de cash e abrir para todos.
 
 ## Não fazer
 

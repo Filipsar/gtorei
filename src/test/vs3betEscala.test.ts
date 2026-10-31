@@ -13,20 +13,22 @@ import { HAND_ORDER } from '@/data/ranges/handorder.generated';
  * de modo, posição e stack.
  */
 
-const POSICOES: Record<GameMode, Position[]> = {
+// O cash fica de fora: o vs 3-bet dele sai do cálculo por EV (cash.generated.ts),
+// que pesa jogabilidade e não só força bruta (A9o folda e KQs paga). A escala
+// contínua é uma garantia do modelo por percentual, o dos outros modos.
+const POSICOES: Record<Exclude<GameMode, 'cash'>, Position[]> = {
   '8max': ['UTG', 'UTG1', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
   '6max': ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
   hu: ['SB', 'BB'],
   threehand: ['BTN', 'SB', 'BB'],
   bounty: ['UTG', 'UTG1', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
-  cash: ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
 };
 
 const freq = (h: HandData, acao: string) => h.actions.find((a) => a.action === acao)?.frequency ?? 0;
 
 function combinacoes(stacks: number[]) {
   const fora: Array<{ modo: GameMode; posicao: Position; stack: number; mesaFinal: boolean; bounty: number }> = [];
-  for (const modo of Object.keys(POSICOES) as GameMode[]) {
+  for (const modo of Object.keys(POSICOES) as Exclude<GameMode, 'cash'>[]) {
     for (const posicao of POSICOES[modo]) {
       for (const stack of stacks) {
         for (const mesaFinal of [false, true]) {

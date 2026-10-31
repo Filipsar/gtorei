@@ -412,7 +412,7 @@ function WizardMatrix({
 type Formato = 'torneio' | 'cash';
 
 const POSICOES_DO_CASH: Position[] = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
-const CENARIOS_DO_CASH: Scenario[] = ['openRaise', 'vsOpenRaise'];
+const CENARIOS_DO_CASH: Scenario[] = ['openRaise', 'vsOpenRaise', 'vs3bet'];
 
 /** Posições em que o cenário não existe (BB não abre; o primeiro a falar não enfrenta abertura...) */
 function posicaoImpossivel(cenario: Scenario, posicoes: Position[], pos: Position): boolean {
@@ -479,8 +479,10 @@ export default function TablesPage() {
 
   // "Contra quem": só onde a range depende de quem abriu ou empurrou (cash vs
   // abertura e pagar all-in); quem age antes do herói
-  const usaVilao = (cash && cenario === 'vsOpenRaise') || (!cash && cenario === 'vsOpenShove');
-  const viloes = usaVilao ? positions.slice(0, positions.indexOf(effectivePosition)) : [];
+  const usaVilao = (cash && (cenario === 'vsOpenRaise' || cenario === 'vs3bet')) || (!cash && cenario === 'vsOpenShove');
+  // No vs 3-bet o vilão fala depois do herói; nos outros, antes
+  const iHeroi = positions.indexOf(effectivePosition);
+  const viloes = !usaVilao ? [] : cenario === 'vs3bet' ? positions.slice(iHeroi + 1) : positions.slice(0, iHeroi);
   const vilaoEfetivo = vilao && viloes.includes(vilao) ? vilao : undefined;
 
   const range = useMemo(
@@ -615,7 +617,7 @@ export default function TablesPage() {
             {cash && (
               <p className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
                 Cash 6-max com 100 BB, sem ante e com rake de 5% (teto de 3 BB) no pote disputado. Calculado pelo GTORei por EV;
-                fora do big blind, a resposta à abertura é 3-bet ou fold.
+                fora do big blind, a resposta à abertura é 3-bet ou fold. Contra o 3-bet, o 4-bet é pequeno (2,2x) e o all-in fica para o 5-bet.
               </p>
             )}
 
@@ -637,7 +639,7 @@ export default function TablesPage() {
             {/* Contra quem */}
             {usaVilao && viloes.length > 0 && (
               <div className="mb-4">
-                <p className="mb-1.5 text-xs text-muted-foreground">{cenario === 'vsOpenShove' ? 'Quem foi all-in' : 'Quem abriu'}</p>
+                <p className="mb-1.5 text-xs text-muted-foreground">{cenario === 'vsOpenShove' ? 'Quem foi all-in' : cenario === 'vs3bet' ? 'Quem deu 3-bet' : 'Quem abriu'}</p>
                 <div className="flex flex-wrap gap-2">
                   <FilterChip label="Média" active={!vilaoEfetivo} onClick={() => setVilao(null)} />
                   {viloes.map((v) => (

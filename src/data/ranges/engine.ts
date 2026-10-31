@@ -8,7 +8,7 @@ import {
 import { HAND_ORDER } from './handorder.generated';
 import { PF_HANDS, PF_SHOVE, PF_CALL, PF_STACKS, decodePF } from './pushfold.generated';
 import { OE_HANDS, OE_STACKS, OE_ABERTURA } from './openev.generated';
-import { CASH_ABERTURA, CASH_HANDS, CASH_RESPOSTA } from './cash.generated';
+import { CASH_ABERTURA, CASH_HANDS, CASH_RESPOSTA, CASH_VS3BET } from './cash.generated';
 
 // ============================================================
 // HAND STRENGTH CALCULATION
@@ -594,6 +594,7 @@ function getSolvedRange(
  * cenários devolvem null e caem no corte do 6-max.
  */
 export function getCashRange(scenario: Scenario, position: Position, villainPosition?: Position): RangeData | null {
+  // vs 3-bet: só existe com o vilão depois do herói; sem saber quem, é a média deles
   const porMao = new Map<string, ActionFrequency[]>();
   if (scenario === 'openRaise') {
     const a = CASH_ABERTURA[position];
@@ -606,13 +607,16 @@ export function getCashRange(scenario: Scenario, position: Position, villainPosi
         { action: 'fold', frequency: 100 - f, ev: 0 },
       ]);
     });
-  } else if (scenario === 'vsOpenRaise') {
+  } else if (scenario === 'vsOpenRaise' || scenario === 'vs3bet') {
+    // vsOpenRaise: o herói responde à abertura (pagar = c, 3-bet = t).
+    // vs3bet: o herói abriu e levou 3-bet (pagar = c, 4-bet pequeno = r).
+    const tabela: Record<string, { c: string; t?: string; r?: string }> = scenario === 'vs3bet' ? CASH_VS3BET : CASH_RESPOSTA;
     const chaves = villainPosition
       ? [`${position}|vs${villainPosition}`]
-      : Object.keys(CASH_RESPOSTA).filter((k) => k.startsWith(`${position}|vs`));
-    const tabelas = chaves.map((k) => CASH_RESPOSTA[k]).filter(Boolean);
+      : Object.keys(tabela).filter((k) => k.startsWith(`${position}|vs`));
+    const tabelas = chaves.map((k) => tabela[k]).filter(Boolean);
     if (tabelas.length === 0) return null;
-    const c = tabelas.map((x) => decodePF(x.c)), t3 = tabelas.map((x) => decodePF(x.t));
+    const c = tabelas.map((x) => decodePF(x.c)), t3 = tabelas.map((x) => decodePF((x.t ?? x.r)!));
     CASH_HANDS.forEach((h, i) => {
       const media = (v: number[][]) => Math.round(v.reduce((s, x) => s + x[i], 0) / v.length);
       let call = media(c), raise = media(t3);

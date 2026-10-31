@@ -111,6 +111,10 @@ function tamanho3bet(modo, heroi, vilao, r, S) {
   return t < 0.4 * S ? t : null;
 }
 
+// 4-bet pequeno, só no cash (31/10/2026): 2,2x o 3-bet. Com 100 BB, contra
+// o 3-bet ninguém empurra tudo; o 4-bet vai a ~22 BB e o all-in fica para o 5-bet.
+const tamanho4bet = (T, S) => (CASH && T && 2.2 * T < 0.4 * S ? 2.2 * T : null);
+
 // Só o big blind paga a abertura; os demais dão 3-bet ou foldam.
 // Motivo: o modelo não tem pote multiway. Quando alguém no meio da mesa
 // pagava, os blinds de trás eram tratados como se sempre foldassem, e os dois
@@ -149,6 +153,16 @@ function realizacao(i, emPosicao, S) {
 }
 // Fatia do pote que a mão i leva indo ao flop com equity eq
 const fatia = (eq, i, emPosicao, S) => Math.min(1, eq * realizacao(i, emPosicao, S));
+// Pote de 4-bet pago (cash): com ~1,7 pote atrás a mão quase sempre termina em
+// all-in no flop, e posição e jogabilidade valem pouco. A realização vai a 1
+// conforme o SPR cai (cheia a partir de SPR 5). Sem isto o vilão em posição
+// levava num pote de 4-bet a mesma vantagem de um pote simples, e o herói só
+// dava 4-bet all-in, nunca o pequeno.
+function fatiaSpr(eq, i, emPosicao, pote, atras) {
+  const d = Math.min(1, Math.max(0, (atras / pote - 1) / 4));
+  const alvo = JOGAB[i] * (emPosicao ? REAL_EM_POSICAO : REAL_FORA);
+  return Math.min(1, eq * (1 - (1 - alvo) * d));
+}
 
 // ── Álgebra de ranges ─────────────────────────────────────────────────────
 function eqVector(freq) {
@@ -230,6 +244,10 @@ function resolver(modo, S) {
         hC3: topo(0.06), hJ4: topo(0.03), // herói contra o 3-bet pequeno
         hCU: topo(0.06),                  // herói contra o 3-bet all-in
         vC4: topo(0.03),                  // vilão contra o 4-bet all-in
+        // Cash: 4-bet pequeno do herói e o que vem depois
+        hR4: topo(0.03),                  // herói dá 4-bet pequeno contra o 3-bet
+        vC4s: topo(0.02), vJ5: topo(0.01), // vilão contra o 4-bet pequeno: paga ou 5-bet all-in
+        hC5: topo(0.01),                  // herói paga o 5-bet all-in
       };
     }
   }
@@ -257,12 +275,18 @@ function resolver(modo, S) {
           q4: T ? fracao(t4, lt) : 0,
           eqCR: eqVector(x.cR), eqCJ: eqVector(x.cJ), eqUR: eqVector(x.uR),
           eqTR: T ? eqVector(x.tR) : null, eqT4: T ? eqVector(t4) : null,
+          ...(() => {
+            const R4 = tamanho4bet(T, S);
+            if (!R4) return { R4: null };
+            const c4 = produto(x.tR, x.vC4s), j5 = produto(x.tR, x.vJ5);
+            return { R4, vc4: fracao(c4, lt), vj5: fracao(j5, lt), eqC4s: eqVector(c4), eqJ5: eqVector(j5) };
+          })(),
         };
       });
 
       // Herói: abertura e respostas aos 3-bets de cada vilão
       const alvoR = new Float64Array(N), alvoJ = new Float64Array(N);
-      const alvoResp = ctx.map(() => ({ C3: new Float64Array(N), J4: new Float64Array(N), CU: new Float64Array(N) }));
+      const alvoResp = ctx.map(() => ({ C3: new Float64Array(N), J4: new Float64Array(N), CU: new Float64Array(N), R4: new Float64Array(N), C5: new Float64Array(N) }));
       for (let i = 0; i < N; i++) {
         let evJ = 0, segue = 1;
         for (const c of ctx) {
@@ -282,10 +306,21 @@ function resolver(modo, S) {
           let melhor3 = 0;
           if (c.T) {
             const evC3 = fatia(c.eqTR[i], i, c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
-            const evJ4 = (1 - c.q4) * (c.T + c.morto) + c.q4 * (c.eqT4[i] * semRake(2 * S + c.morto) - S);
-            const a = alvo([-r, evC3, evJ4]);
-            alvoResp[k].C3[i] = a[1]; alvoResp[k].J4[i] = a[2];
-            melhor3 = Math.max(-r, evC3, evJ4);
+            // No cash com 100 BB o 4-bet é pequeno e o all-in fica para o 5-bet: com o
+            // 4-bet all-in disponível o modelo empurrava AA a A5s 100% (a range que
+            // paga o all-in sai apertada demais sem pós-flop resolvido)
+            const evJ4 = c.R4 ? NUNCA : (1 - c.q4) * (c.T + c.morto) + c.q4 * (c.eqT4[i] * semRake(2 * S + c.morto) - S);
+            let evR4 = NUNCA;
+            if (c.R4) {
+              const evPaga5 = c.eqJ5[i] * semRake(2 * S + c.morto) - S;
+              alvoResp[k].C5[i] = alvo([-c.R4, evPaga5])[1];
+              evR4 = (1 - c.vc4 - c.vj5) * (c.T + c.morto)
+                + c.vc4 * (fatiaSpr(c.eqC4s[i], i, c.ip, 2 * c.R4 + c.morto, S - c.R4) * semRake(2 * c.R4 + c.morto) - c.R4)
+                + c.vj5 * Math.max(-c.R4, evPaga5);
+            }
+            const a = alvo([-r, evC3, evJ4, evR4]);
+            alvoResp[k].C3[i] = a[1]; alvoResp[k].J4[i] = a[2]; alvoResp[k].R4[i] = a[3];
+            melhor3 = Math.max(-r, evC3, evJ4, evR4);
           }
           evR += segue * (c.c * pago + c.t * melhor3 + c.u * melhorU);
           segue *= 1 - c.c - c.t - c.u;
@@ -302,6 +337,8 @@ function resolver(modo, S) {
         const x = e.vs[c.v];
         gap += aproxima(x.hCU, alvoResp[k].CU); nos += 1;
         if (c.T) { gap += aproxima(x.hC3, alvoResp[k].C3) + aproxima(x.hJ4, alvoResp[k].J4); nos += 2; }
+        if (c.R4) { gap += aproxima(x.hR4, alvoResp[k].R4) + aproxima(x.hC5, alvoResp[k].C5); nos += 2; }
+        else x.hR4.fill(0);
       });
 
       // Vilões: cada um responde à range do herói
@@ -313,13 +350,20 @@ function resolver(modo, S) {
         const pcu = fracao(rangeCU, lR);
         const eqCU = eqVector(rangeCU);
         let pf = 1, pc = 0, pj = 0, eqC3 = null, eqJ4 = null;
+        let pr4 = 0, pc5 = 0, eqR4 = null, eqC5 = null;
         if (c.T) {
           const rangeC3 = produto(e.R, x.hC3), rangeJ4 = produto(e.R, x.hJ4);
-          pc = fracao(rangeC3, lR); pj = fracao(rangeJ4, lR); pf = Math.max(0, 1 - pc - pj);
+          pc = fracao(rangeC3, lR); pj = fracao(rangeJ4, lR);
           eqC3 = eqVector(rangeC3); eqJ4 = eqVector(rangeJ4);
+          if (c.R4) {
+            const rangeR4 = produto(e.R, x.hR4), rangeC5 = produto(rangeR4, x.hC5);
+            pr4 = fracao(rangeR4, lR); pc5 = fracao(rangeC5, largura(rangeR4));
+            eqR4 = eqVector(rangeR4); eqC5 = eqVector(rangeC5);
+          }
+          pf = Math.max(0, 1 - pc - pj - pr4);
         }
         const alvoCR = new Float64Array(N), alvoTR = new Float64Array(N), alvoUR = new Float64Array(N);
-        const alvoCJ = new Float64Array(N), alvoC4 = new Float64Array(N);
+        const alvoCJ = new Float64Array(N), alvoC4 = new Float64Array(N), alvoC4s = new Float64Array(N), alvoJ5 = new Float64Array(N);
         for (let i = 0; i < N; i++) {
           const evF = -c.pv;
           const evC = podePagarAbertura(c.v) ? fatia(eqR[i], i, !c.ip, S) * semRake(2 * r + c.morto) - r : NUNCA;
@@ -329,7 +373,15 @@ function resolver(modo, S) {
             const evPago3 = fatia(eqC3[i], i, !c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
             const evPagaJ4 = eqJ4[i] * semRake(2 * S + c.morto) - S;
             alvoC4[i] = alvo([-c.T, evPagaJ4])[1];
-            ev3 = pf * (r + c.morto) + pc * evPago3 + pj * Math.max(-c.T, evPagaJ4);
+            let melhorContra4 = 0;
+            if (c.R4) {
+              const evPaga4 = fatiaSpr(eqR4[i], i, !c.ip, 2 * c.R4 + c.morto, S - c.R4) * semRake(2 * c.R4 + c.morto) - c.R4;
+              const evJ5 = (1 - pc5) * (c.R4 + c.morto) + pc5 * (eqC5[i] * semRake(2 * S + c.morto) - S);
+              const a4 = alvo([-c.T, evPaga4, evJ5]);
+              alvoC4s[i] = a4[1]; alvoJ5[i] = a4[2];
+              melhorContra4 = Math.max(-c.T, evPaga4, evJ5);
+            }
+            ev3 = pf * (r + c.morto) + pc * evPago3 + pj * Math.max(-c.T, evPagaJ4) + pr4 * melhorContra4;
           }
           const a = alvo([evF, evC, ev3, evU]);
           alvoCR[i] = a[1]; alvoTR[i] = a[2]; alvoUR[i] = a[3];
@@ -338,6 +390,7 @@ function resolver(modo, S) {
         gap += aproxima(x.cR, alvoCR) + aproxima(x.uR, alvoUR) + aproxima(x.cJ, alvoCJ); nos += 3;
         if (c.T) { gap += aproxima(x.tR, alvoTR) + aproxima(x.vC4, alvoC4); nos += 2; }
         else x.tR.fill(0);
+        if (c.R4) { gap += aproxima(x.vC4s, alvoC4s) + aproxima(x.vJ5, alvoJ5); nos += 2; }
       }
     }
 
@@ -379,7 +432,7 @@ const freqB64 = (f) => Buffer.from(Uint8Array.from(f, (x) => Math.round(Math.max
 const evB64 = (e) => Buffer.from(new Int8Array(Array.from(e, (x) => Math.max(-128, Math.min(127, Math.round(x * 10))))).buffer).toString('base64');
 
 const saida = {
-  abertura: {}, resposta: {}, largura: {}, gap: {},
+  abertura: {}, resposta: {}, vs3bet: {}, largura: {}, gap: {},
   parametros: { ANTE, RAKE, TETO_RAKE, REAL_EM_POSICAO, REAL_FORA, MARGEM },
 };
 const [soModo, soStack] = process.argv.slice(2);
@@ -400,6 +453,10 @@ for (const modo of Object.keys(MESAS)) {
       // (vsOpenRaise continua no modelo antigo por enquanto)
       for (const [v, x] of Object.entries(e.vs)) {
         saida.resposta[`${modo}|${v}|vs${p}|${S}`] = { c: freqB64(x.cR), t: freqB64(x.tR), u: freqB64(x.uR) };
+        // Cash: o herói (p) contra o 3-bet pequeno de v: paga, 4-bet pequeno ou 4-bet all-in
+        if (CASH && largura(x.tR) > 0) {
+          saida.vs3bet[`${modo}|${p}|vs${v}|${S}`] = { c: freqB64(x.hC3), r: freqB64(x.hR4), j: freqB64(x.hJ4), abre: freqB64(e.R) };
+        }
       }
     }
     console.log(`${modo} ${S}BB: ${iter} iterações, gap ${(100 * gapMedio).toFixed(2)}% dos combos, ${((Date.now() - t1) / 1000).toFixed(1)}s`);

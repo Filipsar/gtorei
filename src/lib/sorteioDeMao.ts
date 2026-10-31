@@ -1,4 +1,5 @@
 import { POSITIONS, STACK_SIZES, Position, Scenario } from '@/data/gtoRanges';
+import { getCashRange } from '@/data/ranges/engine';
 
 /**
  * Quem pode jogar o quê, e como se sorteia a configuração de uma mão.
@@ -32,7 +33,7 @@ export const MODE_SCENARIOS: Record<TrainingMode, Scenario[]> = {
   threeHand: ['openRaise', 'vsOpenRaise', 'vs3bet', 'simulation'],
   bounty: ['openRaise', 'vsOpenRaise', 'vs3bet', 'vsOpenShove', 'simulation', 'multiway'],
   // Cash (beta, 31/10/2026): só o que já tem range calculada para cash
-  cash: ['openRaise', 'vsOpenRaise'],
+  cash: ['openRaise', 'vsOpenRaise', 'vs3bet'],
 };
 
 export const MODE_POSITIONS: Record<TrainingMode, Position[]> = {
@@ -183,4 +184,21 @@ export function sortearConfiguracaoDaMao(o: OpcoesDeSorteio): ConfiguracaoDaMao 
 
   const stack = o.modo === 'cash' ? STACK_DO_CASH : um(stacks);
   return { cenario, posicao, stack, multiway: multiwayEm(cenario) };
+}
+
+/**
+ * Mão para o vs 3-bet do cash: sorteia até sair uma que o herói abre daquela
+ * posição, aceitando cada uma com a frequência de abertura dela. Depois de 200
+ * tentativas devolve a última, para nunca travar.
+ */
+export function maoQueAbre(sortear: () => string, posicao: Position, sorteio: () => number = Math.random): string {
+  const abertura = getCashRange('openRaise', posicao);
+  let mao = sortear();
+  if (!abertura) return mao;
+  const freq = new Map(abertura.hands.map((h) => [h.hand, h.actions.find((a) => a.action === 'raise')?.frequency ?? 0]));
+  for (let i = 0; i < 200; i++) {
+    if (sorteio() * 100 < (freq.get(mao) ?? 0)) return mao;
+    mao = sortear();
+  }
+  return mao;
 }

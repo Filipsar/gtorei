@@ -22,7 +22,7 @@ const MESAS: { id: ModeChoice; titulo: string; detalhe: string; descricao: strin
   { id: 'hu', titulo: 'Heads-Up', detalhe: '1 x 1', descricao: 'Só você e um oponente: ranges bem mais largas.' },
   { id: 'threeHand', titulo: 'Three Hand', detalhe: '3 jogadores', descricao: 'Fim de torneio, blinds pressionando.' },
   { id: 'bounty', titulo: 'Bounty', detalhe: 'PKO + ICM', descricao: 'A recompensa de cada cabeça muda a range.' },
-  { id: 'cash', titulo: 'Cash', detalhe: '6-max · 100 BB', descricao: 'Sem ante e com rake: abrir e responder à abertura.', beta: true },
+  { id: 'cash', titulo: 'Cash', detalhe: '6-max · 100 BB', descricao: 'Sem ante e com rake: abrir, responder à abertura e ao 3-bet.', beta: true },
 ];
 
 /**

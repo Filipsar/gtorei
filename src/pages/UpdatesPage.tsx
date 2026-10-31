@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.31.1',
+    date: '31/10/2026',
+    type: 'improvement',
+    title: 'Cash: Respostas ao 3-bet',
+    description: 'As tabelas de cash (beta) ganharam o cenário vs 3-bet: você abriu, levou 3-bet e decide entre largar, pagar ou dar 4-bet pequeno, como se joga com 100 BB. Dá para escolher quem deu o 3-bet.',
+  },
+  {
     version: '1.31.0',
     date: '31/10/2026',
     type: 'improvement',

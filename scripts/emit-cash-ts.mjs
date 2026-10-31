@@ -36,6 +36,18 @@ for (const [k, v] of Object.entries(oe.resposta)) {
   linhas.push(`  ${JSON.stringify(`${heroi}|${vs}`)}: { c: ${JSON.stringify(v.c)}, t: ${JSON.stringify(enc(t))} },`);
 }
 linhas.push('};');
+linhas.push('');
+linhas.push('// "herói|vsVilão" -> o herói abriu e levou 3-bet pequeno: frequência 0-100 de pagar (c) e de');
+linhas.push('// 4-bet pequeno (r, 2,2x o 3-bet). Mão que não abre (menos de 5%) fica zerada: ela nunca');
+linhas.push('// chega a enfrentar o 3-bet. Base64.');
+linhas.push('export const CASH_VS3BET: Record<string, { c: string; r: string }> = {');
+for (const [k, v] of Object.entries(oe.vs3bet ?? {})) {
+  const [, heroi, vs] = k.split('|');
+  const abre = dec(v.abre);
+  const so = (b) => enc(dec(b).map((x, i) => (abre[i] < 5 ? 0 : x)));
+  linhas.push(`  ${JSON.stringify(`${heroi}|${vs}`)}: { c: ${JSON.stringify(so(v.c))}, r: ${JSON.stringify(so(v.r))} },`);
+}
+linhas.push('};');
 
 const conteudo = linhas.join('\n') + '\n';
 writeFileSync('src/data/ranges/cash.generated.ts', conteudo);

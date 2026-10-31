@@ -73,6 +73,7 @@ import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Loc
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { usePassoDoTour } from '@/lib/tour';
 import { ADMIN_EMAIL } from '@/data/admin';
+import { maoQueAbre } from '@/lib/sorteioDeMao';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
 
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -325,7 +326,12 @@ export default function TrainPage() {
     // null: vale a chave "Mesa final" da configuração
     const mesaFinal = emSimulado ? sortearMesaFinal(modo === 'bounty') : null;
 
-    const hand = generateRandomHand();
+    // Cash vs 3-bet: a mão sai da range de abertura do herói (só chega ao
+    // 3-bet quem abriu). Sem isso vinha A5o no HJ, que nem abre, e a resposta
+    // "fold" não ensinava nada
+    const hand = modo === 'cash' && cenario === 'vs3bet'
+      ? maoQueAbre(generateRandomHand, posicao)
+      : generateRandomHand();
     const cards = generateCardsFromHand(hand);
     const assentos = MODE_POSITIONS[modo];
 
