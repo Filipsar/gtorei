@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.31.0',
+    date: '31/10/2026',
+    type: 'improvement',
+    title: 'Tabelas de Range com Cash',
+    description: 'A aba Tabelas ganhou as ranges de cash 6-max com 100 BB (beta), sem ante e com rake. Agora dá para escolher quem abriu ou quem foi all-in, as posições em que o cenário não existe ficam desligadas, o resumo mostra quanto da range joga contando os combos de verdade e a tabela cabe inteira no celular.',
+  },
+  {
     version: '1.30.0',
     date: '31/10/2026',
     type: 'feature',

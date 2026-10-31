@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Users, ChevronDown, ChevronUp, Palette, ChevronRight, ChevronLeft } from 'lucide-react';
+import { combosDaMao, resumoDaRange } from '@/lib/resumoDaRange';
 import {
   Tooltip,
   TooltipContent,
@@ -88,51 +89,34 @@ function FilterChip({
 // ACTION PANEL (RIGHT SIDE)
 // ============================================================
 
-function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null; colors: Record<ActionType, string> }) {
-  const totals = useMemo(() => {
-    // If a hand is selected, show its per-action breakdown instead of the aggregate
-    if (selectedHand) {
-      return (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((action) => {
-        const found = selectedHand.actions.find((a) => a.action === action);
-        const freq = found?.frequency ?? 0;
-        return {
-          action,
-          label: action === 'allin' ? 'All-in' : action === 'raise' ? 'Raise 2.5x' : action === 'call' ? 'Call' : 'Fold',
-          percentage: freq,
-          combos: freq / 100,
-        };
-      });
-    }
+const ROTULO: Record<ActionType, string> = { allin: 'All-in', raise: 'Raise', call: 'Call', fold: 'Fold' };
 
-    const sums: Record<ActionType, { freq: number; combos: number }> = {
-      fold: { freq: 0, combos: 0 },
-      call: { freq: 0, combos: 0 },
-      raise: { freq: 0, combos: 0 },
-      allin: { freq: 0, combos: 0 },
-    };
-    for (const hand of range.hands) {
-      for (const action of hand.actions) {
-        if (action.frequency > 0) {
-          sums[action.action].freq += action.frequency;
-          sums[action.action].combos += action.frequency / 100;
-        }
+function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof getRange>; selectedHand: HandData | null; colors: Record<ActionType, string> }) {
+  const resumo = useMemo(() => resumoDaRange(range.hands), [range]);
+  const totals = useMemo(() => {
+    // Com uma mão escolhida, mostra o que ela faz; sem, a range inteira
+    return (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((action) => {
+      if (selectedHand) {
+        const freq = selectedHand.actions.find((a) => a.action === action)?.frequency ?? 0;
+        return { action, label: ROTULO[action], percentage: freq, combos: (freq / 100) * combosDaMao(selectedHand) };
       }
-    }
-    const totalFreq = Object.values(sums).reduce((s, v) => s + v.freq, 0);
-    return (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((action) => ({
-      action,
-      label: action === 'allin' ? 'All-in' : action === 'raise' ? 'Raise 2.5x' : action === 'call' ? 'Call' : 'Fold',
-      percentage: totalFreq > 0 ? (sums[action].freq / totalFreq) * 100 : 0,
-      combos: sums[action].combos,
-    }));
-  }, [range, selectedHand]);
+      return { action, label: ROTULO[action], percentage: (resumo[action] / 1326) * 100, combos: resumo[action] };
+    });
+  }, [resumo, selectedHand]);
+  const joga = ((1326 - resumo.fold) / 1326) * 100;
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {selectedHand ? `Ações — ${selectedHand.hand}` : 'Ações (Range)'}
+          {selectedHand ? `Ações: ${selectedHand.hand}` : 'Ações da range'}
         </span>
+        {!selectedHand && (
+          <p className="mt-1 text-sm text-foreground">
+            Joga <strong className="text-primary">{joga.toFixed(1)}%</strong> das mãos
+            <span className="text-muted-foreground"> ({Math.round(1326 - resumo.fold)} de 1.326 combos)</span>
+          </p>
+        )}
       </div>
       {totals.map(({ action, label, percentage, combos }) => (
         <div
@@ -150,7 +134,7 @@ function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof
           <div className="relative flex items-center justify-between px-3 py-2">
             <span className="text-sm font-medium text-foreground">{label}</span>
             <div className="flex items-center gap-3">
-              {!selectedHand && <span className="text-xs text-muted-foreground">{combos.toFixed(1)} combos</span>}
+              <span className="text-xs text-muted-foreground">{combos.toFixed(1)} combos</span>
               <span className="text-sm font-bold text-foreground">{percentage.toFixed(1)}%</span>
             </div>
           </div>
@@ -166,14 +150,12 @@ function ActionPanel({ range, selectedHand, colors }: { range: ReturnType<typeof
 // ============================================================
 
 function HandDetailPanel({ hand, colors }: { hand: HandData; colors: Record<ActionType, string> }) {
+  // EV só onde a range foi calculada por EV; nas de corte por percentual ele não
+  // existe, e mostrar "EV 0,00" em tudo dava a entender que todas empatam
+  const temEv = hand.actions.some((a) => a.action !== 'fold' && typeof a.ev === 'number' && a.ev !== 0);
   const allActions = (['allin', 'raise', 'call', 'fold'] as ActionType[]).map((act) => {
     const found = hand.actions.find((a) => a.action === act);
-    return {
-      action: act,
-      frequency: found?.frequency ?? 0,
-      ev: found?.ev ?? 0,
-      label: act === 'allin' ? 'All-in' : act === 'raise' ? 'Raise 2.5x' : act === 'call' ? 'Call' : 'Fold',
-    };
+    return { action: act, frequency: found?.frequency ?? 0, ev: found?.ev ?? 0, label: ROTULO[act] };
   });
 
   return (
@@ -206,12 +188,11 @@ function HandDetailPanel({ hand, colors }: { hand: HandData; colors: Record<Acti
                 }}
               />
             </div>
-            <p className={cn(
-              'text-xs',
-              ev < 0 ? 'text-destructive' : 'text-muted-foreground'
-            )}>
-              EV: {ev > 0 ? '+' : ''}{ev.toFixed(2)} BB
-            </p>
+            {temEv && action !== 'fold' && frequency > 0 && (
+              <p className={cn('text-xs', ev < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                EV contra foldar: {ev > 0 ? '+' : ''}{ev.toFixed(2)} BB
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -234,26 +215,34 @@ function PositionBar({
   positions,
   activePosition,
   stack,
+  desligadas = [],
   onPositionClick,
 }: {
   positions: Position[];
   activePosition: Position;
   stack: number;
+  /** Posições em que o cenário não existe */
+  desligadas?: Position[];
   onPositionClick: (pos: Position) => void;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
       {positions.map((pos) => {
         const isActive = pos === activePosition;
+        const desligada = desligadas.includes(pos);
         return (
           <button
             key={pos}
+            disabled={desligada}
+            title={desligada ? 'Este cenário não existe nesta posição' : undefined}
+            aria-pressed={isActive}
             onClick={() => onPositionClick(pos)}
             className={cn(
               'flex flex-col items-center px-3 py-1.5 rounded text-xs font-medium transition-all border',
               isActive
                 ? 'bg-primary/20 border-primary/50 text-primary'
-                : 'bg-card border-border text-muted-foreground hover:border-primary/30'
+                : 'bg-card border-border text-muted-foreground hover:border-primary/30',
+              desligada && 'opacity-30 cursor-not-allowed hover:border-border'
             )}
           >
             <span className="font-bold">{pos}</span>
@@ -329,9 +318,10 @@ function WizardMatrix({
   return (
     <TooltipProvider delayDuration={80}>
       <div className="w-full overflow-x-auto">
-        <div className="min-w-[420px] max-w-[650px] mx-auto">
+        {/* Sem largura mínima: no celular as 13 colunas cabem em ~26 px cada, sem rolar para o lado */}
+        <div className="max-w-[650px] mx-auto">
           {/* Header */}
-          <div className="grid grid-cols-[1.5rem_repeat(13,1fr)] gap-[2px] mb-[2px]">
+          <div className="grid grid-cols-[1rem_repeat(13,minmax(0,1fr))] sm:grid-cols-[1.5rem_repeat(13,minmax(0,1fr))] gap-[2px] mb-[2px]">
             <div />
             {RANKS.map((rank) => (
               <div key={`h-${rank}`} className="h-5 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
@@ -342,13 +332,13 @@ function WizardMatrix({
 
           {/* Rows */}
           {RANKS.map((rowRank, i) => (
-            <div key={rowRank} className="grid grid-cols-[1.5rem_repeat(13,1fr)] gap-[2px] mb-[2px]">
-              <div className="h-[38px] sm:h-[44px] flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+            <div key={rowRank} className="grid grid-cols-[1rem_repeat(13,minmax(0,1fr))] sm:grid-cols-[1.5rem_repeat(13,minmax(0,1fr))] gap-[2px] mb-[2px]">
+              <div className="h-[26px] sm:h-[38px] lg:h-[44px] flex items-center justify-center text-[10px] font-medium text-muted-foreground">
                 {rowRank}
               </div>
               {RANKS.map((colRank, j) => {
                 const hand = matrix[i]?.[j];
-                if (!hand) return <div key={`${rowRank}-${colRank}`} className="h-[38px] sm:h-[44px] rounded-sm bg-muted/20" />;
+                if (!hand) return <div key={`${rowRank}-${colRank}`} className="h-[26px] sm:h-[38px] lg:h-[44px] rounded-sm bg-muted/20" />;
 
                 const isSelected = selectedHand === hand.hand;
                 const isHovered = hoveredHand === hand.hand;
@@ -362,7 +352,7 @@ function WizardMatrix({
                     <TooltipTrigger asChild>
                       <button
                         className={cn(
-                          'h-[38px] sm:h-[44px] flex items-center justify-center text-[10px] sm:text-xs font-mono font-medium rounded-sm relative',
+                          'h-[26px] sm:h-[38px] lg:h-[44px] flex items-center justify-center text-[9px] sm:text-xs font-mono font-medium rounded-sm relative',
                           'transition-all duration-150 cursor-pointer text-white',
                           'border border-[#1a1a2e]',
                           isSelected && 'ring-2 ring-[#FFBF00] ring-offset-1 ring-offset-background z-10',
@@ -380,10 +370,10 @@ function WizardMatrix({
                       >
                         {hand.hand.replace('o', '').replace('s', '')}
                         {hand.suited && !hand.pair && (
-                          <span className="absolute top-0 right-0.5 text-[7px] opacity-60">s</span>
+                          <span className="absolute top-0 right-0.5 hidden text-[7px] opacity-60 sm:inline">s</span>
                         )}
                         {!hand.suited && !hand.pair && (
-                          <span className="absolute top-0 right-0.5 text-[7px] opacity-60">o</span>
+                          <span className="absolute top-0 right-0.5 hidden text-[7px] opacity-60 sm:inline">o</span>
                         )}
                       </button>
                     </TooltipTrigger>
@@ -419,33 +409,88 @@ function WizardMatrix({
 // MAIN PAGE
 // ============================================================
 
+type Formato = 'torneio' | 'cash';
+
+const POSICOES_DO_CASH: Position[] = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+const CENARIOS_DO_CASH: Scenario[] = ['openRaise', 'vsOpenRaise'];
+
+/** Posições em que o cenário não existe (BB não abre; o primeiro a falar não enfrenta abertura...) */
+function posicaoImpossivel(cenario: Scenario, posicoes: Position[], pos: Position): boolean {
+  const i = posicoes.indexOf(pos);
+  const ultimo = i === posicoes.length - 1;
+  switch (cenario) {
+    case 'openRaise':
+      return ultimo;
+    case 'vsOpenRaise':
+    case 'vsOpenShove':
+      return i === 0;
+    case 'vs3bet':
+      return i === 0 || ultimo;
+    case 'multiway':
+      return i < 2;
+    default:
+      return false;
+  }
+}
+
+function lerPaleta(): PaletteId {
+  try {
+    return (localStorage.getItem('tabelas_palette') as PaletteId) || 'wizard';
+  } catch {
+    return 'wizard';
+  }
+}
+
+function guardarPaleta(id: PaletteId) {
+  try {
+    localStorage.setItem('tabelas_palette', id);
+  } catch {
+    // sem storage, a paleta volta ao padrão na próxima visita
+  }
+}
+
 export default function TablesPage() {
+  const [formato, setFormato] = useState<Formato>('torneio');
   const [playerMode, setPlayerMode] = useState<PlayerMode>('6max');
   const [scenario, setScenario] = useState<Scenario>('openRaise');
   const [position, setPosition] = useState<Position>('UTG');
+  const [vilao, setVilao] = useState<Position | null>(null);
   const [stack, setStack] = useState<number>(100);
   const [finalTable, setFinalTable] = useState(false);
   const [selectedHand, setSelectedHand] = useState<HandData | null>(null);
   const [multiwayPlayers, setMultiwayPlayers] = useState<number>(3);
   const [highlightAction, setHighlightAction] = useState<ActionType | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
-  const [paletteId, setPaletteId] = useState<PaletteId>(() => (localStorage.getItem('tabelas_palette') as PaletteId) || 'wizard');
+  const [paletteId, setPaletteId] = useState<PaletteId>(lerPaleta);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const colors = (COLOR_PALETTES.find(p => p.id === paletteId) || COLOR_PALETTES[0]).colors;
 
-  const positions = POSITIONS_BY_MODE[playerMode];
-  const gameMode: GameMode = playerMode === 'threehand' ? 'threehand' : playerMode === 'hu' ? 'hu' : playerMode;
+  const cash = formato === 'cash';
+  const positions = cash ? POSICOES_DO_CASH : POSITIONS_BY_MODE[playerMode];
+  const gameMode: GameMode = cash ? 'cash' : playerMode;
+  const cenarios = cash ? SCENARIOS_LIST.filter((s) => CENARIOS_DO_CASH.includes(s.id)) : SCENARIOS_LIST;
+  const cenario = cenarios.some((s) => s.id === scenario) ? scenario : 'openRaise';
+  const stackEfetivo = cash ? 100 : stack;
+  const mesaFinal = cash ? false : finalTable;
 
-  // Reset position if not available in current mode
-  const effectivePosition = positions.includes(position) ? position : positions[0];
+  // Posição: a escolhida, se existe no formato e no cenário; senão a primeira que serve
+  const validas = positions.filter((p) => !posicaoImpossivel(cenario, positions, p));
+  const effectivePosition = validas.includes(position) ? position : validas[0];
+
+  // "Contra quem": só onde a range depende de quem abriu ou empurrou (cash vs
+  // abertura e pagar all-in); quem age antes do herói
+  const usaVilao = (cash && cenario === 'vsOpenRaise') || (!cash && cenario === 'vsOpenShove');
+  const viloes = usaVilao ? positions.slice(0, positions.indexOf(effectivePosition)) : [];
+  const vilaoEfetivo = vilao && viloes.includes(vilao) ? vilao : undefined;
 
   const range = useMemo(
-    () => getRange(scenario, effectivePosition, stack, finalTable, gameMode, 0, multiwayPlayers),
-    [scenario, effectivePosition, stack, finalTable, gameMode, multiwayPlayers]
+    () => getRange(cenario, effectivePosition, stackEfetivo, mesaFinal, gameMode, 0, multiwayPlayers, vilaoEfetivo),
+    [cenario, effectivePosition, stackEfetivo, mesaFinal, gameMode, multiwayPlayers, vilaoEfetivo]
   );
 
   // Available stacks for display
   const displayStacks = [100, 80, 60, 50, 40, 35, 30, 25, 20, 17, 14, 12, 10, 9, 8];
+  const nomeDoCenario = SCENARIOS_LIST.find((s) => s.id === cenario)?.label;
 
   return (
     <MainLayout>
@@ -453,129 +498,172 @@ export default function TablesPage() {
         {/* FILTER BAR */}
         <div className="border-b border-border bg-card px-4 py-3">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-heading-sm text-foreground">Ranges GTO</h1>
+            <div>
+              <h1 className="text-heading-sm text-foreground">Tabelas de range</h1>
+              <p className="text-xs text-muted-foreground">Calculadas pelo GTORei; toque numa mão para ver o detalhe.</p>
+            </div>
             <button
               onClick={() => setFiltersExpanded(!filtersExpanded)}
+              aria-label={filtersExpanded ? 'Esconder filtros' : 'Mostrar filtros'}
               className="text-muted-foreground hover:text-foreground transition-colors lg:hidden"
             >
               {filtersExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
             </button>
           </div>
 
-          <div className={cn('space-y-3 overflow-hidden transition-all', filtersExpanded ? 'max-h-[500px]' : 'max-h-0 lg:max-h-[500px]')}>
-            {/* Players */}
+          <div className={cn('space-y-3 overflow-hidden transition-all', filtersExpanded ? 'max-h-[600px]' : 'max-h-0 lg:max-h-[600px]')}>
+            {/* Formato */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground w-16 shrink-0">Players</span>
-              {PLAYER_MODES.map((m) => (
-                <FilterChip
-                  key={m.id}
-                  label={m.label}
-                  active={playerMode === m.id}
-                  onClick={() => {
-                    setPlayerMode(m.id);
-                    const newPositions = POSITIONS_BY_MODE[m.id];
-                    if (!newPositions.includes(position)) setPosition(newPositions[0]);
-                  }}
-                />
-              ))}
+              <span className="text-xs text-muted-foreground w-16 shrink-0">Formato</span>
+              <FilterChip label="Torneio" active={!cash} onClick={() => setFormato('torneio')} />
+              <button
+                onClick={() => {
+                  setFormato('cash');
+                  setSelectedHand(null);
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all whitespace-nowrap border',
+                  cash
+                    ? 'bg-primary/20 text-primary border-primary/40'
+                    : 'bg-[hsl(var(--card))] text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                )}
+              >
+                Cash 6-max
+                <span className="rounded bg-primary px-1 py-px text-[9px] font-bold uppercase text-primary-foreground">Beta</span>
+              </button>
             </div>
 
-            {/* Scenario */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground w-16 shrink-0">Cenário</span>
-              {SCENARIOS_LIST.map((s) => (
-                <FilterChip
-                  key={s.id}
-                  label={s.label}
-                  active={scenario === s.id}
-                  onClick={() => setScenario(s.id)}
-                />
-              ))}
-            </div>
-
-            {/* Stacks */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground w-16 shrink-0">Stack</span>
-              <ScrollArea className="w-full">
-                <div className="flex gap-1.5 pb-1">
-                  {displayStacks.map((s) => (
-                    <FilterChip
-                      key={s}
-                      label={`${s}`}
-                      active={stack === s}
-                      onClick={() => setStack(s)}
-                    />
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            </div>
-
-            {/* Multiway players */}
-            {scenario === 'multiway' && (
+            {/* Players (torneio) */}
+            {!cash && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground w-16 shrink-0 flex items-center gap-1">
-                  <Users className="h-3 w-3" /> Way
-                </span>
-                {MULTIWAY_PLAYERS.map((n) => (
+                <span className="text-xs text-muted-foreground w-16 shrink-0">Mesa</span>
+                {PLAYER_MODES.map((m) => (
                   <FilterChip
-                    key={n}
-                    label={`${n}-way`}
-                    active={multiwayPlayers === n}
-                    onClick={() => setMultiwayPlayers(n)}
+                    key={m.id}
+                    label={m.label}
+                    active={playerMode === m.id}
+                    onClick={() => {
+                      setPlayerMode(m.id);
+                      setSelectedHand(null);
+                    }}
                   />
                 ))}
               </div>
             )}
 
-            {/* Final table toggle */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground w-16 shrink-0">ICM</span>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="ft-toggle"
-                  checked={finalTable}
-                  onCheckedChange={setFinalTable}
-                  className="data-[state=checked]:bg-primary"
+            {/* Scenario */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground w-16 shrink-0">Cenário</span>
+              {cenarios.map((s) => (
+                <FilterChip
+                  key={s.id}
+                  label={s.label}
+                  active={cenario === s.id}
+                  onClick={() => {
+                    setScenario(s.id);
+                    setSelectedHand(null);
+                  }}
                 />
-                <Label htmlFor="ft-toggle" className="text-xs text-muted-foreground cursor-pointer">
-                  Mesa Final
-                </Label>
-              </div>
+              ))}
             </div>
+
+            {/* Stacks (o cash é sempre 100 BB) */}
+            {!cash && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16 shrink-0">Stack</span>
+                <ScrollArea className="w-full">
+                  <div className="flex gap-1.5 pb-1">
+                    {displayStacks.map((s) => (
+                      <FilterChip key={s} label={`${s}`} active={stack === s} onClick={() => setStack(s)} />
+                    ))}
+                  </div>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Multiway players */}
+            {cenario === 'multiway' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16 shrink-0 flex items-center gap-1">
+                  <Users className="h-3 w-3" /> Way
+                </span>
+                {MULTIWAY_PLAYERS.map((n) => (
+                  <FilterChip key={n} label={`${n}-way`} active={multiwayPlayers === n} onClick={() => setMultiwayPlayers(n)} />
+                ))}
+              </div>
+            )}
+
+            {/* Final table toggle (só torneio) */}
+            {!cash && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-16 shrink-0">ICM</span>
+                <div className="flex items-center gap-2">
+                  <Switch id="ft-toggle" checked={finalTable} onCheckedChange={setFinalTable} className="data-[state=checked]:bg-primary" />
+                  <Label htmlFor="ft-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                    Mesa Final
+                  </Label>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* MAIN CONTENT */}
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-7xl mx-auto">
-            {/* Position bar */}
-            <div className="mb-4">
+            {cash && (
+              <p className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                Cash 6-max com 100 BB, sem ante e com rake de 5% (teto de 3 BB) no pote disputado. Calculado pelo GTORei por EV;
+                fora do big blind, a resposta à abertura é 3-bet ou fold.
+              </p>
+            )}
+
+            {/* Posição do herói */}
+            <div className="mb-3">
+              <p className="mb-1.5 text-xs text-muted-foreground">Sua posição</p>
               <PositionBar
                 positions={positions}
                 activePosition={effectivePosition}
-                stack={stack}
-                onPositionClick={setPosition}
+                stack={stackEfetivo}
+                desligadas={positions.filter((p) => !validas.includes(p))}
+                onPositionClick={(p) => {
+                  setPosition(p);
+                  setSelectedHand(null);
+                }}
               />
             </div>
+
+            {/* Contra quem */}
+            {usaVilao && viloes.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-1.5 text-xs text-muted-foreground">{cenario === 'vsOpenShove' ? 'Quem foi all-in' : 'Quem abriu'}</p>
+                <div className="flex flex-wrap gap-2">
+                  <FilterChip label="Média" active={!vilaoEfetivo} onClick={() => setVilao(null)} />
+                  {viloes.map((v) => (
+                    <FilterChip key={v} label={v} active={vilaoEfetivo === v} onClick={() => setVilao(v)} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Title */}
             <div className="mb-3 flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-foreground">
-                {SCENARIOS_LIST.find((s) => s.id === scenario)?.label} — {effectivePosition} — {stack}BB
+                {nomeDoCenario} · {effectivePosition}
+                {vilaoEfetivo ? ` contra ${vilaoEfetivo}` : ''} · {stackEfetivo} BB
               </span>
-              {scenario === 'multiway' && (
+              {cash && <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">Cash</span>}
+              {cenario === 'multiway' && (
                 <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">{multiwayPlayers}-way</span>
               )}
-              {finalTable && (
-                <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500">ICM</span>
-              )}
+              {mesaFinal && <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500">ICM</span>}
             </div>
 
             {/* Grid: Matrix + Palette + Action Panel */}
             <div className="grid lg:grid-cols-[1fr_auto_280px] gap-4 items-start">
               {/* Matrix */}
-              <div className="bg-card rounded-lg border border-border p-3 sm:p-4">
+              <div className="bg-card rounded-lg border border-border p-2 sm:p-4">
                 <WizardMatrix
                   range={range}
                   selectedHand={selectedHand?.hand || null}
@@ -593,19 +681,18 @@ export default function TablesPage() {
                         'flex items-center gap-2 px-2 py-1 rounded transition-all',
                         highlightAction === action ? 'bg-foreground/10 ring-1 ring-foreground/20' : 'hover:bg-foreground/5'
                       )}
+                      aria-pressed={highlightAction === action}
                       onClick={() => setHighlightAction(highlightAction === action ? null : action)}
                     >
                       <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: colors[action] }} />
-                      <span className="text-xs text-muted-foreground capitalize">
-                        {action === 'allin' ? 'All-in' : action}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{ROTULO[action]}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Palette toggle + card */}
-              <div className="flex items-start gap-0">
+              <div className="hidden lg:flex items-start gap-0">
                 <button
                   onClick={() => setPaletteOpen(!paletteOpen)}
                   aria-label={paletteOpen ? 'Fechar paleta de cores' : 'Abrir paleta de cores'}
@@ -623,13 +710,11 @@ export default function TablesPage() {
                           key={p.id}
                           onClick={() => {
                             setPaletteId(p.id);
-                            localStorage.setItem('tabelas_palette', p.id);
+                            guardarPaleta(p.id);
                           }}
                           className={cn(
                             'w-full flex items-center justify-between gap-2 px-2 py-2 rounded border transition-all',
-                            paletteId === p.id
-                              ? 'border-primary/50 bg-primary/10'
-                              : 'border-border hover:border-primary/30 bg-card'
+                            paletteId === p.id ? 'border-primary/50 bg-primary/10' : 'border-border hover:border-primary/30 bg-card'
                           )}
                         >
                           <span className="text-xs font-medium text-foreground">{p.label}</span>
@@ -647,18 +732,15 @@ export default function TablesPage() {
 
               {/* Right panel */}
               <div className="space-y-4">
-                {/* Action summary */}
                 <div className="bg-card rounded-lg border border-border p-3">
                   <ActionPanel range={range} selectedHand={selectedHand} colors={colors} />
                 </div>
-
-                {/* Hand detail */}
                 <div className="bg-card rounded-lg border border-border p-3">
                   {selectedHand ? (
-                    <HandDetailPanel hand={selectedHand} colors={colors} />
+                    <HandDetailPanel hand={range.hands.find((h) => h.hand === selectedHand.hand) ?? selectedHand} colors={colors} />
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
-                      <p className="text-sm">Clique em uma mão na matriz para ver os detalhes</p>
+                      <p className="text-sm">Toque numa mão da tabela para ver o que ela faz</p>
                     </div>
                   )}
                 </div>
