@@ -36,9 +36,14 @@ describe('cash 6-max 100 BB (beta)', () => {
     expect(largura(getCashRange('vsOpenRaise', 'BB', 'BTN')!)).toBeGreaterThan(largura(getCashRange('vsOpenRaise', 'BB', 'UTG')!));
   });
 
-  it('fora do big blind a resposta é 3-bet ou fold (o modelo não tem pagar)', () => {
-    const r = getCashRange('vsOpenRaise', 'BTN', 'CO')!;
-    expect(r.hands.every((h) => !h.actions.some((a) => a.action === 'call' && a.frequency > 0))).toBe(true);
+  it('em posição dá para pagar a abertura, mas pouco: o squeeze de quem fala depois pesa', () => {
+    const paga = (r: RangeData) => r.hands.filter((h) => h.actions.some((a) => a.action === 'call' && a.frequency >= 50)).map((h) => h.hand);
+    const btn = paga(getCashRange('vsOpenRaise', 'BTN', 'UTG')!);
+    // Pares pequenos pagam para tentar a trinca
+    expect(btn).toEqual(expect.arrayContaining(['55', '44']));
+    expect(largura(getCashRange('vsOpenRaise', 'BTN', 'UTG')!)).toBeLessThan(20);
+    // O HJ, com quatro jogadores atrás, praticamente não paga
+    expect(paga(getCashRange('vsOpenRaise', 'HJ', 'UTG')!)).toHaveLength(0);
   });
 
   it('cenário sem cálculo de cash devolve null (cai no corte do 6-max)', () => {

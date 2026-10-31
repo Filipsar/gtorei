@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.32.0',
+    date: '31/10/2026',
+    type: 'feature',
+    title: 'Modo Cash (Beta)',
+    description: 'Novo modo de treino: cash 6-max com 100 BB, sem ante e com rake. Treine abrir, responder à abertura (agora também pagando em posição, com o risco de squeeze de quem fala depois) e responder ao 3-bet com 4-bet pequeno. Está em beta: as ranges vão sendo refinadas com base nas suas mãos.',
+  },
+  {
     version: '1.31.1',
     date: '31/10/2026',
     type: 'improvement',

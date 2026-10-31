@@ -15,9 +15,9 @@ describe('resumo da aba Tabelas', () => {
     expect(resumoDaRange([mao('AKo', false, false)]).raise).toBe(12);
   });
 
-  it('o cash abre do UTG o mesmo que o cálculo diz (~16%)', () => {
+  it('o cash abre do UTG o mesmo que o cálculo diz (~14%)', () => {
     const r = resumoDaRange(getRange('openRaise', 'UTG', 100, false, 'cash').hands);
-    expect((r.raise / TOTAL_DE_COMBOS) * 100).toBeGreaterThan(14);
+    expect((r.raise / TOTAL_DE_COMBOS) * 100).toBeGreaterThan(12);
     expect((r.raise / TOTAL_DE_COMBOS) * 100).toBeLessThan(18);
   });
 });

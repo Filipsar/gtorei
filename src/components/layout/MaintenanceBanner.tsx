@@ -36,6 +36,13 @@ const BANNER_MESSAGES: BannerMessage[] = [
     dwell: 8000,
   },
   {
+    text: 'Modo Cash 6-max (beta): 100 BB, sem ante e com rake. Teste agora no Treinar.',
+    shortText: 'Novo: modo Cash (beta)',
+    icon: <Spade className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    link: '/treinar',
+    tag: 'Novo',
+  },
+  {
     text: 'Indique e ganhe: com 15 amigos, 7 dias de PRO; com 100, PRO para sempre.',
     shortText: 'Indique amigos e ganhe PRO',
     icon: <Gift className="h-4 w-4 shrink-0" aria-hidden="true" />,

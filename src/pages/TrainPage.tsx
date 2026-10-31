@@ -72,7 +72,6 @@ import { cn } from '@/lib/utils';
 import { Play, Shuffle, Trophy, Target, Zap, Info, AlertTriangle, RefreshCw, Lock, Heart, ArrowLeft, BarChart3, ClipboardCheck, Loader2, X } from 'lucide-react';
 import { RangeViewerModal } from '@/components/poker/RangeViewerModal';
 import { usePassoDoTour } from '@/lib/tour';
-import { ADMIN_EMAIL } from '@/data/admin';
 import { maoQueAbre } from '@/lib/sorteioDeMao';
 import { LevelTest, useLevelTestStatus } from '@/components/onboarding/LevelTest';
 
@@ -1320,8 +1319,9 @@ export default function TrainPage() {
               handleModeSelect('rangeTraining');
             }}
             bloqueado={modoBloqueado}
-            // Cash ainda em construção (31/10/2026): só o admin vê
-            mostrarCash={user?.email === ADMIN_EMAIL}
+            // Cash liberado para todos como beta (31/10/2026); os erros são
+            // medidos em /admin → Cash (beta)
+            mostrarCash
           />
         </div>
         {!emTour && needsLevelTest && !semIntro && <LevelTest onComplete={completeLevelTest} onClose={completeLevelTest} />}

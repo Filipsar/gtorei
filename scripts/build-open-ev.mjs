@@ -120,7 +120,11 @@ const tamanho4bet = (T, S) => (CASH && T && 2.2 * T < 0.4 * S ? 2.2 * T : null);
 // pagava, os blinds de trás eram tratados como se sempre foldassem, e os dois
 // disputavam 2,5 BB de blinds e ante de graça. Com 20 BB isso fazia cada vilão
 // pagar 69% e o UTG abrir 67%. O BB fecha a ação, então o pote dele está certo.
-const podePagarAbertura = (vilao) => vilao === 'BB';
+// Cash (31/10/2026, etapa 1): todo mundo pode pagar a abertura. O brinde que
+// fazia o torneio travar isso (os blinds de trás foldando sempre) vira risco de
+// squeeze: quem paga fora do BB perde o call se alguém atrás der 3-bet, com a
+// chance tirada da frequência de 3-bet de quem fala depois (ver pSqueeze).
+const podePagarAbertura = (vilao) => CASH || vilao === 'BB';
 
 // ── Realização de equity ──────────────────────────────────────────────────
 // Jogabilidade: quanto da equity crua a mão converte quando joga pós-flop.
@@ -264,13 +268,21 @@ function resolver(modo, S) {
       const atras = posicoes.slice(posicoes.indexOf(p) + 1);
 
       // O que cada vilão faz (frequência agregada) e equities contra cada range
+      // Chance de alguém atrás de v dar 3-bet (squeeze) depois que v paga: usa a
+      // frequência de 3-bet de cada um contra este herói. Só conta no cash.
+      const pSqueeze = (v) => {
+        if (!CASH) return 0;
+        let ninguem = 1;
+        for (const w of atras.slice(atras.indexOf(v) + 1)) ninguem *= 1 - Math.min(1, largura(e.vs[w].tR) + largura(e.vs[w].uR));
+        return 1 - ninguem;
+      };
       const ctx = atras.map((v) => {
         const x = e.vs[v];
         const T = tamanho3bet(modo, p, v, r, S);
         const t4 = produto(x.tR, x.vC4);
         const lt = T ? largura(x.tR) : 0;
         return {
-          v, pv: postado(v), ip: heroiEmPosicao(modo, p, v), morto: POTE_INICIAL - ph - postado(v), T,
+          v, pv: postado(v), ip: heroiEmPosicao(modo, p, v), morto: POTE_INICIAL - ph - postado(v), T, sq: pSqueeze(v),
           c: largura(x.cR), t: lt, u: largura(x.uR), j: largura(x.cJ),
           q4: T ? fracao(t4, lt) : 0,
           eqCR: eqVector(x.cR), eqCJ: eqVector(x.cJ), eqUR: eqVector(x.uR),
@@ -297,7 +309,7 @@ function resolver(modo, S) {
 
         let evR = 0; segue = 1;
         ctx.forEach((c, k) => {
-          const pago = fatia(c.eqCR[i], i, c.ip, S) * semRake(2 * r + c.morto) - r;
+          const pago = (1 - c.sq) * (fatia(c.eqCR[i], i, c.ip, S) * semRake(2 * r + c.morto) - r) + c.sq * -r;
           // contra o 3-bet all-in
           const evCU = c.eqUR[i] * semRake(2 * S + c.morto) - S;
           alvoResp[k].CU[i] = alvo([-r, evCU])[1];
@@ -366,7 +378,7 @@ function resolver(modo, S) {
         const alvoCJ = new Float64Array(N), alvoC4 = new Float64Array(N), alvoC4s = new Float64Array(N), alvoJ5 = new Float64Array(N);
         for (let i = 0; i < N; i++) {
           const evF = -c.pv;
-          const evC = podePagarAbertura(c.v) ? fatia(eqR[i], i, !c.ip, S) * semRake(2 * r + c.morto) - r : NUNCA;
+          const evC = podePagarAbertura(c.v) ? (1 - c.sq) * (fatia(eqR[i], i, !c.ip, S) * semRake(2 * r + c.morto) - r) + c.sq * -r : NUNCA;
           const evU = (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * semRake(2 * S + c.morto) - S);
           let ev3 = NUNCA;
           if (c.T) {

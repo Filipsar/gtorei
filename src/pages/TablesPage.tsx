@@ -617,7 +617,7 @@ export default function TablesPage() {
             {cash && (
               <p className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
                 Cash 6-max com 100 BB, sem ante e com rake de 5% (teto de 3 BB) no pote disputado. Calculado pelo GTORei por EV;
-                fora do big blind, a resposta à abertura é 3-bet ou fold. Contra o 3-bet, o 4-bet é pequeno (2,2x) e o all-in fica para o 5-bet.
+                quem paga a abertura fora do big blind corre o risco de squeeze de quem fala depois. Contra o 3-bet, o 4-bet é pequeno (2,2x) e o all-in fica para o 5-bet.
               </p>
             )}
 
