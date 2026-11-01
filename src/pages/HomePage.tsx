@@ -38,12 +38,12 @@ import { UltimasNoticias } from '@/components/home/UltimasNoticias';
 import { EloBadge } from '@/components/app/EloBadge';
 import { ELOS, ELO_REI } from '@/data/elos';
 
-// Conferidos no banco em 21/09/2026: 152 contas, 126 jogadores com mãos registradas,
-// 39.552 mãos. Arredondados para baixo — só ficam mais verdadeiros com o tempo.
+// Conferidos no banco em 01/11/2026: 205 contas, 176 jogadores com mãos registradas,
+// 60.790 mãos. Arredondados para baixo — só ficam mais verdadeiros com o tempo.
 // Reconferir antes de aumentar qualquer um deles.
 const NUMEROS = [
-  { valor: '39 mil+', label: 'mãos treinadas na plataforma' },
-  { valor: '120+', label: 'jogadores estudando aqui' },
+  { valor: '60 mil+', label: 'mãos treinadas na plataforma' },
+  { valor: '170+', label: 'jogadores estudando aqui' },
   { valor: '7', label: 'stacks de push/fold resolvidos' },
   { valor: 'R$ 0', label: 'para treinar' },
 ];
@@ -51,19 +51,19 @@ const NUMEROS = [
 const FAQ = [
   {
     q: 'O GTORei é gratuito de verdade?',
-    a: 'É. Não existe plano pago, paywall nem pedido de cartão. O projeto se mantém com doações de quem usa, e quem não doa nada continua com o treino inteiro liberado.',
+    a: 'O treino é. Sem anúncio no site, sem mensalidade e sem pedir cartão: o treino principal, as tabelas de range, o ranking e as ligas são de graça. O projeto se mantém com apoio via Pix. Quem apoia vira PRO e libera os modos extras e a análise de hand history com IA, que tem custo por análise. Também dá para ganhar PRO indicando amigos: 15 indicados valem 7 dias e 100 valem PRO para sempre.',
   },
   {
     q: 'As ranges são calculadas ou copiadas de alguma tabela?',
-    a: 'Calculadas aqui. O push/fold de 8bb a 20bb sai de uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta até o equilíbrio; os resultados batem com as tabelas de Nash publicadas. Desde outubro de 2026, a abertura de todas as stacks também é calculada por EV, com ante e com a escolha entre abrir pequeno ou ir de all-in. As respostas a uma abertura (pagar e 3-bet) ainda usam um corte por força de mão e estão sendo recalculadas do mesmo jeito.',
+    a: 'Calculadas aqui. O push/fold de 8bb a 20bb sai de uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta até o equilíbrio; os resultados batem com as tabelas de Nash publicadas. Desde outubro de 2026, a abertura de todas as stacks também é calculada por EV, com ante e com a escolha entre abrir pequeno ou ir de all-in. No modo Cash, abertura, resposta à abertura e resposta ao 3-bet saem do mesmo cálculo, com rake e bloqueadores. No torneio, as respostas a uma abertura (pagar e 3-bet) ainda usam um corte por força de mão.',
   },
   {
     q: 'Serve para torneio ou para cash game?',
-    a: 'O foco é torneio. Você treina 8-max, 6-max, heads-up, bounty e mesa final, com stacks de 10bb a 200bb. Boa parte serve para cash, mas as ranges curtas foram feitas pensando em torneio.',
+    a: 'Para os dois. O torneio é o foco desde o começo: 8-max, 6-max, heads-up, bounty e mesa final, com stacks de 10bb a 200bb. Desde outubro de 2026 existe o modo Cash 6-max (em beta): 100bb, sem ante, com rake e os tamanhos de aposta do cash online.',
   },
   {
     q: 'Preciso instalar alguma coisa?',
-    a: 'Não. Roda no navegador, inclusive no celular. Basta criar uma conta grátis para o progresso e a posição no ranking ficarem salvos.',
+    a: 'Não. Roda no navegador, inclusive no celular. Basta criar uma conta grátis para o progresso e a posição no ranking ficarem salvos. O app para Android está em teste fechado.',
   },
   {
     q: 'Posso usar o GTORei enquanto jogo uma mão de verdade?',
@@ -71,7 +71,7 @@ const FAQ = [
   },
   {
     q: 'Como funciona a análise por IA?',
-    a: 'Você envia o hand history exportado da sala — o parser entende seis salas, entre elas PokerStars, GGPoker e ACR. A análise devolve, mão a mão, a linha GTO, a sua ação e quanto de EV a diferença custou.',
+    a: 'É um recurso PRO. Você envia o hand history exportado da sala — o parser entende PokerStars, GGPoker, 888poker, ACR, partypoker e Winamax. A análise escolhe até 30 mãos em que você entrou no pote e devolve, mão a mão, a linha GTO, a sua ação e quanto de EV a diferença custou, além de onde focar o estudo.',
   },
 ];
 
@@ -97,7 +97,7 @@ export default function HomePage() {
 
   const features = [
     { icon: Zap, title: 'Treinador GTO', desc: 'Pratique decisões pré-flop e pós-flop com ranges calculadas por EV para cada posição e stack.', to: '/treinar', tag: 'Treino' },
-    { icon: Brain, title: 'Análise com IA', desc: 'Faça upload do seu hand history e receba veredicto GTO + EV mão a mão por IA.', to: '/analise-ia', tag: 'Novo' },
+    { icon: Brain, title: 'Análise com IA', desc: 'Faça upload do seu hand history e receba veredicto GTO + EV mão a mão por IA.', to: '/analise-ia', tag: 'PRO' },
     { icon: TableProperties, title: 'Tabelas de Range', desc: 'Matrizes 13x13 interativas com frequências de cada ação por spot.', to: '/tabelas', tag: 'Estudo' },
     { icon: BarChart3, title: 'Análise de Mãos', desc: 'Revise suas decisões street-by-street e entenda o porquê da linha ótima.', to: '/analise', tag: 'Review' },
     { icon: Trophy, title: 'Ligas e Ranking', desc: 'Dispute a liga do seu elo todo dia, de Bronze a Rei, e o ranking global do mês.', to: '/ranking', tag: 'Competitivo' },
@@ -107,7 +107,7 @@ export default function HomePage() {
   ];
 
   const modes = [
-    { icon: Target, title: 'Pré-flop GTO', desc: '6-Max, 8-Max, Heads-Up, Bounty e Mesa Final com ICM.' },
+    { icon: Target, title: 'Pré-flop GTO', desc: '6-Max, 8-Max, Heads-Up, Bounty, Mesa Final com ICM e Cash 6-max (beta).' },
     { icon: Sparkles, title: 'Pós-flop completo', desc: 'Flop, turn e river com sizings e leitura de textura do board.' },
     { icon: TrendingUp, title: 'Stacks dinâmicas', desc: 'De 10bb a 200bb com interpolação automática de ranges.' },
     { icon: ShieldCheck, title: 'Treino grátis', desc: 'O treino principal não custa nada. Apoiadores e o PRO liberam modos extras.' },
@@ -237,7 +237,7 @@ export default function HomePage() {
             className="animate-in fade-in slide-in-from-bottom-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-8"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Agora com Análise de Torneio por IA
+            Novo: modo Cash 6-max (beta)
           </div>
 
           <h1
@@ -253,7 +253,7 @@ export default function HomePage() {
             className="animate-in fade-in slide-in-from-bottom-3 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
           >
             O GTORei é um treinador de poker GTO gratuito, em português.
-            Ranges calculadas por EV, IA, ranking global e conquistas — tudo num só lugar.
+            Ranges calculadas por EV para torneio e cash, ligas diárias, ranking e análise com IA — tudo num só lugar.
           </p>
 
           <div

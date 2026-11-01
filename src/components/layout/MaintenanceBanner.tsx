@@ -66,7 +66,7 @@ const BANNER_MESSAGES: BannerMessage[] = [
     tag: 'Novo',
   },
   {
-    text: 'Análise de torneio com IA: importe seu hand history e receba o relatório',
+    text: 'Análise de torneio com IA (PRO): importe seu hand history e receba o relatório',
     shortText: 'Análise de torneio com IA',
     icon: <Brain className="h-4 w-4 shrink-0" aria-hidden="true" />,
     link: '/analise-ia',

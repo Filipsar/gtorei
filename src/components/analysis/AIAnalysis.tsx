@@ -1,6 +1,6 @@
 import { anonimizarMaos } from '@/lib/anonimizarMaos';
 import { useMemo, useRef, useState } from 'react';
-import { Upload, FileText, Loader2, Brain, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, Brain, TrendingUp, TrendingDown, AlertCircle, BookOpen, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,19 @@ import {
   NOME_DO_SPOT,
   type SpotDoHeroi,
 } from '@/lib/spotsDoHeroi';
+import {
+  CENARIO_DO_TEMA,
+  montarTreino,
+  resumirMao,
+  TEMA_DO_SPOT,
+  temasDoTexto,
+  type MaoResumida,
+} from '@/lib/treinoDaAnalise';
+import type { TemaDeEstudo } from '@/data/materialDidatico';
+import { salvarAnalise, type AnaliseDoHistorico, type AnalysisResult, type Verdict } from '@/lib/historicoDeAnalises';
 import { supabase } from '@/integrations/supabase/client';
+import { BotaoDeTreino, PlanoDeEstudo, type TemaDoPlano } from './PlanoDeEstudo';
+import { HistoricoDeAnalises } from './HistoricoDeAnalises';
 import {
   LineChart,
   Line,
@@ -27,25 +39,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-
-type Verdict = 'best' | 'correct' | 'inaccuracy' | 'mistake' | 'blunder';
-
-interface HandAnalysis {
-  handId: string;
-  verdict: Verdict;
-  summary: string;
-  gtoPlay: string;
-  evDelta: number;
-}
-
-interface AnalysisResult {
-  hands: HandAnalysis[];
-  overall: {
-    leaks: string[];
-    recommendations: string[];
-    evTotal: number;
-  };
-}
 
 const VERDICT_STYLE: Record<Verdict, { label: string; color: string; bg: string }> = {
   best: { label: 'Excelente', color: 'text-feedback-best', bg: 'bg-feedback-best/20' },
@@ -81,6 +74,49 @@ function montarPedido(maos: ParsedHand[]) {
   return { escolhidas, corpo };
 }
 
+const COM_ERRO: Verdict[] = ['inaccuracy', 'mistake', 'blunder'];
+
+/** Junta os itens de duas rodadas sem repetir o mesmo texto */
+const juntarTextos = (a: string[], b: string[]) => [...new Set([...a, ...b])];
+
+/**
+ * Temas do plano de estudo: cada leak e recomendação conta 2, cada mão com
+ * erro conta 1 no tema do spot dela. O treino sai das mãos com erro.
+ */
+function montarPlano(analise: AnalysisResult, maos: MaoResumida[]): TemaDoPlano[] {
+  const comErro = new Set(analise.hands.filter((h) => COM_ERRO.includes(h.verdict)).map((h) => h.handId));
+  const peso = new Map<TemaDeEstudo, number>();
+  const erros = new Map<TemaDeEstudo, number>();
+  const somar = (m: Map<TemaDeEstudo, number>, t: TemaDeEstudo, n: number) => m.set(t, (m.get(t) ?? 0) + n);
+  for (const texto of [...analise.overall.leaks, ...analise.overall.recommendations]) {
+    for (const t of temasDoTexto(texto)) somar(peso, t, 2);
+  }
+  for (const m of maos) {
+    if (!comErro.has(m.handId)) continue;
+    for (const s of m.spots) {
+      const t = TEMA_DO_SPOT[s];
+      if (t) {
+        somar(peso, t, 1);
+        somar(erros, t, 1);
+      }
+    }
+  }
+  // Tema de spot sem nenhuma mão no relatório não ganha treino (a IA às vezes
+  // fala do que não aconteceu); o material continua
+  const temMao = (t: TemaDeEstudo) => maos.some((m) => m.spots.some((s) => TEMA_DO_SPOT[s] === t));
+  return [...peso.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([tema, p]) => {
+      const cenario = CENARIO_DO_TEMA[tema];
+      return {
+        tema,
+        peso: p,
+        erros: erros.get(tema) ?? 0,
+        treino: cenario && temMao(tema) ? montarTreino(cenario, maos, comErro) : null,
+      };
+    });
+}
+
 export function AIAnalysis() {
   const [parsed, setParsed] = useState<ParsedHand[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -89,7 +125,13 @@ export function AIAnalysis() {
   const [fileName, setFileName] = useState<string>('');
   const [enviadas, setEnviadas] = useState(0);
   const [removidos, setRemovidos] = useState(0);
+  // Mãos já analisadas (resumo de cada uma): "Analisar as próximas" pega o resto
+  const [maosAnalisadas, setMaosAnalisadas] = useState<MaoResumida[]>([]);
+  const [idSalvo, setIdSalvo] = useState<string | null>(null);
+  const [versaoHistorico, setVersaoHistorico] = useState(0);
+  const [temaAberto, setTemaAberto] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const relatorioRef = useRef<HTMLDivElement>(null);
 
   const handleFile = async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.txt')) {
@@ -116,6 +158,9 @@ export function AIAnalysis() {
     setParsed(hands);
     setAnalysis(null);
     setRemovidos(0);
+    setMaosAnalisadas([]);
+    setIdSalvo(null);
+    setTemaAberto('');
     setFileName(file.name);
     toast({ title: 'Histórico carregado', description: `${hands.length} mão(s) detectada(s).` });
   };
@@ -132,11 +177,16 @@ export function AIAnalysis() {
     if (file) handleFile(file);
   };
 
-  const runAnalysis = async () => {
-    if (parsed.length === 0) return;
+  const jaAnalisadas = useMemo(() => new Set(maosAnalisadas.map((m) => m.handId)), [maosAnalisadas]);
+  const restantes = useMemo(() => parsed.filter((h) => !jaAnalisadas.has(h.handId)), [parsed, jaAnalisadas]);
+  const continuando = analysis !== null && maosAnalisadas.length > 0;
+
+  const runAnalysis = async (continuar: boolean) => {
+    const fila = continuar ? restantes : parsed;
+    if (fila.length === 0) return;
     setLoading(true);
     try {
-      const { escolhidas, corpo } = montarPedido(parsed);
+      const { escolhidas, corpo } = montarPedido(fila);
       const { data, error } = await supabase.functions.invoke('analyze-hand-history', {
         body: { hands: corpo },
       });
@@ -152,13 +202,43 @@ export function AIAnalysis() {
       const presentes = new Set<SpotDoHeroi>(escolhidas.flatMap((m) => lerMaoDoHeroi(m).spots));
       const leaks = filtrarPorSpots(resultado.overall?.leaks ?? [], presentes);
       const recomendacoes = filtrarPorSpots(resultado.overall?.recommendations ?? [], presentes);
-      setAnalysis({
+      const rodada: AnalysisResult = {
         hands: resultado.hands ?? [],
         overall: { evTotal: resultado.overall?.evTotal ?? 0, leaks: leaks.itens, recommendations: recomendacoes.itens },
+      };
+      // Continuação: as mãos novas entram depois das já vistas, o EV soma e os
+      // leaks e recomendações das rodadas ficam juntos, os mais novos primeiro
+      const base = continuar && analysis ? analysis : null;
+      const juntas: AnalysisResult = base
+        ? {
+            hands: [...base.hands, ...rodada.hands],
+            overall: {
+              evTotal: Math.round((base.overall.evTotal + rodada.overall.evTotal) * 100) / 100,
+              leaks: juntarTextos(rodada.overall.leaks, base.overall.leaks),
+              recommendations: juntarTextos(rodada.overall.recommendations, base.overall.recommendations),
+            },
+          }
+        : rodada;
+      const maos = [...(base ? maosAnalisadas : []), ...escolhidas.map(resumirMao)];
+      const totalRemovidos = (base ? removidos : 0) + leaks.removidos + recomendacoes.removidos;
+      setAnalysis(juntas);
+      setMaosAnalisadas(maos);
+      setEnviadas(maos.length);
+      setRemovidos(totalRemovidos);
+      toast({
+        title: base ? 'Mais mãos analisadas!' : 'Análise concluída!',
+        description: base ? `${escolhidas.length} mão(s) novas no relatório.` : 'Veja o resultado abaixo.',
       });
-      setEnviadas(escolhidas.length);
-      setRemovidos(leaks.removidos + recomendacoes.removidos);
-      toast({ title: 'Análise concluída!', description: 'Veja o resultado abaixo.' });
+      const id = await salvarAnalise(base ? idSalvo : null, {
+        arquivo: fileName,
+        sala: parsed[0] ? PLATFORM_INFO[parsed[0].platform].name : null,
+        maosNoArquivo: parsed.length,
+        relatorio: { analise: juntas, maos, removidos: totalRemovidos },
+      });
+      if (id) {
+        setIdSalvo(id);
+        setVersaoHistorico((v) => v + 1);
+      }
     } catch (e) {
       toast({
         title: 'Erro na análise',
@@ -168,6 +248,43 @@ export function AIAnalysis() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const abrirDoHistorico = (a: AnaliseDoHistorico) => {
+    const r = a.resultado;
+    setParsed([]);
+    setFileName(a.arquivo ?? '');
+    setAnalysis(r.analise);
+    setMaosAnalisadas(r.maos ?? []);
+    setEnviadas(r.maos?.length ?? a.maos_analisadas);
+    setRemovidos(r.removidos ?? 0);
+    setIdSalvo(a.id);
+    setTemaAberto('');
+    requestAnimationFrame(() => relatorioRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
+  const plano = useMemo(() => (analysis ? montarPlano(analysis, maosAnalisadas) : []), [analysis, maosAnalisadas]);
+  const treinoDoTema = useMemo(() => new Map(plano.map((p) => [p.tema, p.treino])), [plano]);
+
+  const estudar = (tema: TemaDeEstudo) => {
+    setTemaAberto(tema);
+    requestAnimationFrame(() => document.getElementById(`tema-${tema}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  };
+
+  /** Botões de treino e de estudo embaixo de um leak ou recomendação */
+  const acoesDoItem = (texto: string) => {
+    const temas = temasDoTexto(texto);
+    if (temas.length === 0) return null;
+    const treino = temas.map((t) => treinoDoTema.get(t)).find(Boolean) ?? null;
+    return (
+      <span className="mt-1.5 flex flex-wrap gap-1.5">
+        {treino && <BotaoDeTreino treino={treino} compacto />}
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => estudar(temas[0])}>
+          <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+          Estudar
+        </Button>
+      </span>
+    );
   };
 
   const platform = parsed[0]?.platform;
@@ -238,7 +355,7 @@ export function AIAnalysis() {
                   </div>
                 </div>
               </div>
-              <Button onClick={runAnalysis} disabled={loading} className="w-full sm:w-auto">
+              <Button onClick={() => void runAnalysis(false)} disabled={loading} className="w-full sm:w-auto">
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -247,7 +364,7 @@ export function AIAnalysis() {
                 ) : (
                   <>
                     <Brain className="h-4 w-4 mr-2" />
-                    Analisar com IA
+                    {continuando ? 'Analisar de novo' : 'Analisar com IA'}
                   </>
                 )}
               </Button>
@@ -273,7 +390,7 @@ export function AIAnalysis() {
               {parsed.length > MAX_MAOS_NA_IA && (
                 <p className="text-xs text-muted-foreground">
                   A IA analisa até {MAX_MAOS_NA_IA} mãos por vez. Das {parsed.length} do arquivo, vão primeiro as
-                  em que você entrou no pote.
+                  em que você entrou no pote; depois, dá para continuar nas próximas.
                 </p>
               )}
             </div>
@@ -283,7 +400,35 @@ export function AIAnalysis() {
 
       {/* Resultado */}
       {analysis && (
-        <>
+        <div ref={relatorioRef} className="space-y-6 scroll-mt-4">
+          {/* Continuar nas mãos que ficaram de fora */}
+          {parsed.length > 0 && continuando && (
+            <div className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {maosAnalisadas.length} de {parsed.length} mãos do torneio analisadas
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {restantes.length > 0
+                    ? `Faltam ${restantes.length}. Cada rodada conta uma análise do seu limite do dia.`
+                    : 'Todas as mãos do arquivo estão no relatório.'}
+                </p>
+              </div>
+              {restantes.length > 0 && (
+                <Button onClick={() => void runAnalysis(true)} disabled={loading} className="w-full sm:w-auto">
+                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-2" />}
+                  Analisar as próximas {Math.min(MAX_MAOS_NA_IA, restantes.length)}
+                </Button>
+              )}
+            </div>
+          )}
+          {parsed.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Análise do histórico{fileName ? ` (${fileName})` : ''}. Para analisar mais mãos desse torneio, envie o
+              arquivo de novo.
+            </p>
+          )}
+
           {/* EV chart */}
           <Card>
             <CardHeader>
@@ -340,11 +485,14 @@ export function AIAnalysis() {
               {analysis.overall.leaks.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-sm mb-2 text-foreground">Principais Leaks</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
                     {analysis.overall.leaks.map((l, i) => (
                       <li key={i} className="flex gap-2">
                         <span className="text-feedback-blunder">•</span>
-                        {l}
+                        <span className="flex-1">
+                          {l}
+                          {acoesDoItem(l)}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -353,11 +501,14 @@ export function AIAnalysis() {
               {analysis.overall.recommendations.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-sm mb-2 text-foreground">Recomendações</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
                     {analysis.overall.recommendations.map((r, i) => (
                       <li key={i} className="flex gap-2">
                         <span className="text-primary">→</span>
-                        {r}
+                        <span className="flex-1">
+                          {r}
+                          {acoesDoItem(r)}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -371,6 +522,8 @@ export function AIAnalysis() {
             </CardContent>
           </Card>
 
+          <PlanoDeEstudo temas={plano} aberto={temaAberto} onAbrir={setTemaAberto} />
+
           {/* Mão por mão */}
           <Card>
             <CardHeader>
@@ -381,7 +534,14 @@ export function AIAnalysis() {
                 {analysis.hands.map((h, i) => {
                   const style = VERDICT_STYLE[h.verdict] ?? VERDICT_STYLE.correct;
                   const orig = parsed.find((p) => p.handId === h.handId);
-                  const leitura = orig ? lerMaoDoHeroi(orig) : null;
+                  // Do histórico não há arquivo: vale o resumo guardado da mão
+                  const resumo = maosAnalisadas.find((m) => m.handId === h.handId);
+                  const leitura = orig
+                    ? lerMaoDoHeroi(orig)
+                    : resumo
+                      ? { spots: resumo.spots, posicao: resumo.posicao, stackEfetivoBb: resumo.stackBb }
+                      : null;
+                  const cartas = orig?.holeCards ?? resumo?.cartas ?? [];
                   return (
                     <AccordionItem key={h.handId + i} value={`hand-${i}`}>
                       <AccordionTrigger className="hover:no-underline">
@@ -390,10 +550,8 @@ export function AIAnalysis() {
                             {style.label}
                           </span>
                           <span className="text-sm font-medium">Mão #{i + 1}</span>
-                          {orig?.holeCards.length ? (
-                            <span className="text-xs text-muted-foreground font-mono">
-                              [{orig.holeCards.join(' ')}]
-                            </span>
+                          {cartas.length ? (
+                            <span className="text-xs text-muted-foreground font-mono">[{cartas.join(' ')}]</span>
                           ) : null}
                           <span
                             className={cn(
@@ -437,8 +595,10 @@ export function AIAnalysis() {
               </Accordion>
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
+
+      <HistoricoDeAnalises versao={versaoHistorico} abertaId={idSalvo} onAbrir={abrirDoHistorico} />
     </div>
   );
 }

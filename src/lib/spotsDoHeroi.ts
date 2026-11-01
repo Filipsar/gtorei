@@ -177,8 +177,8 @@ export function escolherMaosParaAnalise(hands: ParsedHand[], maximo: number): Pa
 // Texto da IA que fala de enfrentar 3-bet ou 4-bet: "vs 3-bet", "contra 3-bets",
 // "diante de uma 4-bet", "defesa contra 3bet"...
 const ANTES = String.raw`(?:\bvs\.?|\bversus|\bcontra|\benfrentando|\benfrentar|\bdiante d[eoa]s?|\bfrente [aà]|\bperante|\bem resposta [aà]s?|\bfacing)`;
-const FALA_DE_3BET = new RegExp(String.raw`${ANTES}\s*(?:uma?s?\s+|o\s+|os\s+|as?\s+)?(?:3-?bets?|three-?bets?)`, 'i');
-const FALA_DE_4BET = new RegExp(String.raw`${ANTES}\s*(?:uma?s?\s+|o\s+|os\s+|as?\s+)?(?:4-?bets?|four-?bets?)`, 'i');
+export const FALA_DE_3BET = new RegExp(String.raw`${ANTES}\s*(?:uma?s?\s+|o\s+|os\s+|as?\s+)?(?:3-?bets?|three-?bets?)`, 'i');
+export const FALA_DE_4BET = new RegExp(String.raw`${ANTES}\s*(?:uma?s?\s+|o\s+|os\s+|as?\s+)?(?:4-?bets?|four-?bets?)`, 'i');
 
 /**
  * Tira do resumo da IA o que fala de um spot que não está em nenhuma mão

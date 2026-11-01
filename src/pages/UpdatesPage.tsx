@@ -22,6 +22,27 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.34.0',
+    date: '01/11/2026',
+    type: 'feature',
+    title: 'Análise com IA: Torneio Inteiro, Treino e Histórico',
+    description: 'A análise com IA agora continua nas próximas mãos do torneio, 30 por vez, e soma tudo num relatório só. Cada leak e recomendação ganhou o botão Treinar, que abre a mesa no spot, nas posições e stacks das suas mãos, e o botão Estudar, que abre o material do tema no novo Plano de Estudo. E as análises ficam guardadas no Histórico de Análises.',
+  },
+  {
+    version: '1.33.0',
+    date: '01/11/2026',
+    type: 'improvement',
+    title: 'Análise com IA Vira PRO',
+    description: 'A análise de hand history com IA agora é recurso PRO: cada análise tem custo de IA, e assim o treino continua grátis para todo mundo. Dá para virar PRO apoiando o projeto ou indicando 15 amigos (7 dias de PRO). A página inicial também ganhou números atualizados e respostas novas nas perguntas frequentes, com o modo Cash.',
+  },
+  {
+    version: '1.32.2',
+    date: '01/11/2026',
+    type: 'improvement',
+    title: 'Cash: Tamanhos de Aposta',
+    description: 'No cash (beta), as aberturas agora seguem o padrão do cash online com 100 BB: 2,5x do UTG ao CO, 2x do botão e 3x do SB, e as ranges foram recalculadas para esses tamanhos. Com o botão abrindo menor, o big blind defende mais.',
+  },
+  {
     version: '1.32.1',
     date: '31/10/2026',
     type: 'improvement',

@@ -191,8 +191,22 @@ podem pagar a abertura, com risco de squeeze tirado da frequência de 3-bet de q
 depois. Etapa 2 (31/10): bloqueadores (`COMPAT`, `fracVec`, `eqVectorBloq`, só no cash) nas
 equities e nas respostas a 3-bet e 4-bet — o 3-bet passou a ter Ax suited baixo de blefe; o
 3-bet all-in do vilão foi tirado no cash (AA e KK dos blinds iam all-in). O 4-bet ainda é só
-de valor: com o A5s, pagar o 3-bet vale mais no modelo. No treino, a mão do vs 3-bet sai da range de abertura (`maoQueAbre`).
+de valor: com o A5s, pagar o 3-bet vale mais no modelo. Etapa 3 (01/11): aberturas de
+cash 2,5x do UTG ao CO, 2x do BTN, 3x do SB (TAMANHO_DO_CASH no script e
+`src/data/ranges/tamanhosCash.ts` no app, conferidos por `tamanhosCash.test.ts`); a mesa do
+treino usa os mesmos tamanhos (`initializeHandState(..., cash)`). No treino, a mão do vs 3-bet sai da range de abertura (`maoQueAbre`).
 Próximos passos: flat em posição, pós-flop de cash e abrir para todos.
+
+### Análise com IA: PRO, continuação, treino e histórico (01/11/2026)
+
+`/analise-ia` é só para PRO (trava de tela em `AIAnalysisPage`; o admin passa). "Analisar as
+próximas" manda as mãos que faltam, 30 por vez, e soma ao relatório. Cada leak e recomendação
+vira tema (`temasDoTexto` em `src/lib/treinoDaAnalise.ts`) com material em
+`src/data/materialDidatico.ts` (texto de conceito, sem número de solver) e, se o tema tem
+cenário e há mão dele no relatório, o link `/treinar?treino=&modo=&pos=&stack=`, lido por
+`presetDoLink` no TrainPage (usa o mesmo caminho do preset da lição e tira os parâmetros da
+URL). Histórico na tabela `analises_ia` (migration `20261101120000`): relatório e resumo de
+cada mão, nunca o hand history; 50 por conta. Sem a migration, a lista diz "em breve".
 
 ## Não fazer
 

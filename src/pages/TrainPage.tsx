@@ -22,6 +22,7 @@ import { SimuladoResultado } from '@/components/train/SimuladoResultado';
 import { LicaoResultado } from '@/components/train/LicaoResultado';
 import { ReiComenta } from '@/components/train/ReiComenta';
 import { licaoPorId, type Licao } from '@/data/trilha';
+import { presetDoLink } from '@/lib/treinoDaAnalise';
 import { explicarJogada, poseDoComentario } from '@/lib/explicacao';
 import { MAOS_POR_LICAO, proximaLicao, registrarResultado, type Estrelas } from '@/lib/trilha';
 import { Chip, OpcaoGrande, Secao } from '@/components/train/ConfigUI';
@@ -109,9 +110,12 @@ export default function TrainPage() {
 
   // Lição da trilha do app (?licao=id, src/data/trilha.ts): spot fixo, 10 mãos
   // com a resposta a cada uma, estrelas no fim
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const licao = useMemo(() => licaoPorId(searchParams.get('licao')), [searchParams]);
-  const preset = licao ?? null;
+  // Treino pedido pela análise com IA (?treino=, src/lib/treinoDaAnalise.ts):
+  // abre a mesa no spot do leak, sem o placar de lição
+  const presetDaAnalise = useMemo(() => (licao ? null : presetDoLink(searchParams)), [licao, searchParams]);
+  const preset = licao ?? presetDaAnalise;
   // No app o Rei comenta cada mão; o quadro completo abre em "Ver range"
   const comentarioDoRei = usarLayoutDoApp();
   const [detalhesAbertos, setDetalhesAbertos] = useState(false);
@@ -334,11 +338,11 @@ export default function TrainPage() {
     const cards = generateCardsFromHand(hand);
     const assentos = MODE_POSITIONS[modo];
 
-    const parcial = initializeHandState(cenario, posicao, stack, hand, cards, assentos, undefined, multiway);
+    const parcial = initializeHandState(cenario, posicao, stack, hand, cards, assentos, undefined, multiway, modo === 'cash');
     // Com o vilão conhecido, dá para distribuir os stacks da mesa
     const stackDist = getStackDistribution(stack, posicao, getGameMode(modo), cenario, parcial.villainPosition, assentos);
     // Remontada com o stack do vilão já valendo
-    const estado = initializeHandState(cenario, posicao, stack, hand, cards, assentos, stackDist.villain, multiway);
+    const estado = initializeHandState(cenario, posicao, stack, hand, cards, assentos, stackDist.villain, multiway, modo === 'cash');
 
     return { cenario, posicao, stack, hand, cards, stackDist, estado, mesaFinal };
   }, [scenario, randomScenario, selectedPositions, randomPosition, selectedStacks, randomStack, simulacaoMultiway, bloqueioDoSorteio, generateRandomHand, emSimulado]);
@@ -428,7 +432,7 @@ export default function TrainPage() {
   }, [montarMao, scenario, randomPosition, randomStack, trainingMode, modoAleatorio, heroBounty, user, emSimulado]);
 
   // Lição nova (ou a mesma de novo): monta o spot e pede a mesa
-  const chaveDoPreset = licao?.id ?? null;
+  const chaveDoPreset = licao?.id ?? (presetDaAnalise ? searchParams.toString() : null);
   useEffect(() => {
     if (!preset || !chaveDoPreset) return;
     setFormato('livre');
@@ -443,7 +447,10 @@ export default function TrainPage() {
     setSimulacaoMultiway(false);
     setFinalTable(false);
     setLicaoPendente(chaveDoPreset);
-  }, [preset, chaveDoPreset]);
+    // O link da análise vale uma vez: tirado da URL, o spot fica configurado e
+    // o jogador muda o que quiser depois sem o sorteio preso a ele
+    if (!licao) setSearchParams({}, { replace: true });
+  }, [preset, chaveDoPreset, licao, setSearchParams]);
 
   useEffect(() => {
     if (!licaoPendente) return;

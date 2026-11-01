@@ -45,7 +45,7 @@ const DOCS: Record<DocLegal, { titulo: string; descricao: string; corpo: () => R
           <li><strong>Treino:</strong> mãos jogadas, decisões, acertos, XP, nível, sessões, favoritos, conquistas e desafios.</li>
           <li><strong>Comunidade:</strong> posts, comentários, reações e imagens que você envia ao perfil.</li>
           <li><strong>Indicação:</strong> quem convidou quem e se o convite foi validado. Quem convidou vê só o seu apelido e o seu progresso até 50 mãos.</li>
-          <li><strong>Análise por IA:</strong> o hand history que você envia. Antes do envio, os apelidos dos outros jogadores são trocados por "Vilão 1", "Vilão 2" etc.</li>
+          <li><strong>Análise por IA:</strong> o hand history que você envia. Antes do envio, os apelidos dos outros jogadores são trocados por "Vilão 1", "Vilão 2" etc. Fica guardado no seu histórico só o relatório (veredito e EV de cada mão, leaks e recomendações) e, de cada mão, as suas cartas, o spot, a posição e a stack — o hand history em si não é guardado. São as 50 análises mais recentes, e você apaga qualquer uma quando quiser.</li>
           <li><strong>Compras (app):</strong> o comprovante da compra do PRO no Google Play (token e número do pedido). Não recebemos dados de cartão.</li>
           <li><strong>Anúncios (só no app grátis):</strong> o Google AdMob usa o ID de publicidade do aparelho e dados técnicos para mostrar e medir anúncios.</li>
         </ul>
