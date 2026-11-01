@@ -117,15 +117,31 @@ Deno.serve(async (req) => {
     const hands = body?.hands as ParsedHandLite[] | undefined;
     if (!Array.isArray(hands) || hands.length === 0) return json({ error: 'Nenhuma mão para analisar' }, 400);
 
-    // 3. Limite diário. Conta e registra com a service role: a tabela não
-    // tem política para o usuário, então ninguém apaga o próprio registro.
+    // 3. Acesso e limite diário. A análise com IA é PRO: só apoiador
+    // (supporters, inclusive quem comprou no Google Play) ou PRO temporário
+    // válido (pro_temporario, PRO de 7 dias ganho por indicação) usa. Admin
+    // não tem limite e não registra. Conta e registra com a service role: a
+    // tabela não tem política para o usuário, então ninguém apaga o próprio
+    // registro.
     const admin = createClient(supabaseUrl, serviceRoleKey);
     let usoId: string | null = null;
     const { data: ehAdmin } = await admin.rpc('has_role', { _user_id: userId, _role: 'admin' });
     if (!ehAdmin) {
-      // Direto na tabela: is_supporter não tem permissão para a service role
-      const { data: ehPro } = await admin.from('supporters').select('user_id').eq('user_id', userId).maybeSingle();
-      const limite = ehPro ? LIMITE_PRO : LIMITE_DIARIO;
+      // Direto nas tabelas: is_supporter lê auth.uid(), que é nulo na service role
+      const { data: apoiador } = await admin.from('supporters').select('user_id').eq('user_id', userId).maybeSingle();
+      const { data: proTemporario } = await admin
+        .from('pro_temporario')
+        .select('user_id')
+        .eq('user_id', userId)
+        .gt('expira_em', new Date().toISOString())
+        .maybeSingle();
+      if (!apoiador && !proTemporario) {
+        // Barra antes de registrar uso e antes de gastar crédito de IA
+        return json(
+          { error: 'A análise com IA é um recurso PRO. Vire PRO ou indique 15 amigos para ganhar 7 dias.', codigo: 'pro_necessario' },
+          403,
+        );
+      }
       const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
       const { count, error: erroConta } = await admin
         .from('ai_analysis_usage')
@@ -133,8 +149,8 @@ Deno.serve(async (req) => {
         .eq('user_id', userId)
         .eq('used_on', hoje);
       if (erroConta) throw erroConta;
-      if ((count ?? 0) >= limite) {
-        return json({ error: `Você já fez ${limite} análises hoje. O limite renova à meia-noite.` }, 429);
+      if ((count ?? 0) >= LIMITE_PRO) {
+        return json({ error: `Você já fez ${LIMITE_PRO} análises hoje. O limite renova à meia-noite.` }, 429);
       }
       const { data: uso, error: erroRegistro } = await admin
         .from('ai_analysis_usage')
