@@ -186,8 +186,12 @@ scripts/emit-cash-ts.mjs` (sem ante, rake 5% com teto de 3 BB no pote disputado)
 é 3-bet ou fold (sem flat). Vs 3-bet (31/10): o herói larga, paga ou dá 4-bet pequeno (2,2x);
 o all-in fica para o 5-bet do vilão. O 4-bet all-in do herói foi tirado no cash porque o
 modelo empurrava AA a A5s 100% (sem pós-flop resolvido, a range que paga all-in sai
-apertada demais), e o pote de 4-bet usa realização por SPR (`fatiaSpr`). Sem 4-bet de
-blefe no modelo. No treino, a mão do vs 3-bet sai da range de abertura (`maoQueAbre`).
+apertada demais), e o pote de 4-bet usa realização por SPR (`fatiaSpr`). Etapa 1 (31/10): todos
+podem pagar a abertura, com risco de squeeze tirado da frequência de 3-bet de quem fala
+depois. Etapa 2 (31/10): bloqueadores (`COMPAT`, `fracVec`, `eqVectorBloq`, só no cash) nas
+equities e nas respostas a 3-bet e 4-bet — o 3-bet passou a ter Ax suited baixo de blefe; o
+3-bet all-in do vilão foi tirado no cash (AA e KK dos blinds iam all-in). O 4-bet ainda é só
+de valor: com o A5s, pagar o 3-bet vale mais no modelo. No treino, a mão do vs 3-bet sai da range de abertura (`maoQueAbre`).
 Próximos passos: flat em posição, pós-flop de cash e abrir para todos.
 
 ## Não fazer

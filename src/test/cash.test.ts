@@ -46,6 +46,14 @@ describe('cash 6-max 100 BB (beta)', () => {
     expect(paga(getCashRange('vsOpenRaise', 'HJ', 'UTG')!)).toHaveLength(0);
   });
 
+  it('blefe por bloqueio: o 3-bet tem Ax suited baixo (bloqueia AA e AK)', () => {
+    const r = getCashRange('vsOpenRaise', 'BTN', 'CO')!;
+    for (const m of ['A5s', 'A4s']) expect(acao(r, m)).toBe('raise');
+    for (const m of ['AA', 'KK']) expect(acao(r, m)).toBe('raise');
+    // E o BB contra o botão não vai all-in com AA (3-bet é pequeno com 100 BB)
+    expect(acao(getCashRange('vsOpenRaise', 'BB', 'BTN')!, 'AA')).toBe('raise');
+  });
+
   it('cenário sem cálculo de cash devolve null (cai no corte do 6-max)', () => {
     expect(getCashRange('vsOpenShove', 'CO', 'BTN')).toBeNull();
   });

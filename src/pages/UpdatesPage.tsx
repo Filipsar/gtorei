@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.32.1',
+    date: '31/10/2026',
+    type: 'improvement',
+    title: 'Cash: Blefe com Bloqueadores',
+    description: 'As ranges de cash (beta) agora levam em conta as cartas que você bloqueia: o 3-bet ganhou os Ax suited baixos de blefe, que tiram AA e AK do outro lado. E com 100 BB o 3-bet dos blinds passou a ser sempre pequeno, nunca all-in.',
+  },
+  {
     version: '1.32.0',
     date: '31/10/2026',
     type: 'feature',

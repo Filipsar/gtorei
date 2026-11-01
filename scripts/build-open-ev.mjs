@@ -169,7 +169,45 @@ function fatiaSpr(eq, i, emPosicao, pote, atras) {
 }
 
 // ── Álgebra de ranges ─────────────────────────────────────────────────────
+// ── Bloqueadores (cash, etapa 2, 31/10/2026) ───────────────────────────────
+// COMPAT[i*N+j] = quantos combos da classe j sobram, em média, quando o herói
+// tem um combo da classe i (sem carta repetida). Com isso a range do vilão é
+// pesada pelo que a mão do herói bloqueia: com A5s, sobram menos AA e AK do
+// outro lado. Sem bloqueador o modelo nunca blefava no 3-bet nem no 4-bet.
+const NAIPES = 'shdc';
+function combosDaClasse(h) {
+  const a = h[0], b = h[1], out = [];
+  for (let x = 0; x < 4; x++) for (let y = 0; y < 4; y++) {
+    if (h.length === 2) { if (x < y) out.push([a + NAIPES[x], b + NAIPES[y]]); }
+    else if (h[2] === 's') { if (x === y) out.push([a + NAIPES[x], b + NAIPES[y]]); }
+    else if (x !== y) out.push([a + NAIPES[x], b + NAIPES[y]]);
+  }
+  return out;
+}
+const COMBOS_DE = HANDS.map(combosDaClasse);
+const COMPAT = new Float64Array(N * N);
+if (process.env.MODALIDADE === 'cash') {
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    let soma = 0;
+    for (const [c1, c2] of COMBOS_DE[i]) for (const [d1, d2] of COMBOS_DE[j]) if (c1 !== d1 && c1 !== d2 && c2 !== d1 && c2 !== d2) soma++;
+    COMPAT[i * N + j] = soma / COMBOS_DE[i].length;
+  }
+}
+
+/** Para cada mão i do jogador: fração da range "todo" do outro que está em "parte", contando os bloqueadores */
+function fracVec(parte, todo) {
+  const out = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    let p = 0, q = 0;
+    const base = i * N;
+    for (let j = 0; j < N; j++) { const k = COMPAT[base + j]; if (todo[j] > 0) { q += todo[j] * k; p += parte[j] * k; } }
+    out[i] = q > 1e-9 ? p / q : 0;
+  }
+  return out;
+}
+
 function eqVector(freq) {
+  if (process.env.MODALIDADE === 'cash') return eqVectorBloq(freq);
   const out = new Float64Array(N);
   const w = new Float64Array(N);
   let peso = 0;
@@ -180,6 +218,17 @@ function eqVector(freq) {
     const base = i * N;
     for (let j = 0; j < N; j++) { const wj = w[j]; if (wj > 0) soma += EQ[base + j] * wj; }
     out[i] = soma / peso;
+  }
+  return out;
+}
+// Equity da mão i contra a range, com os combos que a mão i deixa sobrar
+function eqVectorBloq(freq) {
+  const out = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    let soma = 0, peso = 0;
+    const base = i * N;
+    for (let j = 0; j < N; j++) { const w = freq[j] * COMPAT[base + j]; if (w > 0) { soma += EQ[base + j] * w; peso += w; } }
+    out[i] = peso > 1e-9 ? soma / peso : 0.5;
   }
   return out;
 }
@@ -291,7 +340,7 @@ function resolver(modo, S) {
             const R4 = tamanho4bet(T, S);
             if (!R4) return { R4: null };
             const c4 = produto(x.tR, x.vC4s), j5 = produto(x.tR, x.vJ5);
-            return { R4, vc4: fracao(c4, lt), vj5: fracao(j5, lt), eqC4s: eqVector(c4), eqJ5: eqVector(j5) };
+            return { R4, vc4: fracVec(c4, x.tR), vj5: fracVec(j5, x.tR), eqC4s: eqVector(c4), eqJ5: eqVector(j5) };
           })(),
         };
       });
@@ -326,9 +375,10 @@ function resolver(modo, S) {
             if (c.R4) {
               const evPaga5 = c.eqJ5[i] * semRake(2 * S + c.morto) - S;
               alvoResp[k].C5[i] = alvo([-c.R4, evPaga5])[1];
-              evR4 = (1 - c.vc4 - c.vj5) * (c.T + c.morto)
-                + c.vc4 * (fatiaSpr(c.eqC4s[i], i, c.ip, 2 * c.R4 + c.morto, S - c.R4) * semRake(2 * c.R4 + c.morto) - c.R4)
-                + c.vj5 * Math.max(-c.R4, evPaga5);
+              const vc4 = c.vc4[i], vj5 = c.vj5[i];
+              evR4 = (1 - vc4 - vj5) * (c.T + c.morto)
+                + vc4 * (fatiaSpr(c.eqC4s[i], i, c.ip, 2 * c.R4 + c.morto, S - c.R4) * semRake(2 * c.R4 + c.morto) - c.R4)
+                + vj5 * Math.max(-c.R4, evPaga5);
             }
             const a = alvo([-r, evC3, evJ4, evR4]);
             alvoResp[k].C3[i] = a[1]; alvoResp[k].J4[i] = a[2]; alvoResp[k].R4[i] = a[3];
@@ -363,6 +413,7 @@ function resolver(modo, S) {
         const eqCU = eqVector(rangeCU);
         let pf = 1, pc = 0, pj = 0, eqC3 = null, eqJ4 = null;
         let pr4 = 0, pc5 = 0, eqR4 = null, eqC5 = null;
+        let pcV = null, pr4V = null; // cash: as mesmas frações, por mão do vilão
         if (c.T) {
           const rangeC3 = produto(e.R, x.hC3), rangeJ4 = produto(e.R, x.hJ4);
           pc = fracao(rangeC3, lR); pj = fracao(rangeJ4, lR);
@@ -371,6 +422,7 @@ function resolver(modo, S) {
             const rangeR4 = produto(e.R, x.hR4), rangeC5 = produto(rangeR4, x.hC5);
             pr4 = fracao(rangeR4, lR); pc5 = fracao(rangeC5, largura(rangeR4));
             eqR4 = eqVector(rangeR4); eqC5 = eqVector(rangeC5);
+            if (CASH) { pcV = fracVec(rangeC3, e.R); pr4V = fracVec(rangeR4, e.R); }
           }
           pf = Math.max(0, 1 - pc - pj - pr4);
         }
@@ -379,7 +431,9 @@ function resolver(modo, S) {
         for (let i = 0; i < N; i++) {
           const evF = -c.pv;
           const evC = podePagarAbertura(c.v) ? (1 - c.sq) * (fatia(eqR[i], i, !c.ip, S) * semRake(2 * r + c.morto) - r) + c.sq * -r : NUNCA;
-          const evU = (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * semRake(2 * S + c.morto) - S);
+          // Cash com 100 BB: o 3-bet é pequeno; 3-bet all-in só existe quando o pequeno não cabe
+          // (com ele, AA e KK dos blinds iam all-in 91-100% e o resto do cálculo entortava)
+          const evU = CASH && c.T ? NUNCA : (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * semRake(2 * S + c.morto) - S);
           let ev3 = NUNCA;
           if (c.T) {
             const evPago3 = fatia(eqC3[i], i, !c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
@@ -393,7 +447,12 @@ function resolver(modo, S) {
               alvoC4s[i] = a4[1]; alvoJ5[i] = a4[2];
               melhorContra4 = Math.max(-c.T, evPaga4, evJ5);
             }
-            ev3 = pf * (r + c.morto) + pc * evPago3 + pj * Math.max(-c.T, evPagaJ4) + pr4 * melhorContra4;
+            if (pcV) {
+              const pci = pcV[i], pr4i = pr4V[i], pfi = Math.max(0, 1 - pci - pr4i);
+              ev3 = pfi * (r + c.morto) + pci * evPago3 + pr4i * melhorContra4;
+            } else {
+              ev3 = pf * (r + c.morto) + pc * evPago3 + pj * Math.max(-c.T, evPagaJ4) + pr4 * melhorContra4;
+            }
           }
           const a = alvo([evF, evC, ev3, evU]);
           alvoCR[i] = a[1]; alvoTR[i] = a[2]; alvoUR[i] = a[3];
