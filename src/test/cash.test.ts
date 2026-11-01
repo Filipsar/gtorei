@@ -40,7 +40,7 @@ describe('cash 6-max 100 BB (beta)', () => {
     const paga = (r: RangeData) => r.hands.filter((h) => h.actions.some((a) => a.action === 'call' && a.frequency >= 50)).map((h) => h.hand);
     const btn = paga(getCashRange('vsOpenRaise', 'BTN', 'UTG')!);
     // Pares pequenos pagam para tentar a trinca
-    expect(btn).toEqual(expect.arrayContaining(['55', '44']));
+    expect(btn).toEqual(expect.arrayContaining(['66', '55']));
     expect(largura(getCashRange('vsOpenRaise', 'BTN', 'UTG')!)).toBeLessThan(20);
     // O HJ, com quatro jogadores atrás, praticamente não paga
     expect(paga(getCashRange('vsOpenRaise', 'HJ', 'UTG')!)).toHaveLength(0);

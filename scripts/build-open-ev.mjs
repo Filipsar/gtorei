@@ -101,8 +101,12 @@ function heroiEmPosicao(modo, heroi, vilao) {
   return ehBlind(vilao);                    // fora dos blinds, quem fala depois tem posição
 }
 
+// Cash (etapa 3, 01/11/2026): os tamanhos do cash online de 100 BB — 2,5x do
+// UTG ao CO, 2x do botão (que ainda tem os blinds atrás e quer pagar barato
+// pela posição) e 3x do SB. Torneio continua com 2,2x (2x até 25 BB).
+const TAMANHO_DO_CASH = { UTG: 2.5, HJ: 2.5, CO: 2.5, BTN: 2, SB: 3 };
 const tamanhoAbertura = (modo, heroi, S) =>
-  Math.min(S, heroi === 'SB' && modo !== 'hu' ? 3 : S <= 25 ? 2 : 2.2);
+  CASH ? TAMANHO_DO_CASH[heroi] : Math.min(S, heroi === 'SB' && modo !== 'hu' ? 3 : S <= 25 ? 2 : 2.2);
 
 // 3-bet pequeno: 3x em posição, 4x fora. Se custaria 40% do stack ou mais, não
 // existe na prática (é shove), e o vilão só tem o 3-bet all-in.

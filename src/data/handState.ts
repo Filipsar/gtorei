@@ -2,6 +2,7 @@
 // Gerencia o fluxo completo de uma mão de poker
 
 import { ActionType, Position, Scenario, POSITIONS, RANKS, getHandData } from './gtoRanges';
+import { aberturaDoCash, tresBetDoCash } from './ranges/tamanhosCash';
 import { CardType } from '@/components/poker/PlayingCard';
 import { compareHands, evaluateHand, HandEvaluation } from './handEvaluator';
 import { makeVillainPostflopDecision, makeVillainPreflopDecision, VillainDecision, VillainMemory, createVillainMemory, updateMemory } from './villainGTO';
@@ -209,7 +210,9 @@ export function initializeHandState(
   availablePositions?: Position[],
   villainStackOverride?: number,
   /** Simulação com um terceiro jogador no pote, do flop em diante */
-  multiway = false
+  multiway = false,
+  /** Cash: tamanhos de aposta do cash (tamanhosCash.ts), os mesmos da range calculada */
+  cash = false
 ): HandState {
   const actions: ActionEntry[] = [];
   const activeBets: { position: Position; amount: number }[] = [];
@@ -232,7 +235,7 @@ export function initializeHandState(
   
   if ((scenario === 'vsOpenRaise' || scenario === 'simulation') && villainPosition) {
     const villainIndex = positionOrder.indexOf(villainPosition);
-    const openSize = calculateOpenSize(heroStack);
+    const openSize = cash ? Math.min(aberturaDoCash(villainPosition), heroStack) : calculateOpenSize(heroStack);
     
     // Villain abre
     actions.push({ position: villainPosition, action: 'open', amount: openSize });
@@ -264,8 +267,10 @@ export function initializeHandState(
       foldedPositions.push(pos);
     }
   } else if (scenario === 'vs3bet' && villainPosition) {
-    const openSize = calculateOpenSize(heroStack);
-    const threeBetSize = calculate3BetSize(openSize, heroStack);
+    const openSize = cash ? Math.min(aberturaDoCash(heroPosition), heroStack) : calculateOpenSize(heroStack);
+    const threeBetSize = cash
+      ? Math.min(tresBetDoCash(heroPosition, villainPosition, openSize), heroStack)
+      : calculate3BetSize(openSize, heroStack);
     
     // Herói abre
     actions.push({ position: heroPosition, action: 'open', amount: openSize, isHero: true });
