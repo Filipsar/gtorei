@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      analises_ia: {
+        Row: {
+          arquivo: string | null
+          atualizada_em: string
+          criada_em: string
+          ev_total: number | null
+          id: string
+          maos_analisadas: number
+          maos_no_arquivo: number
+          resultado: Json
+          sala: string | null
+          user_id: string
+        }
+        Insert: {
+          arquivo?: string | null
+          atualizada_em?: string
+          criada_em?: string
+          ev_total?: number | null
+          id?: string
+          maos_analisadas: number
+          maos_no_arquivo: number
+          resultado: Json
+          sala?: string | null
+          user_id?: string
+        }
+        Update: {
+          arquivo?: string | null
+          atualizada_em?: string
+          criada_em?: string
+          ev_total?: number | null
+          id?: string
+          maos_analisadas?: number
+          maos_no_arquivo?: number
+          resultado?: Json
+          sala?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           content: string
@@ -374,14 +413,19 @@ export type Database = {
           imagem_url: string | null
           link: string
           motivo: string | null
+          premio: string | null
+          premio_usd: number | null
           publicada_em: string | null
           publicada_na_fonte: string | null
+          relevancia: number
           resumo: string | null
           slug: string | null
           status: string
           titulo: string | null
           titulo_fonte: string
+          torneio: string | null
           trecho_fonte: string | null
+          vencedor: string | null
         }
         Insert: {
           atualizada_em?: string | null
@@ -392,14 +436,19 @@ export type Database = {
           imagem_url?: string | null
           link: string
           motivo?: string | null
+          premio?: string | null
+          premio_usd?: number | null
           publicada_em?: string | null
           publicada_na_fonte?: string | null
+          relevancia?: number
           resumo?: string | null
           slug?: string | null
           status?: string
           titulo?: string | null
           titulo_fonte: string
+          torneio?: string | null
           trecho_fonte?: string | null
+          vencedor?: string | null
         }
         Update: {
           atualizada_em?: string | null
@@ -410,14 +459,19 @@ export type Database = {
           imagem_url?: string | null
           link?: string
           motivo?: string | null
+          premio?: string | null
+          premio_usd?: number | null
           publicada_em?: string | null
           publicada_na_fonte?: string | null
+          relevancia?: number
           resumo?: string | null
           slug?: string | null
           status?: string
           titulo?: string | null
           titulo_fonte?: string
+          torneio?: string | null
           trecho_fonte?: string | null
+          vencedor?: string | null
         }
         Relationships: []
       }
@@ -636,6 +690,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pro_temporario: {
+        Row: {
+          criado_em: string
+          expira_em: string
+          origem: string
+          user_id: string
+        }
+        Insert: {
+          criado_em?: string
+          expira_em: string
+          origem: string
+          user_id: string
+        }
+        Update: {
+          criado_em?: string
+          expira_em?: string
+          origem?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -967,6 +1042,10 @@ export type Database = {
         Args: { _periodo: string; _ref: string }
         Returns: string
       }
+      _pro_por_indicacao: {
+        Args: { _uid: string; _validos: number }
+        Returns: undefined
+      }
       _processar_ligas_do_dia: { Args: never; Returns: undefined }
       _progresso_desafios: {
         Args: { _dia: string; _uid: string }
@@ -1002,6 +1081,7 @@ export type Database = {
       }
       _sequencia_desafios: { Args: { _uid: string }; Returns: number }
       _validar_indicacao: { Args: { _referred: string }; Returns: undefined }
+      admin_cash_erros: { Args: { _desde?: string }; Returns: Json }
       admin_monthly_metrics: {
         Args: { _ate_dia?: number; _meses?: number }
         Returns: {
@@ -1058,6 +1138,7 @@ export type Database = {
       get_daily_challenges: { Args: never; Returns: Json }
       get_liga: { Args: never; Returns: Json }
       get_my_referral_code: { Args: never; Returns: string }
+      get_my_referral_pro: { Args: never; Returns: Json }
       get_my_referrals: { Args: never; Returns: Json }
       get_period_challenges: { Args: never; Returns: Json }
       get_period_start: { Args: { period_type: string }; Returns: string }
