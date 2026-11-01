@@ -2,15 +2,14 @@
 //
 // Segurança (05/10/2026): até aqui a função respondia a qualquer chamada, até
 // sem token, e cada chamada gasta crédito de IA do projeto. Agora exige
-// usuário logado (a chave pública anon não serve), limita quantas análises
-// cada um faz por dia (tabela ai_analysis_usage, que já existia sem uso) e
-// corta o tamanho do que vai para a IA.
+// usuário logado (a chave pública anon não serve), corta o tamanho do que vai
+// para a IA e (01/11/2026) a análise é PRO: só apoiador (supporters) ou PRO
+// temporário válido (pro_temporario, ganho por indicação) usa, 30 análises
+// por dia; admin não tem limite.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-// Análises por usuário por dia (dia de Brasília). PRO (apoiador, inclusive
-// quem comprou no Google Play) tem mais; admin não tem limite.
-const LIMITE_DIARIO = 5;
+// Análises por dia para quem é PRO (dia de Brasília). Admin não tem limite.
 const LIMITE_PRO = 30;
 const MAX_MAOS = 30;
 // ~30 mãos parseadas cabem com folga; acima disso é abuso ou lixo
