@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.34.1',
+    date: '02/11/2026',
+    type: 'fix',
+    title: 'Análise com IA: EV Perdido no Lugar do EV Acumulado',
+    description: 'O relatório mostrava um "EV acumulado" positivo porque a IA às vezes contava o pote ganho como EV de jogada certa, e o total dela não batia com as mãos. Agora o número é o EV perdido: a soma do que cada decisão custou contra o GTO, com jogada certa valendo 0. O relatório também avisa quantas mãos ficaram sem comentário da IA.',
+  },
+  {
     version: '1.34.0',
     date: '01/11/2026',
     type: 'feature',

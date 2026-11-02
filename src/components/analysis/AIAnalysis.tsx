@@ -25,7 +25,7 @@ import {
   type MaoResumida,
 } from '@/lib/treinoDaAnalise';
 import type { TemaDeEstudo } from '@/data/materialDidatico';
-import { salvarAnalise, type AnaliseDoHistorico, type AnalysisResult, type Verdict } from '@/lib/historicoDeAnalises';
+import { evPerdido, perdaDaMao, salvarAnalise, type AnaliseDoHistorico, type AnalysisResult, type Verdict } from '@/lib/historicoDeAnalises';
 import { supabase } from '@/integrations/supabase/client';
 import { BotaoDeTreino, PlanoDeEstudo, type TemaDoPlano } from './PlanoDeEstudo';
 import { HistoricoDeAnalises } from './HistoricoDeAnalises';
@@ -291,11 +291,17 @@ export function AIAnalysis() {
   const platformInfo = platform ? PLATFORM_INFO[platform] : null;
   const spotsDoArquivo = useMemo(() => contarSpots(parsed), [parsed]);
 
+  // EV perdido: só as perdas mão a mão (jogada certa vale 0), não o total da IA
+  const perdido = analysis ? evPerdido(analysis) : 0;
+  let somaDasPerdas = 0;
   const chartData =
-    analysis?.hands.map((h, i) => ({
-      name: `#${i + 1}`,
-      ev: Number((analysis.hands.slice(0, i + 1).reduce((acc, x) => acc + (x.evDelta || 0), 0)).toFixed(2)),
-    })) ?? [];
+    analysis?.hands.map((h, i) => {
+      somaDasPerdas += perdaDaMao(h);
+      return { name: `#${i + 1}`, ev: Math.round(somaDasPerdas * 100) / 100 || 0 };
+    }) ?? [];
+  // Mãos enviadas que a IA devolveu sem veredito (em geral folds que ela pulou)
+  const comVeredito = new Set(analysis?.hands.map((h) => h.handId) ?? []);
+  const semVeredito = maosAnalisadas.filter((m) => !comVeredito.has(m.handId)).length;
 
   return (
     <div className="space-y-6">
@@ -406,7 +412,8 @@ export function AIAnalysis() {
             <div className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  {maosAnalisadas.length} de {parsed.length} mãos do torneio analisadas
+                  {maosAnalisadas.length} de {parsed.length} mãos do torneio enviadas à IA
+                  {semVeredito > 0 && ` · ${semVeredito} sem comentário`}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {restantes.length > 0
@@ -434,25 +441,25 @@ export function AIAnalysis() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-heading-xs">
                 <span className="flex items-center gap-2">
-                  {analysis.overall.evTotal >= 0 ? (
-                    <TrendingUp className="h-5 w-5 text-feedback-best" />
-                  ) : (
+                  {perdido < 0 ? (
                     <TrendingDown className="h-5 w-5 text-feedback-blunder" />
+                  ) : (
+                    <TrendingUp className="h-5 w-5 text-feedback-best" />
                   )}
-                  EV Acumulado
+                  EV Perdido
                 </span>
-                <span
-                  className={cn(
-                    'text-lg font-bold',
-                    analysis.overall.evTotal >= 0 ? 'text-feedback-best' : 'text-feedback-blunder'
-                  )}
-                >
-                  {analysis.overall.evTotal >= 0 ? '+' : ''}
-                  {analysis.overall.evTotal.toFixed(2)} bb
+                <span className={cn('text-lg font-bold', perdido < 0 ? 'text-feedback-blunder' : 'text-feedback-best')}>
+                  {perdido.toFixed(2)} bb
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Quanto as suas decisões custaram contra o GTO, somando mão a mão. Jogada certa vale 0: o resultado do
+                pote não entra.
+                {semVeredito > 0 &&
+                  ` ${semVeredito} ${semVeredito === 1 ? 'mão ficou' : 'mãos ficaram'} sem comentário da IA e não ${semVeredito === 1 ? 'entra' : 'entram'} na conta.`}
+              </p>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -464,7 +471,7 @@ export function AIAnalysis() {
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                     }}
-                    formatter={(v: number) => [`${v} bb`, 'EV']}
+                    formatter={(v: number) => [`${v} bb`, 'EV perdido']}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                   <Line type="monotone" dataKey="ev" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
@@ -556,11 +563,10 @@ export function AIAnalysis() {
                           <span
                             className={cn(
                               'ml-auto text-xs font-semibold',
-                              h.evDelta >= 0 ? 'text-feedback-best' : 'text-feedback-blunder'
+                              perdaDaMao(h) < 0 ? 'text-feedback-blunder' : 'text-feedback-best'
                             )}
                           >
-                            {h.evDelta >= 0 ? '+' : ''}
-                            {h.evDelta.toFixed(2)} bb
+                            {perdaDaMao(h).toFixed(2)} bb
                           </span>
                         </div>
                       </AccordionTrigger>

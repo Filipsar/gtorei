@@ -3,7 +3,7 @@ import { History, Loader2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { apagarAnalise, listarAnalises, type AnaliseDoHistorico } from '@/lib/historicoDeAnalises';
+import { apagarAnalise, evPerdido, listarAnalises, type AnaliseDoHistorico } from '@/lib/historicoDeAnalises';
 
 interface Props {
   /** Muda quando uma análise é gravada: a lista relê */
@@ -56,7 +56,8 @@ export function HistoricoDeAnalises({ versao, abertaId, onAbrir }: Props) {
         ) : (
           <ul className="divide-y divide-border">
             {lista.map((a) => {
-              const ev = Number(a.ev_total ?? 0);
+              // Recalcula do relatório: as análises antigas gravaram o total da IA
+              const ev = a.resultado?.analise?.hands ? evPerdido(a.resultado.analise) : Number(a.ev_total ?? 0);
               return (
                 <li key={a.id} className="flex items-center gap-2 py-2">
                   <button
@@ -75,8 +76,7 @@ export function HistoricoDeAnalises({ versao, abertaId, onAbrir }: Props) {
                         {a.sala ? ` · ${a.sala}` : ''}
                       </span>
                     </span>
-                    <span className={cn('shrink-0 text-xs font-semibold', ev >= 0 ? 'text-feedback-best' : 'text-feedback-blunder')}>
-                      {ev >= 0 ? '+' : ''}
+                    <span className={cn('shrink-0 text-xs font-semibold', ev < 0 ? 'text-feedback-blunder' : 'text-feedback-best')}>
                       {ev.toFixed(2)} bb
                     </span>
                   </button>

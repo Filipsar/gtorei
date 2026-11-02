@@ -25,6 +25,17 @@ export interface AnalysisResult {
   };
 }
 
+/**
+ * Quanto a mão custou contra o GTO: 0 ou negativo. A IA às vezes dá EV
+ * positivo a jogada certa (conta o pote ganho, não a decisão), e o total que
+ * ela manda não bate com as próprias mãos; por isso a conta é feita aqui.
+ */
+export const perdaDaMao = (h: Pick<HandAnalysis, 'evDelta'>): number => Math.min(0, Number(h.evDelta) || 0);
+
+/** EV perdido no relatório: soma das perdas mão a mão, em bb */
+export const evPerdido = (a: Pick<AnalysisResult, 'hands'>): number =>
+  Math.round(a.hands.reduce((acc, h) => acc + perdaDaMao(h), 0) * 100) / 100 || 0;
+
 /** O que vai para a coluna `resultado` */
 export interface RelatorioSalvo {
   analise: AnalysisResult;
@@ -66,7 +77,7 @@ export async function salvarAnalise(id: string | null, d: DadosDaAnalise): Promi
     sala: d.sala,
     maos_no_arquivo: d.maosNoArquivo,
     maos_analisadas: d.relatorio.maos.length,
-    ev_total: d.relatorio.analise.overall.evTotal,
+    ev_total: evPerdido(d.relatorio.analise),
     resultado: d.relatorio,
   };
   try {
