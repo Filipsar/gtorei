@@ -6,6 +6,9 @@
 // para a IA e (01/11/2026) a análise é PRO: só apoiador (supporters) ou PRO
 // temporário válido (pro_temporario, ganho por indicação) usa, 30 análises
 // por dia; admin não tem limite.
+// Desde 02/11/2026: evDelta é EV PERDIDO pela decisão (0 ou negativo, nunca o
+// resultado do pote) e o evTotal do resumo é recalculado pela função (soma dos
+// evDelta, arredondado em 2 casas); entrada de mão inventada pela IA sai.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
@@ -56,13 +59,13 @@ Retorne JSON estritamente válido (sem texto fora do JSON), com a estrutura:
       "verdict": "best" | "correct" | "inaccuracy" | "mistake" | "blunder",
       "summary": "string curta (1-2 frases) descrevendo a decisão do herói",
       "gtoPlay": "string descrevendo a jogada GTO ideal",
-      "evDelta": number  // EV ganho (positivo) ou perdido (negativo) em bb
+      "evDelta": number  // EV PERDIDO pela decisão do herói contra a jogada GTO, em bb. Sempre 0 ou negativo.
     }
   ],
   "overall": {
     "leaks": ["string", ...],          // principais vazamentos identificados
     "recommendations": ["string", ...], // sugestões específicas de estudo
-    "evTotal": number                  // EV total acumulado em bb
+    "evTotal": number                  // soma dos evDelta de todas as mãos (0 ou negativo)
   }
 }
 
@@ -71,7 +74,10 @@ Regras:
 2. overall.leaks e overall.recommendations só podem citar spots presentes em pelo menos uma mão enviada. Em cada leak, diga o spot e em quantas mãos ele apareceu (ex.: "Vs open raise no BB (6 mãos): ...").
 3. Com menos de 3 mãos de um spot, não chame de leak: diga que a amostra é pequena.
 4. evDelta e evTotal em big blinds.
-5. Não invente mãos, cartas, ações ou stacks que não estejam no input. Responda só o JSON.`;
+5. Não invente mãos, cartas, ações ou stacks que não estejam no input. Responda só o JSON.
+6. Devolva exatamente uma entrada em "hands" para cada mão recebida, na mesma ordem e com o mesmo handId. Isso inclui folds pré-flop e mãos simples: um fold correto é "best" ou "correct" com evDelta 0; um fold de mão que devia entrar é erro, com evDelta negativo.
+7. evDelta mede só a qualidade da decisão, nunca o resultado do pote. Ganhar a mão não gera EV positivo, e perder com a jogada certa não gera EV negativo.
+8. Escala do evDelta: "best" = 0; "correct" entre -0,3 e 0; "inaccuracy" entre -0,3 e -1,5; "mistake" entre -1,5 e -5; "blunder" abaixo de -5.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -208,6 +214,26 @@ Deno.serve(async (req) => {
       parsed = JSON.parse(content);
     } catch {
       parsed = { raw: content };
+    }
+
+    // Normaliza a resposta sem chamar a IA de novo (02/11/2026): evDelta nunca
+    // positivo, evTotal recalculado e entrada de mão que não foi enviada sai.
+    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { hands?: unknown }).hands)) {
+      const obj = parsed as { hands: unknown[]; overall?: unknown };
+      const enviadas = new Set(trimmed.map((h) => h.handId));
+      let evTotal = 0;
+      obj.hands = (obj.hands as unknown[]).filter((item) => {
+        if (!item || typeof item !== 'object') return false;
+        const handId = (item as { handId?: unknown }).handId;
+        if (typeof handId !== 'string' || !enviadas.has(handId)) return false;
+        const ev = Math.min(0, Number((item as { evDelta?: unknown }).evDelta) || 0);
+        (item as { evDelta: number }).evDelta = ev;
+        evTotal += ev;
+        return true;
+      });
+      if (obj.overall && typeof obj.overall === 'object') {
+        (obj.overall as { evTotal: number }).evTotal = Math.round(evTotal * 100) / 100;
+      }
     }
 
     return json({ analysis: parsed });
