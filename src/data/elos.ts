@@ -1,4 +1,5 @@
-// Elos das ligas (migrations 20261024130000_ligas_por_elo e 20261024150000_ligas_diarias).
+// Elos das ligas (migrations 20261024130000_ligas_por_elo, 20261024150000_ligas_diarias
+// e 20261103120000_ligas_menos_jogadores).
 // O número é o que o banco guarda em liga_jogador.elo.
 
 export interface Elo {
@@ -29,8 +30,10 @@ export const ELO_REI = 7;
 /**
  * A disputa é diária (migration 20261024150000_ligas_diarias.sql): no fim do
  * dia, dentro de cada elo, os `sobem` primeiros (com XP no dia) sobem um elo e
- * quem termina da posição `caiA` para baixo cai um. No Rei ficam os 10
- * primeiros. A mesma tabela está no SQL (_regra_do_elo): mudou lá, muda aqui.
+ * quem termina da posição `caiA` para baixo cai um. No Rei ficam os 2
+ * primeiros (desde 03/11/2026, com menos jogadores ativos). A mesma tabela está
+ * no SQL (_regra_do_elo, última versão na migration 20261103120000): mudou lá,
+ * muda aqui.
  */
 export interface RegraDoElo {
   sobem: number;
@@ -41,11 +44,11 @@ export interface RegraDoElo {
 export const REGRAS_DOS_ELOS: Record<number, RegraDoElo> = {
   1: { sobem: 10, caiA: null },
   2: { sobem: 10, caiA: 20 },
-  3: { sobem: 10, caiA: 20 },
-  4: { sobem: 6, caiA: 15 },
-  5: { sobem: 6, caiA: 10 },
+  3: { sobem: 5, caiA: 20 },
+  4: { sobem: 5, caiA: 15 },
+  5: { sobem: 3, caiA: 10 },
   6: { sobem: 3, caiA: 10 },
-  7: { sobem: 0, caiA: 11 },
+  7: { sobem: 0, caiA: 3 },
 };
 
 export const regraDoElo = (n: number): RegraDoElo => REGRAS_DOS_ELOS[n] ?? REGRAS_DOS_ELOS[1];

@@ -281,8 +281,9 @@ cada mão, nunca o hand history; 50 por conta. Sem a migration, a lista diz "em 
   Ligas por elo (migrations `20261024130000_ligas_por_elo.sql` e
   `20261024150000_ligas_diarias.sql`): Bronze, Prata, Ouro, Adamantio, Rúnico, Diamante,
   Rei. Desde 24/10/2026 a disputa é diária (XP do `rankings` daily, Brasília), com regra
-  por elo: sobem 10/10/10/6/6/3 e caem do 20º/20º/15º/10º/10º para baixo (Bronze não cai);
-  no Rei ficam os 10 primeiros. A tabela está no SQL (`_regra_do_elo`) e em
+  por elo: sobem 10/10/5/5/3/3 (desde 03/11/2026, migration `20261103120000`; antes
+  10/10/10/6/6/3) e caem do 20º/20º/15º/10º/10º para baixo (Bronze não cai); no Rei ficam
+  os 2 primeiros (antes 10). A tabela está no SQL (`_regra_do_elo`) e em
   `src/data/elos.ts` (`REGRAS_DOS_ELOS`); `src/test/ligas.test.ts` falha se divergirem. Sem
   pg_cron: os dias fecham, em ordem, na primeira chamada de `get_liga()` depois da
   meia-noite. Ranking e perfil são os mesmos no app e no site

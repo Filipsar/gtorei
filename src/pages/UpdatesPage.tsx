@@ -22,6 +22,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.35.0',
+    date: '03/11/2026',
+    type: 'improvement',
+    title: 'Ligas: Novas Vagas de Subida e Rei Mais Disputado',
+    description: 'As ligas foram ajustadas ao número de jogadores de cada elo. No Ouro e no Adamantio sobem os 5 primeiros do dia; no Rúnico e no Diamante, os 3 primeiros. No Rei agora só continuam os 2 primeiros do dia: quem terminar do 3º para baixo, ou não jogar, cai para o Diamante. Bronze e Prata seguem com 10 vagas de subida, e as posições de queda não mudaram.',
+  },
+  {
     version: '1.34.1',
     date: '02/11/2026',
     type: 'fix',
