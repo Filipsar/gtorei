@@ -7,6 +7,8 @@ import { EloBadge } from '@/components/app/EloBadge';
 import { AchievementIcon } from '@/components/achievements/AchievementIcon';
 import { InsigniaDeIndicacao } from '@/components/referral/InsigniaDeIndicacao';
 import { useInsignias } from '@/hooks/useInsignias';
+import { usePros } from '@/hooks/usePros';
+import { SeloPro } from '@/components/ui/SeloPro';
 import { lerDestaques } from '@/lib/destaques';
 import { Avatar } from '@/components/app/RankingApp';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +58,7 @@ export function PerfilApp({ dados, proprio, enviando, imagemDoNivel, onEnviarCap
   const [destaques, setDestaques] = useState<string[] | null>(null);
   const [ajustes, setAjustes] = useState(false);
   const nivelIndicacao = useInsignias([dados.user_id]).get(dados.user_id) ?? 0;
+  const ehPro = usePros([dados.user_id]).has(dados.user_id);
   const capa = useRef<HTMLInputElement>(null);
   const resultado = useRef<HTMLInputElement>(null);
 
@@ -127,6 +130,7 @@ export function PerfilApp({ dados, proprio, enviando, imagemDoNivel, onEnviarCap
 
         <h1 className="mt-3 break-words text-2xl font-bold">
           {dados.username}
+          {ehPro && <SeloPro grande className="ml-2" />}
           {nivelIndicacao > 0 && <InsigniaDeIndicacao nivel={nivelIndicacao} tamanho={26} className="ml-2" />}
           {proprio && <span className="ml-2 align-middle text-xs font-medium text-muted-foreground">você</span>}
         </h1>

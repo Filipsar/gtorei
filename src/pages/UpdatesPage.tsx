@@ -27,7 +27,7 @@ const UPDATES: UpdateNote[] = [
     date: '04/11/2026',
     type: 'improvement',
     title: 'Obrigado a Quem Doou e Selo PRO',
-    description: 'Um agradecimento a todos que doaram: são as doações que mantêm o GTORei no ar e grátis. Quem doou já está com o PRO liberado, e agora a conta PRO ganha um selo dourado ao lado do nome, no topo do menu. Doou e o PRO não apareceu? É só chamar no WhatsApp pelo botão do aviso.',
+    description: 'Um agradecimento a todos que doaram: são as doações que mantêm o GTORei no ar e grátis. Quem doou já está com o PRO liberado, e agora a conta PRO ganha um selo dourado ao lado do nome: no topo do menu, no ranking e no perfil. Doou e o PRO não apareceu? É só chamar no WhatsApp pelo botão do aviso.',
   },
   {
     version: '1.37.0',

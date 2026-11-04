@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { SettingsModal } from './SettingsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupporter } from '@/hooks/useSupporter';
+import { SeloPro } from '@/components/ui/SeloPro';
 import { useLanguage } from '@/contexts/LanguageContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 import { tour, tourFeito, tourNoMenu } from '@/lib/tour';
@@ -261,15 +262,7 @@ export function AppSidebar() {
                 <div className="flex-1 min-w-0">
                   <p className="flex items-center gap-1.5 text-sm font-medium">
                     <span className="truncate">{profile?.username || user.email?.split('@')[0] || t.sidebar.player}</span>
-                    {isSupporter && (
-                      <span
-                        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-1.5 py-0.5 text-[10px] font-extrabold leading-none tracking-wide text-amber-950 shadow-sm"
-                        title="Conta PRO"
-                      >
-                        <Crown className="h-3 w-3" aria-hidden="true" />
-                        PRO
-                      </span>
-                    )}
+                    {isSupporter && <SeloPro />}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {user.email}

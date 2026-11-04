@@ -5,6 +5,8 @@ import { EloBadge } from '@/components/app/EloBadge';
 import { InsigniaDeIndicacao } from '@/components/referral/InsigniaDeIndicacao';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useInsignias } from '@/hooks/useInsignias';
+import { usePros } from '@/hooks/usePros';
+import { SeloPro } from '@/components/ui/SeloPro';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { ADMIN_EMAIL } from '@/data/admin';
@@ -140,6 +142,7 @@ function SuaLiga() {
   const [indisponivel, setIndisponivel] = useState(false);
   const { checkLiga, carregado } = useAchievements();
   const insignias = useInsignias(liga?.jogadores.map((j) => j.user_id) ?? []);
+  const pros = usePros(liga?.jogadores.map((j) => j.user_id) ?? []);
 
   // Conquistas de liga do elo atual (o servidor confere)
   const eloAtual = liga?.elo;
@@ -277,10 +280,18 @@ function SuaLiga() {
                   >
                     <span className="w-6 text-center text-sm font-bold tabular-nums">{j.posicao}</span>
                     <Avatar url={j.avatar_url} nome={j.username} />
-                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                      <span className="truncate font-medium">{j.username}</span>
-                      {insignias.get(j.user_id) ? <InsigniaDeIndicacao nivel={insignias.get(j.user_id)!} tamanho={18} /> : null}
-                      {j.eu && <span className="shrink-0 text-xs text-muted-foreground">(você)</span>}
+                    {/* Selos numa segunda linha: na coluna estreita, ao lado do nome, eles o espremiam */}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1">
+                        <span className="truncate font-medium">{j.username}</span>
+                        {j.eu && <span className="shrink-0 text-xs text-muted-foreground">(você)</span>}
+                      </span>
+                      {(pros.has(j.user_id) || !!insignias.get(j.user_id)) && (
+                        <span className="mt-0.5 flex items-center gap-1.5">
+                          {pros.has(j.user_id) && <SeloPro />}
+                          {insignias.get(j.user_id) ? <InsigniaDeIndicacao nivel={insignias.get(j.user_id)!} tamanho={18} /> : null}
+                        </span>
+                      )}
                     </span>
                     {sobe && <ChevronsUp className="h-5 w-5 shrink-0 text-feedback-best" aria-label="Zona de subida" />}
                     {cai && (
@@ -315,6 +326,7 @@ function Global() {
   const [elos, setElos] = useState<Map<string, number> | null>(null);
   const mesAtual = mes === meses[0];
   const insignias = useInsignias(linhas?.map((l) => l.user_id) ?? []);
+  const pros = usePros(linhas?.map((l) => l.user_id) ?? []);
 
   useEffect(() => {
     setLinhas(null);
@@ -399,11 +411,12 @@ function Global() {
                   </span>
                   <Avatar url={l.avatar_url} nome={l.username} />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate font-medium">{l.username}</span>
-                      {insignias.get(l.user_id) ? <InsigniaDeIndicacao nivel={insignias.get(l.user_id)!} tamanho={18} /> : null}
+                    <span className="block truncate font-medium">{l.username}</span>
+                    <span className="mt-0.5 flex items-center gap-1.5">
+                      {pros.has(l.user_id) && <SeloPro />}
+                      {insignias.get(l.user_id) ? <InsigniaDeIndicacao nivel={insignias.get(l.user_id)!} tamanho={16} /> : null}
+                      {elo !== null && <span className="truncate text-xs text-muted-foreground">{eloPorNumero(elo).nome}</span>}
                     </span>
-                    {elo !== null && <span className="text-xs text-muted-foreground">{eloPorNumero(elo).nome}</span>}
                   </span>
                   {elo !== null && <EloBadge elo={elo} tamanho={26} />}
                   <span className="shrink-0 text-sm font-semibold tabular-nums">{l.xp.toLocaleString('pt-BR')} XP</span>
