@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SettingsModal } from './SettingsModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSupporter } from '@/hooks/useSupporter';
 import { useLanguage } from '@/contexts/LanguageContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 import { tour, tourFeito, tourNoMenu } from '@/lib/tour';
@@ -71,6 +72,8 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
+  // Selo PRO ao lado do nome (apoiador, compra no Google Play ou PRO por indicação)
+  const { isSupporter } = useSupporter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [fechadas, setFechadas] = useState<string[]>(lerSecoesFechadas);
   const [secaoAtivaFechadaNaMao, setSecaoAtivaFechadaNaMao] = useState(false);
@@ -256,8 +259,17 @@ export function AppSidebar() {
                   </div>
               }
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {profile?.username || user.email?.split('@')[0] || t.sidebar.player}
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
+                    <span className="truncate">{profile?.username || user.email?.split('@')[0] || t.sidebar.player}</span>
+                    {isSupporter && (
+                      <span
+                        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-1.5 py-0.5 text-[10px] font-extrabold leading-none tracking-wide text-amber-950 shadow-sm"
+                        title="Conta PRO"
+                      >
+                        <Crown className="h-3 w-3" aria-hidden="true" />
+                        PRO
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {user.email}
