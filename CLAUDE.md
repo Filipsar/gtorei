@@ -102,9 +102,21 @@ Desde 02/10/2026 a **abertura** (`openRaise`) de todas as stacks sai de
 `openev.generated.ts` por `scripts/emit-open-ev-ts.mjs`. Para refazer: `node
 scripts/build-open-ev.mjs && node scripts/emit-open-ev-ts.mjs` (~2 min). O pós-flop é
 estimado por realização de equity, não resolvido; as simplificações e a limitação
-conhecida (CO/BTN apertados entre 20 e 35 BB) estão no cabeçalho do script. Mesa final,
-bounty, `vsOpenRaise` e `vs3bet` continuam no corte por percentual de `engine.ts`; o
-pagamento de all-in (`vsOpenShove`) continua no push/fold sem ante.
+conhecida (CO/BTN apertados entre 20 e 35 BB) estão no cabeçalho do script.
+
+Desde 04/11/2026 a **resposta à abertura** (`vsOpenRaise` e o pré-flop da simulação) de
+torneio também vem do `build-open-ev.mjs`, numa segunda rodada com `TODOS_PAGAM=1` (quem
+tem posição sobre quem abriu pode pagar, com risco de squeeze; o SB só dá 3-bet ou fold),
+gravada em `scripts/.cache/open-ev-respostas.json` e emitida como `OE_RESPOSTA`
+(`getRespostaRange` no `engine.ts`). As aberturas continuam da rodada normal: com o
+pagamento em posição o modelo apertava o UTG de 15,4% para 13,2% em 100 BB. Para refazer
+tudo: `node scripts/build-open-ev.mjs && TODOS_PAGAM=1 node scripts/build-open-ev.mjs &&
+node scripts/emit-open-ev-ts.mjs`. O **pagamento de all-in** (`vsOpenShove`, até 20 BB)
+saiu do push/fold, que desde a mesma data tem ante de 1 BB (`SEM_ANTE=1` refaz o antigo).
+Continuam no corte por percentual de `engine.ts`: mesa final, bounty, `vs3bet` de
+torneio e o `vsOpenShove` acima de 20 BB. Draws do pós-flop (OESD, dupla gutshot,
+gutshot, flush, com outs e chance exata) em `src/data/draws.ts`, usado pela análise
+(`postflopAnalysis.ts`, que compara o draw com o preço do call) e pelo vilão.
 
 ### Tailwind
 

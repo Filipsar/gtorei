@@ -25,8 +25,8 @@ describe('gráfico de range', () => {
     const comVilao = getRange('vsOpenShove', 'LJ', 8, false, '8max', 0, 3, 'UTG');
     const semVilao = getRange('vsOpenShove', 'LJ', 8, false, '8max', 0, 3, undefined);
 
-    const daNota = frequenciaDeCall(comVilao, 'KQs');
-    const daMedia = frequenciaDeCall(semVilao, 'KQs');
+    const daNota = frequenciaDeCall(comVilao, 'A7s');
+    const daMedia = frequenciaDeCall(semVilao, 'A7s');
     expect(daNota).not.toBe(daMedia);
 
     render(
@@ -38,12 +38,12 @@ describe('gráfico de range', () => {
         stack={8}
         gameMode="8max"
         villainPosition="UTG"
-        heroHand="KQs"
+        heroHand="A7s"
         heroAction="call"
       />
     );
 
-    const bloco = screen.getByText('Sua Mão: KQs').closest('div')!.parentElement!;
+    const bloco = screen.getByText('Sua Mão: A7s').closest('div')!.parentElement!;
     expect(within(bloco).getByText(`${daNota}%`)).toBeInTheDocument();
     expect(within(bloco).queryByText(`${daMedia}%`)).not.toBeInTheDocument();
   });

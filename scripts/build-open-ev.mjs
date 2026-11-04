@@ -124,11 +124,19 @@ const tamanho4bet = (T, S) => (CASH && T && 2.2 * T < 0.4 * S ? 2.2 * T : null);
 // pagava, os blinds de trás eram tratados como se sempre foldassem, e os dois
 // disputavam 2,5 BB de blinds e ante de graça. Com 20 BB isso fazia cada vilão
 // pagar 69% e o UTG abrir 67%. O BB fecha a ação, então o pote dele está certo.
+// Torneio, respostas (04/11/2026): com TODOS_PAGAM=1, quem tem posição sobre
+// quem abriu também pode pagar, com o mesmo risco de squeeze do cash; o SB
+// continua em 3-bet ou fold, como nos solvers de torneio. É dessa rodada que
+// saem as respostas à abertura do app (vsOpenRaise): sem pagar em posição, o
+// botão dava 3-bet em 19,6% contra o CO em 100 BB e nunca pagava. As ABERTURAS
+// continuam da rodada normal: com o pagamento em posição o modelo apertava o
+// UTG de 15,4% para 13,2% em 100 BB, longe dos ~16% de solver.
 // Cash (31/10/2026, etapa 1): todo mundo pode pagar a abertura. O brinde que
 // fazia o torneio travar isso (os blinds de trás foldando sempre) vira risco de
 // squeeze: quem paga fora do BB perde o call se alguém atrás der 3-bet, com a
 // chance tirada da frequência de 3-bet de quem fala depois (ver pSqueeze).
-const podePagarAbertura = (vilao) => CASH || vilao === 'BB';
+const TODOS_PAGAM = CASH || !!process.env.TODOS_PAGAM;
+const podePagarAbertura = (vilao) => CASH || vilao === 'BB' || (TODOS_PAGAM && vilao !== 'SB');
 
 // ── Realização de equity ──────────────────────────────────────────────────
 // Jogabilidade: quanto da equity crua a mão converte quando joga pós-flop.
@@ -324,7 +332,7 @@ function resolver(modo, S) {
       // Chance de alguém atrás de v dar 3-bet (squeeze) depois que v paga: usa a
       // frequência de 3-bet de cada um contra este herói. Só conta no cash.
       const pSqueeze = (v) => {
-        if (!CASH) return 0;
+        if (!TODOS_PAGAM) return 0;
         let ninguem = 1;
         for (const w of atras.slice(atras.indexOf(v) + 1)) ninguem *= 1 - Math.min(1, largura(e.vs[w].tR) + largura(e.vs[w].uR));
         return 1 - ninguem;
@@ -524,8 +532,7 @@ for (const modo of Object.keys(MESAS)) {
       const k = `${modo}|${p}|${S}`;
       saida.abertura[k] = { r: freqB64(e.R), j: freqB64(e.J), er: evB64(e.evR), ej: evB64(e.evJ) };
       saida.largura[k] = { abre: +(100 * (largura(e.R) + largura(e.J))).toFixed(1), allin: +(100 * largura(e.J)).toFixed(1) };
-      // Respostas à abertura: guardadas para comparar; o app ainda não usa
-      // (vsOpenRaise continua no modelo antigo por enquanto)
+      // Respostas à abertura: o app usa as da rodada TODOS_PAGAM (emit-open-ev-ts.mjs)
       for (const [v, x] of Object.entries(e.vs)) {
         saida.resposta[`${modo}|${v}|vs${p}|${S}`] = { c: freqB64(x.cR), t: freqB64(x.tR), u: freqB64(x.uR) };
         // Cash: o herói (p) contra o 3-bet pequeno de v: paga, 4-bet pequeno ou 4-bet all-in
@@ -543,7 +550,14 @@ if (soModo) {
   process.exit(0);
 }
 
-writeFileSync(CASH ? 'scripts/.cache/open-ev-cash.json' : 'scripts/.cache/open-ev.json', JSON.stringify(saida));
+writeFileSync(
+  CASH ? 'scripts/.cache/open-ev-cash.json' : TODOS_PAGAM ? 'scripts/.cache/open-ev-respostas.json' : 'scripts/.cache/open-ev.json',
+  JSON.stringify(saida),
+);
+if (TODOS_PAGAM && !CASH) {
+  console.log('respostas gravadas em scripts/.cache/open-ev-respostas.json');
+  process.exit(0);
+}
 if (CASH) {
   for (const [k, v] of Object.entries(saida.largura)) console.log(k.padEnd(18), 'abre', String(v.abre).padStart(5) + '%');
   process.exit(0);

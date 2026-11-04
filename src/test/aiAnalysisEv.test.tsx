@@ -62,5 +62,6 @@ describe('relatório da análise com IA', () => {
     expect(screen.queryByText(/27\.40/)).toBeNull();
     expect(screen.getByText(/1 mão ficou sem comentário da IA/)).toBeInTheDocument();
     expect(screen.getByText('0.00 bb')).toBeInTheDocument();
-  });
+    // Renderiza a página inteira: com a suíte rodando em paralelo passa de 5 s
+  }, 20000);
 });

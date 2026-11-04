@@ -6,7 +6,7 @@ const { hands } = JSON.parse(readFileSync('scripts/.cache/equity-matrix.json', '
 
 const linhas = [];
 linhas.push('// ARQUIVO GERADO por scripts/build-pushfold.mjs — não editar à mão.');
-linhas.push('// Ranges de push/fold calculadas por EV (chipEV, stacks iguais, sem ante),');
+linhas.push('// Ranges de push/fold calculadas por EV (chipEV, stacks iguais, ante de big blind de 1 BB),');
 linhas.push('// iterando melhor-resposta amortecida até o equilíbrio, sobre uma matriz');
 linhas.push('// de equity 169x169 gerada por Monte Carlo (12 mil simulações por confronto).');
 linhas.push('');

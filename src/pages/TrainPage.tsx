@@ -973,6 +973,9 @@ export default function TrainPage() {
       street: streetLabel,
       heroAction: heroActionLabel,
       villainAction: villainActionLabel,
+      // Aposta enfrentada e pote antes da ação: a análise compara o draw com o preço do call
+      villainAmount: facingBet ? handState.villainAction!.amount : undefined,
+      potBefore: facingBet ? handState.pot : undefined,
       pot: newState.pot,
       effectiveStack: handState.heroStack,
       boardCards: [...handState.communityCards],

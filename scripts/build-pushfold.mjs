@@ -1,6 +1,9 @@
 // Calcula ranges de push/fold por EV, iterando até o equilíbrio.
-// Modelo: chipEV, stacks iguais, sem ante, um único pagador (simplificação padrão).
-// Uso: node scripts/build-pushfold.mjs
+// Modelo: chipEV, stacks iguais, um único pagador (simplificação padrão) e,
+// desde 04/11/2026, ante de big blind de 1 BB como dinheiro morto, o mesmo do
+// build-open-ev.mjs. Sem ante, quem pagava o all-in jogava apertado demais:
+// com o ante o pote dá melhor preço para pagar.
+// Uso: node scripts/build-pushfold.mjs   (SEM_ANTE=1 refaz o modelo antigo)
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const cache = JSON.parse(readFileSync('scripts/.cache/equity-matrix.json', 'utf8'));
@@ -30,6 +33,8 @@ const MESAS = {
 };
 
 const STACKS = [8, 9, 10, 12, 14, 17, 20];
+const ANTE = process.env.SEM_ANTE ? 0 : 1; // ante de big blind, em BB
+const POTE_INICIAL = 0.5 + 1 + ANTE;       // blinds e ante antes de qualquer ação
 const MARGEM_MIX = 0.15; // bb: faixa onde a mão é jogada em frequência mista
 
 // Equity de TODAS as mãos contra uma range, num passo só (produto matriz-vetor)
@@ -59,7 +64,8 @@ const freqDeMargem = (ev) => {
 };
 
 // EV de pagar um all-in de S bb. postado = quanto o pagador já colocou (blind).
-// morto = fichas mortas no pote que não são do herói nem do pagador.
+// morto = fichas mortas no pote que não são do herói nem do pagador (blinds de
+// terceiros e o ante).
 function rangeDePagamento(S, postado, morto, rangeDoShover) {
   const freq = new Float64Array(N);
   const evs = new Float64Array(N);
@@ -95,10 +101,8 @@ function rangeDeShove(S, heroPostado, jogadoresAtras) {
       probTodosFoldaram *= 1 - c;
     }
 
-    // Todos foldaram: herói leva os blinds que não são dele
-    const blindsAlheios = jogadoresAtras.reduce((acc, j) => acc + j.postado, 0) +
-      (heroPostado > 0 ? 1.5 - heroPostado - jogadoresAtras.reduce((a, j) => a + j.postado, 0) : 1.5 - jogadoresAtras.reduce((a, j) => a + j.postado, 0));
-    ev += probTodosFoldaram * Math.max(0, blindsAlheios);
+    // Todos foldaram: herói leva os blinds e o ante que não são dele
+    ev += probTodosFoldaram * (POTE_INICIAL - heroPostado);
 
     const evFold = -heroPostado;
     evs[i] = ev - evFold;
@@ -177,7 +181,7 @@ for (const [modo, posicoes] of Object.entries(MESAS)) {
         const atras = posicoes.slice(posicoes.indexOf(sh) + 1).map((jp) => {
           const postado = postadoDe(jp);
           const freq = chamadas[sh][jp];
-          return { pos: jp, postado, freq, larguraChamada: larguraEmCombos(freq), morto: Math.max(0, 1.5 - postado - heroPostado) };
+          return { pos: jp, postado, freq, larguraChamada: larguraEmCombos(freq), morto: POTE_INICIAL - postado - heroPostado };
         });
         const alvo = rangeDeShove(S, heroPostado, atras);
         mudanca += mistura(shoves[sh].freq, alvo.freq);
@@ -188,7 +192,8 @@ for (const [modo, posicoes] of Object.entries(MESAS)) {
       for (const sh of shovers) {
         for (const pagador of Object.keys(chamadas[sh])) {
           const postado = postadoDe(pagador);
-          const morto = Math.max(0, 1.5 - postado);
+          // O que o shover postou já está no S dele; morto é só o resto
+          const morto = POTE_INICIAL - postado - postadoDe(sh);
           const alvo = rangeDePagamento(S, postado, morto, shoves[sh].freq);
           mudanca += mistura(chamadas[sh][pagador], alvo.freq);
           chamadas[sh][pagador + '_evs'] = alvo.evs;

@@ -3,6 +3,7 @@
 
 import { CardType } from '@/components/poker/PlayingCard';
 import { evaluateHand, HandRank } from './handEvaluator';
+import { descreverChance, descreverDraws, detectarDraws, type Draws } from './draws';
 
 // ============================================================
 // TYPES
@@ -100,30 +101,19 @@ function analyzeBoardTexture(board: CardType[]): BoardTextureInfo {
 // DRAW DETECTION FOR HERO
 // ============================================================
 
-function countHeroDraws(heroCards: CardType[], board: CardType[]): { hasFlushDraw: boolean; hasStraightDraw: boolean; outs: number } {
-  const allCards = [...heroCards, ...board];
-  
-  // Flush draw
-  const suitCounts: Record<string, number> = {};
-  allCards.forEach(c => { suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1; });
-  const hasFlushDraw = Object.values(suitCounts).some(c => c === 4);
+// Detector exato em ./draws (04/11/2026): OESD 8 outs, dupla gutshot 8,
+// gutshot 4, flush 9; só no flop e no turn, e só com carta do herói.
+type DrawsDoHeroi = { outs: number; hasFlushDraw: boolean; hasStraightDraw: boolean; detalhe: Draws };
 
-  // Straight draw (open-ended)
-  const values = [...new Set(allCards.map(c => RANK_VALUES[c.rank]))].sort((a, b) => a - b);
-  let hasStraightDraw = false;
-  for (let i = 0; i <= values.length - 4; i++) {
-    if (values[i + 3] - values[i] <= 4) {
-      hasStraightDraw = true;
-      break;
-    }
-  }
+function countHeroDraws(heroCards: CardType[], board: CardType[]): DrawsDoHeroi {
+  const d = detectarDraws(heroCards, board);
+  return { outs: d.outs, hasFlushDraw: d.flush, hasStraightDraw: d.sequencia !== null, detalhe: d };
+}
 
-  let outs = 0;
-  if (hasFlushDraw) outs += 9;
-  if (hasStraightDraw) outs += 8;
-  if (hasFlushDraw && hasStraightDraw) outs = 15; // combo draw overlap
-
-  return { hasFlushDraw, hasStraightDraw, outs };
+/** Preço do call: equity mínima para pagar a aposta, em % (pote já inclui a aposta) */
+export function equityParaPagar(apostaEnfrentada: number, poteComAposta: number): number {
+  if (apostaEnfrentada <= 0 || poteComAposta <= 0) return 0;
+  return Math.round((1000 * apostaEnfrentada) / (poteComAposta + apostaEnfrentada)) / 10;
 }
 
 // ============================================================
@@ -217,16 +207,27 @@ function calculatePotOdds(callAmount: number, pot: number): number {
 // VERDICT ENGINE
 // ============================================================
 
-function getVerdict(tier: number, action: string, boardTexture: BoardTextureInfo, draws: { outs: number; hasFlushDraw: boolean; hasStraightDraw: boolean }, pot: number, villainAction?: string): { verdict: StreetVerdict; reasons: string[] } {
+function getVerdict(tier: number, action: string, boardTexture: BoardTextureInfo, draws: { outs: number; hasFlushDraw: boolean; hasStraightDraw: boolean; detalhe?: Draws }, pot: number, villainAction?: string, precoDoCall?: number): { verdict: StreetVerdict; reasons: string[] } {
   const lower = action.toLowerCase();
   const reasons: string[] = [];
   let score = 50; // Start neutral
+  // Draw contra o preço do call: chance de completar na próxima carta x equity mínima
+  const chance = draws.detalhe?.proximaCarta ?? 0;
+  const temPreco = !!precoDoCall && draws.outs > 0 && tier <= 2;
 
   // ---- FOLD analysis ----
   if (lower === 'fold') {
     if (tier >= 4) {
       reasons.push('Foldou com mão forte — jogada questionável');
       return { verdict: 'bad', reasons };
+    }
+    if (temPreco) {
+      if (chance >= precoDoCall!) {
+        reasons.push(`Foldou com o preço certo para pagar: o draw completa ${chance}% na próxima carta e o call pedia ${precoDoCall}%`);
+        return { verdict: 'questionable', reasons };
+      }
+      reasons.push(`Fold correto pelo preço: o draw completa ${chance}% na próxima carta e o call pedia ${precoDoCall}%`);
+      return { verdict: chance >= precoDoCall! - 8 ? 'acceptable' : 'good', reasons };
     }
     if (tier >= 2 && draws.outs > 0) {
       reasons.push('Foldou com draw — considere call com pot odds favoráveis');
@@ -238,6 +239,19 @@ function getVerdict(tier: number, action: string, boardTexture: BoardTextureInfo
     }
     reasons.push('Fold aceitável nessa situação');
     return { verdict: 'acceptable', reasons };
+  }
+
+  // ---- CALL com draw: o preço ----
+  if (lower.startsWith('call') && temPreco) {
+    if (chance >= precoDoCall!) {
+      reasons.push(`Call com preço: o draw completa ${chance}% na próxima carta e o call pede ${precoDoCall}%`);
+      score += 15;
+    } else if (chance >= precoDoCall! - 8) {
+      reasons.push(`Call um pouco caro (${chance}% contra ${precoDoCall}%): fica bom se você ganhar mais fichas quando completar (odds implícitas)`);
+    } else {
+      reasons.push(`Call caro para o draw: completa ${chance}% na próxima carta e o call pede ${precoDoCall}%`);
+      score -= 20;
+    }
   }
 
   // ---- CHECK analysis ----
@@ -258,6 +272,9 @@ function getVerdict(tier: number, action: string, boardTexture: BoardTextureInfo
       score += 15;
     } else if (draws.outs >= 8) {
       reasons.push('Check com draw forte — semi-bluff seria uma opção');
+    } else if (draws.outs > 0 && tier <= 1) {
+      reasons.push('Check com draw fraco — ver a próxima carta de graça é bom');
+      score += 10;
       score += 0;
     }
   }
@@ -431,7 +448,10 @@ export interface StreetActionData {
   heroAction: string;
   heroAmount?: number;
   villainAction?: string;
+  /** Aposta que o herói enfrentava (já somada em potBefore) */
   villainAmount?: number;
+  /** Pote antes da ação do herói, com a aposta do vilão; com villainAmount dá o preço do call */
+  potBefore?: number;
   pot: number;
   effectiveStack?: number;
   boardCards?: CardType[];
@@ -459,16 +479,17 @@ export function analyzeStreetAction(data: StreetActionData): StreetAnalysis {
   const handStrength = classifyHandStrength(hero, board);
   const draws = countHeroDraws(hero, board);
   const sizing = analyzeSizing(heroAction, pot);
+  const precoDoCall = data.villainAmount && data.potBefore ? equityParaPagar(data.villainAmount, data.potBefore) : undefined;
 
-  const { verdict, reasons } = getVerdict(handStrength.tier, heroAction, boardTexture, draws, pot, villainAction);
+  const { verdict, reasons } = getVerdict(handStrength.tier, heroAction, boardTexture, draws, pot, villainAction, precoDoCall);
   const { label: verdictLabel, emoji: verdictEmoji } = VERDICT_MAP[verdict];
 
-  // Add draw info to reasoning
-  if (draws.hasFlushDraw && !reasons.some(r => r.includes('flush'))) {
-    reasons.push(`Flush draw detectado (${draws.outs} outs)`);
-  }
-  if (draws.hasStraightDraw && !reasons.some(r => r.includes('draw'))) {
-    reasons.push(`Straight draw detectado`);
+  // Draw do herói: tipo, outs e a chance de completar (conta exata pelas cartas não vistas)
+  const textoDoDraw = descreverDraws(draws.detalhe);
+  if (textoDoDraw) {
+    reasons.push(textoDoDraw);
+    const chance = descreverChance(draws.detalhe, board.length === 3 ? 2 : 1);
+    if (chance) reasons.push(chance);
   }
 
   // Generate ideal play suggestion when verdict is not optimal

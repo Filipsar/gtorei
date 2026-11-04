@@ -7,7 +7,7 @@ import {
 } from './types';
 import { HAND_ORDER } from './handorder.generated';
 import { PF_HANDS, PF_SHOVE, PF_CALL, PF_STACKS, decodePF } from './pushfold.generated';
-import { OE_HANDS, OE_STACKS, OE_ABERTURA } from './openev.generated';
+import { OE_HANDS, OE_STACKS, OE_ABERTURA, OE_RESPOSTA } from './openev.generated';
 import { CASH_ABERTURA, CASH_HANDS, CASH_RESPOSTA, CASH_VS3BET } from './cash.generated';
 
 // ============================================================
@@ -519,6 +519,81 @@ function getOpenEvRange(gameMode: GameMode, position: Position, stack: number): 
   return { scenario: 'openRaise', position, stack, finalTable: false, hands };
 }
 
+// Resposta à abertura (vsOpenRaise) calculada por EV, com ante, pelo mesmo
+// método da abertura (04/11/2026): pagar, 3-bet pequeno ou 3-bet all-in. Vem da
+// rodada do build-open-ev.mjs em que quem tem posição sobre quem abriu também
+// pode pagar; o SB responde com 3-bet ou fold, e o BB defende. Sem saber quem
+// abriu, é a média de todos que podem abrir antes do herói. Substituiu o corte
+// fixo por posição (MODE_CONFIGS), que não tinha ante nem dependia de quem abriu.
+const decodeOuZero = (b: string) => (b ? decodePF(b) : new Array(OE_HANDS.length).fill(0));
+// Média já decodificada por "modo|herói|vilão-ou-*|stack": o treino e a tela de
+// tabelas pedem a mesma resposta muitas vezes
+const respostaLida = new Map<string, { c: number[]; t: number[]; u: number[] } | null>();
+
+function getRespostaRange(
+  gameMode: GameMode,
+  scenario: Scenario,
+  position: Position,
+  stack: number,
+  villainPosition?: Position
+): RangeData | null {
+  const modo = MODE_KEY[gameMode];
+  const { baixo, alto, peso } = vizinhosDeStack(stack, OE_STACKS);
+  const chaves = (s: number) =>
+    villainPosition
+      ? [`${modo}|${position}|vs${villainPosition}|${s}`]
+      : Object.keys(OE_RESPOSTA).filter((k) => k.startsWith(`${modo}|${position}|vs`) && k.endsWith(`|${s}`));
+  const ler = (s: number) => {
+    const memo = `${modo}|${position}|${villainPosition ?? '*'}|${s}`;
+    if (respostaLida.has(memo)) return respostaLida.get(memo)!;
+    const tabelas = chaves(s).map((k) => OE_RESPOSTA[k]).filter(Boolean);
+    if (tabelas.length === 0) {
+      respostaLida.set(memo, null);
+      return null;
+    }
+    const soma = { c: new Array(OE_HANDS.length).fill(0), t: new Array(OE_HANDS.length).fill(0), u: new Array(OE_HANDS.length).fill(0) };
+    for (const x of tabelas) {
+      const c = decodeOuZero(x.c), t = decodeOuZero(x.t), u = decodeOuZero(x.u);
+      for (let i = 0; i < OE_HANDS.length; i++) {
+        soma.c[i] += c[i] / tabelas.length;
+        soma.t[i] += t[i] / tabelas.length;
+        soma.u[i] += u[i] / tabelas.length;
+      }
+    }
+    respostaLida.set(memo, soma);
+    return soma;
+  };
+  const A = ler(baixo);
+  const B = peso > 0 ? ler(alto) : A;
+  if (!A || !B) return null;
+
+  const porMao = new Map<string, { c: number; t: number; u: number }>();
+  const mistura = (x: number[], y: number[], i: number) => x[i] * (1 - peso) + y[i] * peso;
+  OE_HANDS.forEach((h, i) => porMao.set(h, { c: mistura(A.c, B.c, i), t: mistura(A.t, B.t, i), u: mistura(A.u, B.u, i) }));
+
+  const hands: HandData[] = getSortedHands(gameMode).map((entry) => {
+    const d = porMao.get(entry.hand) ?? { c: 0, t: 0, u: 0 };
+    let call = Math.max(0, Math.round(d.c));
+    let raise = Math.max(0, Math.round(d.t));
+    let allin = Math.max(0, Math.round(d.u));
+    // O arredondamento pode passar de 100; tira da maior
+    while (call + raise + allin > 100) {
+      if (call >= raise && call >= allin) call--;
+      else if (raise >= allin) raise--;
+      else allin--;
+    }
+    const actions = ([
+      { action: 'allin', frequency: allin },
+      { action: 'raise', frequency: raise },
+      { action: 'call', frequency: call },
+      { action: 'fold', frequency: 100 - call - raise - allin },
+    ] as ActionFrequency[]).filter((a) => a.frequency > 0 || a.action === 'fold');
+    return { hand: entry.hand, actions, primaryAction: pickPrimaryAction(actions), suited: entry.suited, pair: entry.pair };
+  });
+
+  return { scenario, position, stack, finalTable: false, hands };
+}
+
 // Devolve a range calculada por EV, ou null quando o caso sai do modelo
 // (mesa final usa ICM, bounty muda os incentivos, stack alto não é push/fold)
 function getSolvedRange(
@@ -534,6 +609,10 @@ function getSolvedRange(
   if (scenario === 'openRaise') {
     const aberta = getOpenEvRange(gameMode, position, stack);
     if (aberta) return aberta;
+  }
+  if (scenario === 'vsOpenRaise' || scenario === 'simulation') {
+    const resposta = getRespostaRange(gameMode, scenario, position, stack, villainPosition);
+    if (resposta) return resposta;
   }
   if (stack > PF_STACKS[PF_STACKS.length - 1]) return null;
   if (scenario !== 'openRaise' && scenario !== 'vsOpenShove') return null;

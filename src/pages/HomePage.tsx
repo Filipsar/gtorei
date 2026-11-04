@@ -55,7 +55,7 @@ const FAQ = [
   },
   {
     q: 'As ranges são calculadas ou copiadas de alguma tabela?',
-    a: 'Calculadas aqui. O push/fold de 8bb a 20bb sai de uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta até o equilíbrio; os resultados batem com as tabelas de Nash publicadas. Desde outubro de 2026, a abertura de todas as stacks também é calculada por EV, com ante e com a escolha entre abrir pequeno ou ir de all-in. No modo Cash, abertura, resposta à abertura e resposta ao 3-bet saem do mesmo cálculo, com rake e bloqueadores. No torneio, as respostas a uma abertura (pagar e 3-bet) ainda usam um corte por força de mão.',
+    a: 'Calculadas aqui. O push/fold de 8bb a 20bb sai de uma matriz de equity 169x169 gerada por simulação de Monte Carlo e, em cima dela, iteração de melhor-resposta até o equilíbrio; os resultados batem com as tabelas de Nash publicadas. Desde outubro de 2026, a abertura de todas as stacks também é calculada por EV, com ante e com a escolha entre abrir pequeno ou ir de all-in. No modo Cash, abertura, resposta à abertura e resposta ao 3-bet saem do mesmo cálculo, com rake e bloqueadores. Desde novembro de 2026, no torneio, a resposta a uma abertura (pagar, 3-bet ou 3-bet all-in) e o pagamento de all-in também saem do cálculo por EV com o ante. Mesa final, bounty e o vs 3-bet do torneio ainda usam um corte por força de mão.',
   },
   {
     q: 'Serve para torneio ou para cash game?',

@@ -478,8 +478,11 @@ export default function TablesPage() {
   const effectivePosition = validas.includes(position) ? position : validas[0];
 
   // "Contra quem": só onde a range depende de quem abriu ou empurrou (cash vs
-  // abertura e pagar all-in); quem age antes do herói
-  const usaVilao = (cash && (cenario === 'vsOpenRaise' || cenario === 'vs3bet')) || (!cash && cenario === 'vsOpenShove');
+  // abertura, pagar all-in e, desde 04/11/2026, a resposta à abertura do
+  // torneio fora da mesa final); quem age antes do herói
+  const usaVilao =
+    (cash && (cenario === 'vsOpenRaise' || cenario === 'vs3bet')) ||
+    (!cash && (cenario === 'vsOpenShove' || (cenario === 'vsOpenRaise' && !mesaFinal)));
   // No vs 3-bet o vilão fala depois do herói; nos outros, antes
   const iHeroi = positions.indexOf(effectivePosition);
   const viloes = !usaVilao ? [] : cenario === 'vs3bet' ? positions.slice(iHeroi + 1) : positions.slice(0, iHeroi);

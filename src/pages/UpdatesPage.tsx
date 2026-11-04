@@ -16,13 +16,19 @@ interface UpdateNote {
 const UPCOMING: string[] = [
   'Modo Cash 6-max aberto para todos, com pagar a abertura em posição e jogo pós-flop',
   'App Android na Play Store',
-  'Respostas a uma abertura (pagar e 3-bet) nos torneios calculadas pelo mesmo método da abertura',
-  'Ante também no pagamento de all-in',
-  'Análise de straight draw (OESD, gutshot) no board',
+  'Resposta ao 3-bet nos torneios calculada pelo mesmo método da abertura',
+  'Mesa final (ICM) e bounty calculados por EV',
   'Aulas gratuitas de poker GTO',
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.37.0',
+    date: '04/11/2026',
+    type: 'improvement',
+    title: 'Respostas à Abertura por EV, Ante no All-in e Draws de Sequência',
+    description: 'Três itens dos próximos passos. A resposta a uma abertura nos torneios (pagar, 3-bet ou 3-bet all-in) agora sai do mesmo cálculo de EV da abertura, com ante e dependendo de quem abriu: o big blind defende bem mais, como nos solvers de torneio (contra o CO com 100 BB, paga 67%, antes 30%), quem tem posição paga ou dá 3-bet, o small blind responde com 3-bet ou fold e, com stack curto, o 3-bet vira all-in. Na aba Tabelas dá para escolher quem abriu. O pagamento de all-in (até 20 BB) passou a contar o ante: o pote dá melhor preço e quem paga joga mais solto (o BB contra o all-in de 10 BB do SB paga 53%, antes 38%). E a análise do pós-flop reconhece direito os draws de sequência: open-ended e dupla gutshot com 8 outs, gutshot com 4 (antes todo draw valia 8), o ás como 1 na sequência baixa, a chance exata de completar e, quando você enfrenta aposta, se o draw tinha o preço para pagar. Mesa final, bounty e o vs 3-bet do torneio continuam no modelo anterior. Os pontos já registrados não foram alterados.',
+  },
   {
     version: '1.36.0',
     date: '04/11/2026',

@@ -2,6 +2,7 @@
 // Makes optimal villain decisions based on board texture, ranges, pot odds, position, SPR, draws, and multi-street memory
 
 import { CardType } from '@/components/poker/PlayingCard';
+import { detectarDraws } from './draws';
 import { Position, POSITIONS } from './gtoRanges';
 import { HandRank, HandEvaluation, evaluateHand } from './handEvaluator';
 import { Street } from './handState';
@@ -74,63 +75,19 @@ interface DrawInfo {
   outs: number;
 }
 
+// Mesmo detector da análise do herói (src/data/draws.ts, 04/11/2026). O antigo
+// tratava quatro cartas numa janela de cinco como open-ended e três como gutshot.
 function detectDraws(holeCards: CardType[], boardCards: CardType[]): DrawInfo {
-  const allCards = [...holeCards, ...boardCards];
-  let hasFlushDraw = false;
-  let hasStraightDraw = false;
-  let hasGutshot = false;
-  let outs = 0;
-  
-  // Flush draw detection: hole card suits matching board suits to make 4 to flush
-  const suitCounts: Record<string, number> = {};
-  allCards.forEach(c => { suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1; });
-  
-  for (const [suit, count] of Object.entries(suitCounts)) {
-    if (count === 4 && holeCards.some(c => c.suit === suit)) {
-      hasFlushDraw = true;
-      outs += 9;
-      break;
-    }
-  }
-  
-  // Straight draw detection
-  const allValues = [...new Set(allCards.map(c => RANK_VALUES[c.rank] || 0))].sort((a, b) => a - b);
-  // Add low ace
-  if (allValues.includes(14)) allValues.unshift(1);
-  
-  // Count consecutive cards in windows of 5
-  let maxConsecutive = 0;
-  for (let target = 1; target <= 14; target++) {
-    const window = [target, target + 1, target + 2, target + 3, target + 4];
-    const matched = window.filter(v => allValues.includes(v > 14 ? v - 13 : v)).length;
-    if (matched > maxConsecutive) maxConsecutive = matched;
-  }
-  
-  if (maxConsecutive === 4) {
-    // Check if hole cards contribute to the draw
-    const holeValues = holeCards.map(c => RANK_VALUES[c.rank] || 0);
-    const boardValues = boardCards.map(c => RANK_VALUES[c.rank] || 0);
-    const holeContributes = holeValues.some(v => !boardValues.includes(v));
-    if (holeContributes) {
-      hasStraightDraw = true;
-      outs += 8;
-    }
-  } else if (maxConsecutive === 3) {
-    // Gutshot (4 outs)
-    const holeValues = holeCards.map(c => RANK_VALUES[c.rank] || 0);
-    const boardValues = boardCards.map(c => RANK_VALUES[c.rank] || 0);
-    const holeContributes = holeValues.some(v => !boardValues.includes(v));
-    if (holeContributes) {
-      hasGutshot = true;
-      outs += 4;
-    }
-  }
-  
-  const hasComboDraws = hasFlushDraw && (hasStraightDraw || hasGutshot);
-  // Adjust for overlap
-  if (hasComboDraws) outs = Math.min(outs, 15);
-  
-  return { hasFlushDraw, hasStraightDraw, hasGutshot, hasComboDraws, outs };
+  const d = detectarDraws(holeCards, boardCards);
+  const hasStraightDraw = d.sequencia === 'oesd' || d.sequencia === 'dupla_gutshot';
+  const hasGutshot = d.sequencia === 'gutshot';
+  return {
+    hasFlushDraw: d.flush,
+    hasStraightDraw,
+    hasGutshot,
+    hasComboDraws: d.flush && (hasStraightDraw || hasGutshot),
+    outs: d.outs,
+  };
 }
 
 // ============================================================
