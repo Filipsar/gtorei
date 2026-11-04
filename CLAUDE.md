@@ -208,6 +208,22 @@ cenário e há mão dele no relatório, o link `/treinar?treino=&modo=&pos=&stac
 URL). Histórico na tabela `analises_ia` (migration `20261101120000`): relatório e resumo de
 cada mão, nunca o hand history; 50 por conta. Sem a migration, a lista diz "em breve".
 
+### Conquistas, destaques e insígnia de indicação (04/11/2026)
+
+Migration `20261104120000`. Sniper GTO, Perfeição Estendida e Solver Humano só valem em sessão do
+modo Aleatório (`training_sessions.aleatorio`, marcada pelo TrainPage; sem a coluna, a sessão é gravada
+sem a marca); a tela mostra um "i" (`soNoAleatorio` em `src/data/achievements.ts`). Conquistas de liga
+`liga_3`..`liga_7` e `liga_rei_3`, conferidas pelo `unlock_achievement` em `liga_jogador` e
+`liga_historico_dia` e pedidas pelo `RankingApp` (`checkLiga`). Até 3 conquistas em destaque no perfil
+(`profiles.conquistas_destaque`, gatilho recusa a que a pessoa não tem). Insígnia do nível de indicação
+(`InsigniaDeIndicacao`, nobres do nível 3 em diante) vem de `insignias_de_indicacao(uuid[])`, porque
+`user_achievements` é privada; o hook `useInsignias` guarda no módulo. A conta do Filipe recebeu as cinco
+de indicação na própria migration (trouxe os jogadores no orgânico). XP do UTG1 na mesa de 8: 1/3 do
+ganho (`pesarPorPosicao` no cliente e `claim_simulado` no servidor). Comunidade: uma consulta com
+reações e comentários embutidos + uma de perfis, feed guardado no módulo, 20 por página. Precisão por
+sessão dos últimos 12 meses na Análise só para PRO (`src/lib/precisaoAnual.ts`; com mais de 60 sessões,
+um ponto por semana). O link de feedback (Google Forms) saiu do menu e do Mais.
+
 ## Não fazer
 
 - Não prometer na interface o que não existe. Já houve texto de onboarding citando

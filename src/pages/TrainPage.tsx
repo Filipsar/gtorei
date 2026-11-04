@@ -14,7 +14,7 @@ import { EVENTO_MAO_REGISTRADA } from '@/hooks/useDailyChallenges';
 import { DailyChallengesCard } from '@/components/challenges/DailyChallengesCard';
 import { ehApp, usarLayoutDoApp } from '@/lib/nativo/plataforma';
 import { useDificuldade } from '@/hooks/useDificuldade';
-import { ajustarPontos, limitarPontos, pesarPorCenario, sortearMao } from '@/lib/dificuldade';
+import { ajustarPontos, limitarPontos, pesarPorCenario, pesarPorPosicao, sortearMao } from '@/lib/dificuldade';
 import { somDaJogada, tocar } from '@/lib/sons';
 import { BotaoDeSom } from '@/components/poker/BotaoDeSom';
 import { DificuldadeControle } from '@/components/poker/DificuldadeControle';
@@ -364,17 +364,20 @@ export default function TrainPage() {
     // Persist session to Supabase (awaited before the first hand is recorded)
     if (user) {
       supabaseSessionId.current = null;
-      sessionPromise.current = supabase
-        .from('training_sessions')
-        .insert({
-          user_id: user.id,
-          // claim_simulado só corrige sessão marcada assim
-          scenario: emSimulado ? CENARIO_DA_SESSAO_SIMULADO : selectedScenario,
-          position: pos,
-          stack: stk,
-        })
-        .select('id')
-        .single()
+      const linha = {
+        user_id: user.id,
+        // claim_simulado só corrige sessão marcada assim
+        scenario: emSimulado ? CENARIO_DA_SESSAO_SIMULADO : selectedScenario,
+        position: pos,
+        stack: stk,
+      };
+      const inserir = (dados: typeof linha & { aleatorio?: boolean }) =>
+        supabase.from('training_sessions').insert(dados).select('id').single();
+      // Sessão do Aleatório marcada: Sniper GTO, Perfeição Estendida e Solver
+      // Humano só valem nela (migration 20261104120000). Sem a coluna no banco
+      // ainda, grava sem a marca.
+      sessionPromise.current = (aleatorio && !emSimulado ? inserir({ ...linha, aleatorio: true }) : inserir(linha))
+        .then(async (res) => (res.error && aleatorio && !emSimulado ? inserir(linha) : res))
         .then(({ data, error }) => {
           if (error) {
             console.error('Error creating session:', error);
@@ -645,8 +648,10 @@ export default function TrainPage() {
     const userLevel = profile?.level || 1;
     const feedback = calculateFeedback(action, handData, userLevel);
 
-    // Peso do cenário (pesarPorCenario) e, no ganho, a dificuldade mostrada no controle
-    feedback.points = limitarPontos(ajustarPontos(pesarPorCenario(scenario, feedback.points), dificuldade.efetiva));
+    // Peso do cenário (pesarPorCenario), da posição (UTG1 da mesa de 8) e, no
+    // ganho, a dificuldade mostrada no controle
+    const pesados = pesarPorPosicao(trainingMode, handState.heroPosition, pesarPorCenario(scenario, feedback.points));
+    feedback.points = limitarPontos(ajustarPontos(pesados, dificuldade.efetiva));
     const pointsToAdd = isHandAlreadyPlayedState ? 0 : feedback.points;
     const isCorrect = feedback.type === 'best' || feedback.type === 'correct';
 

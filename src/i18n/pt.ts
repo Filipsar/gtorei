@@ -32,7 +32,6 @@ export const pt = {
     updates: 'Atualizações',
     support: 'Apoie',
     ggpoker: 'GGPoker',
-    feedback: 'Feedback',
     settings: 'Configurações',
     logout: 'Sair',
     collapse: 'Recolher',

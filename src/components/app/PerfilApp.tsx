@@ -4,10 +4,15 @@ import { Award, Camera, ChevronRight, ImagePlus, Pencil, Route, Star, Trash2, Tr
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/layout/SettingsModal';
 import { EloBadge } from '@/components/app/EloBadge';
+import { AchievementIcon } from '@/components/achievements/AchievementIcon';
+import { InsigniaDeIndicacao } from '@/components/referral/InsigniaDeIndicacao';
+import { useInsignias } from '@/hooks/useInsignias';
+import { lerDestaques } from '@/lib/destaques';
 import { Avatar } from '@/components/app/RankingApp';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAchievements } from '@/hooks/useAchievements';
-import { ACHIEVEMENTS } from '@/data/achievements';
+import { ACHIEVEMENTS, getAchievement } from '@/data/achievements';
+import { NIVEIS_INDICACAO } from '@/data/indicacao';
 import { eloPorNumero } from '@/data/elos';
 import { LEVEL_THRESHOLDS, getLevelName } from '@/data/localStorage';
 import { LICOES } from '@/data/trilha';
@@ -47,7 +52,10 @@ export function PerfilApp({ dados, proprio, enviando, imagemDoNivel, onEnviarCap
   const { user } = useAuth();
   const { unlockedKeys } = useAchievements();
   const [elo, setElo] = useState<number | null>(null);
+  // null: ainda não chegou, ou a coluna não existe no banco
+  const [destaques, setDestaques] = useState<string[] | null>(null);
   const [ajustes, setAjustes] = useState(false);
+  const nivelIndicacao = useInsignias([dados.user_id]).get(dados.user_id) ?? 0;
   const capa = useRef<HTMLInputElement>(null);
   const resultado = useRef<HTMLInputElement>(null);
 
@@ -59,6 +67,7 @@ export function PerfilApp({ dados, proprio, enviando, imagemDoNivel, onEnviarCap
       .eq('user_id', dados.user_id)
       .maybeSingle()
       .then(({ data, error }) => setElo(error ? null : data?.elo ?? 1));
+    void lerDestaques(dados.user_id).then(setDestaques);
   }, [dados.user_id]);
 
   // Campos que podem vir vazios de perfil antigo não derrubam a tela
@@ -118,9 +127,42 @@ export function PerfilApp({ dados, proprio, enviando, imagemDoNivel, onEnviarCap
 
         <h1 className="mt-3 break-words text-2xl font-bold">
           {dados.username}
+          {nivelIndicacao > 0 && <InsigniaDeIndicacao nivel={nivelIndicacao} tamanho={26} className="ml-2" />}
           {proprio && <span className="ml-2 align-middle text-xs font-medium text-muted-foreground">você</span>}
         </h1>
         {desde && <p className="mt-0.5 text-sm text-muted-foreground">No GTORei desde {desde}</p>}
+        {nivelIndicacao > 0 && (
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Indicação: {NIVEIS_INDICACAO.find((n) => n.nivel === nivelIndicacao)?.nome}
+          </p>
+        )}
+
+        {/* Conquistas em destaque (até 3, escolhidas em /conquistas) */}
+        {destaques !== null && (destaques.length > 0 || proprio) && (
+          <section className="mt-4" aria-labelledby="destaques-perfil">
+            <h2 id="destaques-perfil" className="sr-only">
+              Conquistas em destaque
+            </h2>
+            {destaques.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {destaques.map((k) => (
+                  <li
+                    key={k}
+                    className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 py-1 pl-1.5 pr-3 text-sm font-medium"
+                    title={getAchievement(k)?.description}
+                  >
+                    <AchievementIcon achievement={k} className="h-5 w-5 text-primary" />
+                    {getAchievement(k)?.name}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Link to="/conquistas" className="text-sm font-medium text-primary underline-offset-4 hover:underline [.light_&]:text-foreground">
+                Escolha até 3 conquistas para destacar no perfil
+              </Link>
+            )}
+          </section>
+        )}
 
         <div className="lg:mt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
         <div>

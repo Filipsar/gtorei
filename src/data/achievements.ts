@@ -4,8 +4,17 @@ export interface AchievementDef {
   key: string;
   name: string;
   description: string;
-  category: 'level' | 'streak' | 'volume' | 'accuracy' | 'challenge' | 'referral' | 'drill';
+  category: 'level' | 'streak' | 'volume' | 'accuracy' | 'challenge' | 'referral' | 'drill' | 'league';
+  /**
+   * Só vale no modo Aleatório do treino (04/11/2026): o servidor confere a
+   * sessão marcada (training_sessions.aleatorio). A tela mostra um "i" ao lado.
+   */
+  soNoAleatorio?: boolean;
 }
+
+/** Texto do "i" das conquistas do modo Aleatório */
+export const AVISO_DO_ALEATORIO =
+  'Só conta jogando no modo Aleatório, em que posição, stack, cenário e mesa são sorteados a cada mão.';
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // Nível / XP
@@ -39,9 +48,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'session_perfect', name: 'Sessão Perfeita', description: '100% de acurácia em uma sessão (mín. 10 mãos)', category: 'accuracy' },
   { key: 'accuracy_90', name: 'Precisão Cirúrgica', description: '90%+ de acurácia em uma sessão (mín. 20 mãos)', category: 'accuracy' },
   { key: 'best_10', name: 'Dez Best', description: 'Obter 10 feedbacks "Best" em uma sessão', category: 'accuracy' },
-  { key: 'session_perfect_50', name: 'Perfeição Estendida', description: '100% de acurácia em sessão de 50+ mãos', category: 'accuracy' },
-  { key: 'accuracy_95', name: 'Sniper GTO', description: '95%+ de acurácia em sessão de 100+ mãos', category: 'accuracy' },
-  { key: 'accuracy_98', name: 'Solver Humano', description: '98%+ de acurácia em sessão de 50+ mãos', category: 'accuracy' },
+  { key: 'session_perfect_50', name: 'Perfeição Estendida', description: '100% de acurácia em sessão de 50+ mãos no modo Aleatório', category: 'accuracy', soNoAleatorio: true },
+  { key: 'accuracy_95', name: 'Sniper GTO', description: '95%+ de acurácia em sessão de 100+ mãos no modo Aleatório', category: 'accuracy', soNoAleatorio: true },
+  { key: 'accuracy_98', name: 'Solver Humano', description: '98%+ de acurácia em sessão de 50+ mãos no modo Aleatório', category: 'accuracy', soNoAleatorio: true },
   { key: 'best_25', name: 'Vinte e Cinco Best', description: 'Obter 25 feedbacks "Best" em uma sessão', category: 'accuracy' },
   { key: 'best_50', name: 'Cinquenta Best', description: 'Obter 50 feedbacks "Best" em uma sessão', category: 'accuracy' },
 
@@ -66,6 +75,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'simulado_10', name: 'Dez Simulados', description: 'Ganhar XP em 10 simulados', category: 'drill' },
   { key: 'simulado_perfeito', name: 'Simulado Perfeito', description: 'Acertar todas as mãos de um simulado de 20 ou mais', category: 'drill' },
 
+  // Liga (conferidas pelo servidor em liga_jogador e liga_historico_dia, migration 20261104120000)
+  { key: 'liga_3', name: 'Ouro na Mão', description: 'Chegar à liga Ouro', category: 'league' },
+  { key: 'liga_4', name: 'Liga de Adamantio', description: 'Chegar à liga Adamantio', category: 'league' },
+  { key: 'liga_5', name: 'Gravado em Runas', description: 'Chegar à liga Rúnico', category: 'league' },
+  { key: 'liga_6', name: 'Brilho de Diamante', description: 'Chegar à liga Diamante', category: 'league' },
+  { key: 'liga_7', name: 'Coroado', description: 'Chegar à liga Rei', category: 'league' },
+  { key: 'liga_rei_3', name: 'Reinado', description: 'Terminar 3 dias no top 2 da liga Rei', category: 'league' },
+
   // Indicação (concedidas pelo servidor quando o indicado completa 50 mãos)
   { key: 'indica_1', name: 'Primeiro Convite', description: '1 amigo indicado treinou 50 mãos', category: 'referral' },
   { key: 'indica_5', name: 'Anfitrião', description: '5 indicados válidos', category: 'referral' },
@@ -86,4 +103,15 @@ export const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
   challenge: 'Desafios diários',
   referral: 'Indicação',
   drill: 'Simulado',
+  league: 'Liga',
 };
+
+/** Ordem das categorias na tela de conquistas */
+export const CATEGORY_ORDER: AchievementDef['category'][] = ['level', 'streak', 'volume', 'accuracy', 'league', 'challenge', 'drill', 'referral'];
+
+/** Conquistas de liga que o jogador já deveria ter, pelo elo em que está */
+export function conquistasDeLiga(elo: number): string[] {
+  const chaves: string[] = [];
+  for (let n = 3; n <= Math.min(elo, 7); n++) chaves.push(`liga_${n}`);
+  return chaves;
+}

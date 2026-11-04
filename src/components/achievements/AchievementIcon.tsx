@@ -59,6 +59,8 @@ const Chama = ({ escala = 1 }: { escala?: number }) => (
 );
 
 const Escudo = () => <path d="M16 4l9 3.4v7.4c0 5.6-3.7 9.6-9 11.6-5.3-2-9-6-9-11.6V7.4z" />;
+/** Contorno do brasão das ligas, preenchido por baixo das divisas */
+const BRASAO = 'M16 4l9 3.4v7.4c0 5.6-3.7 9.6-9 11.6-5.3-2-9-6-9-11.6V7.4z';
 
 // Desafios diários: a folha do calendário
 const Calendario = ({ x = 6, y = 7, w = 20, h = 19 }: { x?: number; y?: number; w?: number; h?: number }) => (
@@ -457,6 +459,49 @@ const DESENHOS: Record<string, ReactNode> = {
       <path d="M10 8h12l5 6.5L16 27 5 14.5z" className="fill-primary/15" />
       <path d="M5 14.5h22" />
       <path d="M10 8l-1 6.5 7 12.5 7-12.5-1-6.5" />
+    </>
+  ),
+  // Liga: o brasão com uma divisa por elo acima do Prata; o Rei é a coroa
+  liga_3: (
+    <>
+      <path d={BRASAO} className="fill-primary/15" />
+      <path d="M11 17l5-3.5 5 3.5" />
+    </>
+  ),
+  liga_4: (
+    <>
+      <path d={BRASAO} className="fill-primary/15" />
+      <path d="M11 14.5l5-3.5 5 3.5" />
+      <path d="M11 19l5-3.5 5 3.5" />
+    </>
+  ),
+  liga_5: (
+    <>
+      <path d={BRASAO} className="fill-primary/15" />
+      <path d="M11 12.5l5-3.5 5 3.5" />
+      <path d="M11 16.5l5-3.5 5 3.5" />
+      <path d="M11 20.5l5-3.5 5 3.5" />
+    </>
+  ),
+  liga_6: (
+    <>
+      <path d={BRASAO} className="fill-primary/15" />
+      <path d="M16 9.5l4.5 5-4.5 7-4.5-7z" className="fill-primary/30" />
+      <path d="M11.5 14.5h9" strokeWidth="1.3" />
+    </>
+  ),
+  liga_7: (
+    <>
+      <path d="M5.5 22.5L4 10l7 5.5L16 7l5 8.5 7-5.5-1.5 12.5z" className="fill-primary/20" />
+      <path d="M6.5 26h19" />
+    </>
+  ),
+  liga_rei_3: (
+    <>
+      <path d="M6.5 19.5L5 8.5l6.5 5L16 6l4.5 7.5 6.5-5-1.5 11z" className="fill-primary/20" />
+      <circle cx="10" cy="25" r="1.6" className="fill-primary stroke-none" />
+      <circle cx="16" cy="25" r="1.6" className="fill-primary stroke-none" />
+      <circle cx="22" cy="25" r="1.6" className="fill-primary stroke-none" />
     </>
   ),
   best_10: <polygon points={estrela(16, 16, 10)} className="fill-primary/20" />,

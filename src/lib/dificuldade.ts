@@ -107,6 +107,16 @@ export function pesarPorCenario(cenario: string, pontos: number): number {
   return pontos;
 }
 
+/**
+ * Peso da posição, depois do cenário. No treino de range (mesa de 8), o acerto
+ * no UTG1 rende 1/3 do ganho (04/11/2026): é a posição com mais fold óbvio. A
+ * perda não muda. O simulado usa o mesmo peso no servidor (claim_simulado).
+ */
+export function pesarPorPosicao(modo: string | null | undefined, posicao: string | null | undefined, pontos: number): number {
+  if ((modo ?? 'rangeTraining') === 'rangeTraining' && posicao === 'UTG1' && pontos > 0) return Math.round(pontos / 3);
+  return pontos;
+}
+
 // Mãos da borda da range: as decisões apertadas de raise/call/fold
 export const MAOS_MARGINAIS = [
   'T9s', '98s', '87s', '76s', '65s', 'J9s', 'T8s', '97s', '86s',

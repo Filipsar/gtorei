@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ACHIEVEMENTS, AchievementDef, getAchievement } from '@/data/achievements';
+import { ACHIEVEMENTS, AchievementDef, conquistasDeLiga, getAchievement } from '@/data/achievements';
 import { AchievementIcon } from '@/components/achievements/AchievementIcon';
 import { toast } from 'sonner';
 
@@ -9,6 +9,11 @@ export function useAchievements() {
   const { user } = useAuth();
   const [unlockedKeys, setUnlockedKeys] = useState<Set<string>>(new Set());
   const loadedRef = useRef(false);
+  // As já desbloqueadas, depois que chegaram do banco. Antes disso, pedir uma
+  // conquista que o jogador já tem mostraria o aviso de novo (o servidor
+  // responde true para quem já tem).
+  const loadedKeys = useRef<Set<string> | null>(null);
+  const [carregado, setCarregado] = useState(false);
 
   // Load unlocked achievements
   useEffect(() => {
@@ -22,7 +27,9 @@ export function useAchievements() {
       .eq('user_id', user.id)
       .then(({ data }) => {
         if (data) {
-          setUnlockedKeys(new Set(data.map(d => d.achievement_key)));
+          loadedKeys.current = new Set(data.map(d => d.achievement_key));
+          setUnlockedKeys(new Set(loadedKeys.current));
+          setCarregado(true);
         }
       });
   }, [user]);
@@ -43,6 +50,7 @@ export function useAchievements() {
     if (data !== true) return false;
 
     setUnlockedKeys(prev => new Set([...prev, key]));
+    loadedKeys.current?.add(key);
 
     // Show notification
     toast.success('Conquista Desbloqueada!', {
@@ -122,11 +130,23 @@ export function useAchievements() {
     }
   }, [user, unlockedKeys, unlock]);
 
+  // Conquistas de liga: o servidor confere o elo (liga_jogador e o histórico)
+  const checkLiga = useCallback(async (elo: number) => {
+    if (!user || !loadedKeys.current) return;
+    const chaves = conquistasDeLiga(elo);
+    if (elo >= 7) chaves.push('liga_rei_3');
+    for (const key of chaves) {
+      if (!loadedKeys.current.has(key)) await unlock(key);
+    }
+  }, [user, unlock]);
+
   return {
     unlockedKeys,
     achievements: ACHIEVEMENTS,
     unlock,
     checkAchievements,
+    checkLiga,
+    carregado,
     isUnlocked: (key: string) => unlockedKeys.has(key),
   };
 }

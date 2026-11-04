@@ -14,13 +14,22 @@ interface UpdateNote {
 }
 
 const UPCOMING: string[] = [
-  'Respostas a uma abertura (pagar e 3-bet) calculadas pelo mesmo método da abertura',
+  'Modo Cash 6-max aberto para todos, com pagar a abertura em posição e jogo pós-flop',
+  'App Android na Play Store',
+  'Respostas a uma abertura (pagar e 3-bet) nos torneios calculadas pelo mesmo método da abertura',
   'Ante também no pagamento de all-in',
   'Análise de straight draw (OESD, gutshot) no board',
   'Aulas gratuitas de poker GTO',
 ];
 
 const UPDATES: UpdateNote[] = [
+  {
+    version: '1.36.0',
+    date: '04/11/2026',
+    type: 'feature',
+    title: 'Insígnias de Indicação, Destaques no Perfil e Comunidade Mais Rápida',
+    description: 'Quem indica amigos ganha uma insígnia ao lado do nome no ranking, na comunidade e no perfil; do nível 3 (Recrutador) em diante, as insígnias nobres, até a coroa do Embaixador. Agora dá para escolher até 3 conquistas para destacar no perfil, na tela de Conquistas. Chegaram as conquistas de liga, do Ouro ao Rei, e o Reinado, para quem termina 3 dias no top 2 do Rei. Sniper GTO, Perfeição Estendida e Solver Humano passam a contar só no modo Aleatório (veja o "i" ao lado delas). A Comunidade foi refeita e abre bem mais rápido. Na Análise, quem é PRO vê a precisão por sessão dos últimos 12 meses. No treino de range, o acerto no UTG+1 passa a render 1/3 do XP, por ser a posição com mais fold óbvio.',
+  },
   {
     version: '1.35.0',
     date: '03/11/2026',

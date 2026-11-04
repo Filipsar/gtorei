@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, MessageSquare, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown, Smartphone, Newspaper } from 'lucide-react';
+import { Zap, TableProperties, BarChart3, Menu, Settings, Bell, Lock, Trophy, LogOut, Heart, GraduationCap, HandHeart, Award, User, Search, Users, BookOpen, ShieldCheck, ExternalLink, Brain, ChevronDown, CalendarCheck, Gift, Crown, Smartphone, Newspaper } from 'lucide-react';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
 import { ADMIN_EMAIL } from '@/data/admin';
@@ -131,12 +131,6 @@ export function AppSidebar() {
                 external: true,
               },
             ]),
-        {
-          title: t.sidebar.feedback,
-          url: 'https://forms.gle/JJeiS3UvBint5jG16',
-          icon: MessageSquare,
-          external: true,
-        },
         ...(user?.email === ADMIN_EMAIL
           ? [{ title: 'Admin', url: '/admin', icon: ShieldCheck }]
           : []),

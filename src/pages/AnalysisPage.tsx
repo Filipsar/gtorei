@@ -3,13 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getLevelName, getLevelProgress } from '@/data/localStorage';
 import { POSITIONS } from '@/data/gtoRanges';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye, Info, Play
+  BarChart3, Target, Trophy, TrendingUp, TrendingDown, Minus, Zap, Eye, Info, Play, Lock, Crown
 } from 'lucide-react';
+import { useSupporter } from '@/hooks/useSupporter';
+import { ADMIN_EMAIL } from '@/data/admin';
+import { ehApp } from '@/lib/nativo/plataforma';
+import { serieDoAno, type SessaoDoAno } from '@/lib/precisaoAnual';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
@@ -97,6 +101,11 @@ export default function AnalysisPage() {
   const { user, profile: authProfile } = useAuth();
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [loading, setLoading] = useState(true);
+  // Precisão por sessão: o mês para todos; os últimos 12 meses só para PRO
+  const { isSupporter } = useSupporter();
+  const anoLiberado = isSupporter || user?.email === ADMIN_EMAIL;
+  const [periodo, setPeriodo] = useState<'mes' | 'ano'>('mes');
+  const [sessoesDoAno, setSessoesDoAno] = useState<SessaoDoAno[] | null>(null);
 
   const level = authProfile?.level ?? 1;
   const totalXp = authProfile?.total_xp ?? 0;
@@ -106,6 +115,21 @@ export default function AnalysisPage() {
     if (!user?.id) return;
     fetchMonthlyStats(user.id);
   }, [user?.id]);
+
+  useEffect(() => {
+    if (periodo !== 'ano' || !anoLiberado || !user?.id || sessoesDoAno) return;
+    const umAnoAtras = new Date();
+    umAnoAtras.setFullYear(umAnoAtras.getFullYear() - 1);
+    void supabase
+      .from('training_sessions')
+      .select('started_at, hands_played, accuracy')
+      .eq('user_id', user.id)
+      .gte('started_at', umAnoAtras.toISOString())
+      .gte('hands_played', 5)
+      .order('started_at', { ascending: true })
+      .limit(2000)
+      .then(({ data }) => setSessoesDoAno(data ?? []));
+  }, [periodo, anoLiberado, user?.id, sessoesDoAno]);
 
   async function fetchMonthlyStats(userId: string) {
     setLoading(true);
@@ -211,7 +235,7 @@ export default function AnalysisPage() {
   const irTreinar = () => navigate('/treinar');
 
   // Precisão sessão a sessão, em ordem cronológica
-  const accuracyOverTime = [...stats.sessions]
+  const doMes = [...stats.sessions]
     .filter(s => s.handsPlayed >= 5)
     .sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime())
     .map((s, i) => ({
@@ -220,6 +244,9 @@ export default function AnalysisPage() {
       accuracy: Math.round(s.accuracy),
       hands: s.handsPlayed,
     }));
+  const anual = periodo === 'ano' && anoLiberado && sessoesDoAno ? serieDoAno(sessoesDoAno) : null;
+  const accuracyOverTime = anual ? anual.pontos : periodo === 'ano' ? [] : doMes;
+  const mediaDoGrafico = anual ? anual.media : stats.averageAccuracy;
 
   const feedbackRows = [
     { key: 'best', label: 'Melhor jogada', value: stats.feedbackDistribution.best, color: 'hsl(var(--feedback-best))' },
@@ -370,15 +397,52 @@ export default function AnalysisPage() {
         <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-heading-xs">Precisão por sessão</CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-heading-xs">Precisão por sessão</CardTitle>
+                <div role="group" aria-label="Período do gráfico" className="flex shrink-0 rounded-lg border border-border p-0.5 text-xs">
+                  {(['mes', 'ano'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      aria-pressed={periodo === p}
+                      onClick={() => setPeriodo(p)}
+                      className={cn(
+                        'flex h-8 items-center gap-1 rounded-md px-3 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        periodo === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {p === 'mes' ? 'Mês' : '12 meses'}
+                      {p === 'ano' && !anoLiberado && <Lock className="h-3 w-3" aria-label="PRO" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
-                {accuracyOverTime.length > 1
-                  ? 'Cada ponto é uma sessão; a linha tracejada é sua média do mês'
-                  : 'Aparece quando você tiver mais de uma sessão de 5+ mãos'}
+                {periodo === 'ano' && !anoLiberado
+                  ? 'A evolução dos últimos 12 meses é recurso PRO'
+                  : periodo === 'ano' && !anual
+                    ? 'Carregando os últimos 12 meses...'
+                    : accuracyOverTime.length > 1
+                      ? anual?.porSemana
+                        ? 'Cada ponto é uma semana (média das sessões); a linha tracejada é sua média dos 12 meses'
+                        : `Cada ponto é uma sessão; a linha tracejada é sua média ${anual ? 'dos 12 meses' : 'do mês'}`
+                      : 'Aparece quando você tiver mais de uma sessão de 5+ mãos'}
               </p>
             </CardHeader>
             <CardContent>
-              {accuracyOverTime.length > 1 ? (
+              {periodo === 'ano' && !anoLiberado ? (
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <Crown className="h-8 w-8 text-primary" aria-hidden="true" />
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    Veja como a sua precisão evoluiu sessão a sessão ao longo do ano. Disponível para PRO e apoiadores.
+                  </p>
+                  <Button asChild size="sm">
+                    <Link to={ehApp() ? '/pro' : '/apoiar'}>{ehApp() ? 'Seja PRO' : 'Apoiar e virar PRO'}</Link>
+                  </Button>
+                </div>
+              ) : periodo === 'ano' && !anual ? (
+                <div className="h-[240px] animate-pulse rounded-lg bg-muted/40" role="status" aria-label="Carregando" />
+              ) : accuracyOverTime.length > 1 ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart data={accuracyOverTime} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -386,11 +450,11 @@ export default function AnalysisPage() {
                     <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} unit="%" />
                     <Tooltip
                       contentStyle={tooltipStyle}
-                      labelFormatter={(l) => `Sessão de ${l}`}
+                      labelFormatter={(l) => (anual?.porSemana ? `Semana de ${l}` : `Sessão de ${l}`)}
                       formatter={(value: number, _n, item: any) => [`${value}% em ${item?.payload?.hands ?? 0} mãos`, 'Precisão']}
                     />
                     <ReferenceLine
-                      y={stats.averageAccuracy}
+                      y={mediaDoGrafico}
                       stroke="hsl(var(--muted-foreground))"
                       strokeDasharray="4 4"
                     />

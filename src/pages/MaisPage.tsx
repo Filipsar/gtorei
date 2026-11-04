@@ -12,7 +12,6 @@ import {
   Gift,
   Heart,
   LogOut,
-  MessageSquare,
   Search,
   Settings,
   ShieldCheck,
@@ -71,7 +70,6 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
       // No app o PRO é a compra do Google Play; não há Pix nem link de sala
       { titulo: 'Seja PRO', url: '/pro', icone: Crown },
       { titulo: 'Novidades', url: '/atualizacoes', icone: Bell },
-      { titulo: 'Enviar sugestão', url: 'https://forms.gle/JJeiS3UvBint5jG16', icone: MessageSquare, externo: true },
     ],
   },
 ];
