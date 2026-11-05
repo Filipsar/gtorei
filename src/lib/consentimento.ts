@@ -1,8 +1,9 @@
 // Escolha de privacidade de quem usa o GTORei.
 //
-// O site só guarda o necessário para funcionar, então lá o aviso é informativo.
-// A única coisa opcional é o anúncio personalizado do app grátis (AdMob): sem
-// consentimento, o app pede anúncios não personalizados (npa).
+// A única coisa opcional é o anúncio personalizado: no app grátis (AdMob) e,
+// desde 05/11/2026, no site (AdSense nas notícias e na área logada, só para
+// quem não é PRO; src/lib/anuncios.ts). Sem consentimento, os dois pedem anúncios não personalizados (npa).
+// As notícias saem do servidor (api/_noticias.ts) e leem esta mesma chave.
 //
 // Regra contra padrão enganoso: "aceitar" e "recusar" têm o mesmo peso visual,
 // nada vem marcado de antemão, e mudar de ideia é tão fácil quanto escolher.
@@ -39,21 +40,20 @@ export function salvarConsentimento(anunciosPersonalizados: boolean, agora = Dat
   return c;
 }
 
-/** No site o aviso só informa; fechar grava esta marca */
+/** Aviso antigo do site, que só informava (até 05/11/2026). Não vale mais como resposta */
 export const CHAVE_AVISO_DO_SITE_VISTO = 'gtorei_aviso_cookies_visto';
+
+/** Marca de quem é PRO, lida pelas notícias para não carregar anúncio (useSupporter grava) */
+export const CHAVE_SEM_ANUNCIO = 'gtorei_sem_anuncio';
 
 /**
  * O aviso de privacidade ainda está no rodapé esperando resposta (no app, a
  * escolha do anúncio; no site, o "Entendi"). Pop-up que abre nessa hora fica
  * com o botão embaixo do aviso no celular.
  */
-export function avisoDePrivacidadePendente(app: boolean): boolean {
-  if (app) return lerConsentimento() === null;
-  try {
-    return localStorage.getItem(CHAVE_AVISO_DO_SITE_VISTO) !== '1';
-  } catch {
-    return true;
-  }
+export function avisoDePrivacidadePendente(_app?: boolean): boolean {
+  // Site e app pedem a mesma escolha desde que as notícias têm anúncio
+  return lerConsentimento() === null;
 }
 
 /** Sem escolha registrada, vale o lado seguro: nada personalizado */

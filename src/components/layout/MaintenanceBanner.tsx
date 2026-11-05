@@ -26,7 +26,7 @@ const DEFAULT_DWELL = 5000;
 
 const BANNER_MESSAGES: BannerMessage[] = [
   {
-    text: 'Sem anúncios e sem mensalidade. Qualquer valor mantém o GTORei no ar.',
+    text: 'Sem mensalidade. Qualquer valor mantém o GTORei no ar e tira os anúncios.',
     shortText: 'Ajude a manter o GTORei no ar',
     icon: <Heart className="h-4 w-4 shrink-0" aria-hidden="true" />,
     link: '/apoiar',

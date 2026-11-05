@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { CHAVE_SEM_ANUNCIO } from '@/lib/consentimento';
+
+/** As notícias (HTML do servidor) não têm o login: leem esta marca para não mostrar anúncio ao PRO */
+function marcarSemAnuncio(pro: boolean) {
+  try {
+    if (pro) localStorage.setItem(CHAVE_SEM_ANUNCIO, '1');
+    else localStorage.removeItem(CHAVE_SEM_ANUNCIO);
+  } catch {
+    // sem storage, as notícias mostram anúncio
+  }
+}
 
 /** Disparado quando a conta vira PRO (compra no app) para todas as telas relerem */
 export const EVENTO_PRO_ATUALIZADO = 'gtorei:pro-atualizado';
@@ -30,6 +41,7 @@ export function useSupporter() {
 
   useEffect(() => {
     if (!user) {
+      marcarSemAnuncio(false);
       setIsSupporter(false);
       setLoading(false);
       return;
@@ -43,6 +55,8 @@ export function useSupporter() {
       // Sem a migration aplicada a função não existe: o acesso fica fechado,
       // que é o lado seguro de errar.
       setIsSupporter(!error && data === true);
+      // Erro na consulta não apaga a marca: uma falha de rede não põe anúncio no PRO
+      if (!error) marcarSemAnuncio(data === true);
       setLoading(false);
     });
 

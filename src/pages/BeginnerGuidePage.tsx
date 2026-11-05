@@ -55,7 +55,7 @@ const FAQ = [
   },
   {
     q: 'O GTORei é gratuito?',
-    a: 'É. Não existe plano pago nem anúncio; o projeto se mantém com doações de quem usa. O treino inteiro fica liberado com uma conta grátis.',
+    a: 'É. Não existe mensalidade; o projeto se mantém com doações de quem usa e com anúncios para quem não é PRO (a mesa de treino fica sem anúncio). O treino inteiro fica liberado com uma conta grátis.',
   },
 ];
 

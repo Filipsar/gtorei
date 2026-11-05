@@ -15,6 +15,60 @@ export const SITE = 'https://www.gtorei.com.br';
 // pasta api/ não importa de src/; o teste salasParceiras.test.ts confere).
 export const GGPOKER_URL = 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM';
 export const WPT_GLOBAL_URL = 'https://wptglobal.com/poker-download?referralCode=79F94E';
+// Google AdSense (05/11/2026): só nas páginas de notícia e só para quem não é
+// PRO. A página não tem o login (é HTML do servidor), então lê duas marcas que o
+// site grava no mesmo navegador: gtorei_sem_anuncio (useSupporter, conta PRO) e
+// gtorei_consentimento (aviso de privacidade). Sem "Permitir", o anúncio sai não
+// personalizado (requestNonPersonalizedAds). Laterais fixas só depois de criar o
+// bloco de anúncio no AdSense e pôr o id em ADSENSE_SLOT_LATERAL; até lá, os
+// Anúncios automáticos do painel decidem onde entram.
+export const ADSENSE_CLIENTE = 'ca-pub-7415553208405657';
+const ADSENSE_SLOT_LATERAL: string | null = null;
+
+const ANUNCIOS_NA_CABECA = `<meta name="google-adsense-account" content="${ADSENSE_CLIENTE}">
+<script>
+(function(){
+  try{if(localStorage.getItem('gtorei_sem_anuncio')==='1'){document.documentElement.classList.add('sem-anuncio');return;}}catch(e){}
+  var personalizado=false;
+  try{var c=JSON.parse(localStorage.getItem('gtorei_consentimento')||'null');personalizado=!!(c&&c.versao===1&&c.anunciosPersonalizados===true);}catch(e){}
+  window.adsbygoogle=window.adsbygoogle||[];
+  if(!personalizado)window.adsbygoogle.requestNonPersonalizedAds=1;
+  var s=document.createElement('script');
+  s.async=true;s.crossOrigin='anonymous';
+  s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENTE}';
+  document.head.appendChild(s);
+})();
+</script>`;
+
+/** Uma coluna de anúncio de cada lado do texto, em tela larga (só com o bloco criado no AdSense) */
+const TRILHOS_DE_ANUNCIO = ADSENSE_SLOT_LATERAL
+  ? ['esq', 'dir']
+      .map(
+        (lado) => `<aside class="trilho ${lado}" aria-label="Publicidade"><ins class="adsbygoogle" style="display:block;width:160px;height:600px" data-ad-client="${ADSENSE_CLIENTE}" data-ad-slot="${ADSENSE_SLOT_LATERAL}"></ins></aside>`,
+      )
+      .join('\n') +
+    `\n<script>(function(){if(document.documentElement.classList.contains('sem-anuncio'))return;if(!matchMedia('(min-width:1500px)').matches)return;document.querySelectorAll('.trilho').forEach(function(){(window.adsbygoogle=window.adsbygoogle||[]).push({});});})();</script>`
+  : '';
+
+// Escolha sobre anúncio personalizado para quem chega direto do Google na
+// notícia: a mesma chave e o mesmo formato do aviso do site (consentimento.ts).
+// Botões do mesmo tamanho; nada escolhido sem a pessoa escolher.
+const AVISO_DE_ANUNCIOS = `<section class="aviso-ads" id="aviso-ads" role="region" aria-label="Privacidade e cookies" hidden>
+  <p><b>Anúncios personalizados</b><br>O site mostra anúncios do Google AdSense para quem não é PRO. Com sua permissão, eles podem ser personalizados com cookies do Google. Sem ela, os anúncios continuam, mas genéricos. <a href="/cookies">Saiba mais</a>.</p>
+  <div><button type="button" data-escolha="0">Não permitir</button><button type="button" data-escolha="1">Permitir</button></div>
+</section>
+<script>
+(function(){
+  var a=document.getElementById('aviso-ads');if(!a||document.documentElement.classList.contains('sem-anuncio'))return;
+  try{var c=JSON.parse(localStorage.getItem('gtorei_consentimento')||'null');if(c&&c.versao===1&&typeof c.anunciosPersonalizados==='boolean')return;}catch(e){return;}
+  a.hidden=false;
+  a.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+    try{localStorage.setItem('gtorei_consentimento',JSON.stringify({versao:1,anunciosPersonalizados:b.getAttribute('data-escolha')==='1',em:Date.now()}));}catch(e){}
+    a.hidden=true;
+  });});
+})();
+</script>`;
+
 const AVISO_PARCEIROS =
   'Links de indicação: o GTORei pode receber comissão se você se cadastrar, sem custo para você. Só para maiores de 18 anos. Jogue com responsabilidade.';
 
@@ -296,6 +350,19 @@ dialog.oferta::backdrop{background:rgba(0,0,0,.75)}
 .oferta .fechar{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:999px;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 .oferta .acoes{background:var(--cartao);border-radius:14px;margin-top:8px;padding:12px;text-align:center}
 .oferta .acoes .botao{display:block}
+.trilho{display:none;position:fixed;top:96px;width:160px;height:600px}
+.trilho.esq{left:max(12px,calc(50% - 560px - 184px))}
+.trilho.dir{right:max(12px,calc(50% - 560px - 184px))}
+@media (min-width:1500px){.trilho{display:block}}
+.sem-anuncio .trilho{display:none!important}
+.aviso-ads{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:12px}
+.aviso-ads[hidden]{display:none}
+.aviso-ads p{max-width:640px;margin:0 auto;background:var(--cartao);border:1px solid var(--borda);border-bottom:0;border-radius:12px 12px 0 0;padding:14px 16px 8px;font-size:14px;color:var(--apoio)}
+.aviso-ads p b{color:var(--texto)}
+.aviso-ads p a{color:var(--ouro)}
+.aviso-ads div{max-width:640px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--cartao);border:1px solid var(--borda);border-top:0;border-radius:0 0 12px 12px;padding:0 16px 14px}
+.aviso-ads button{background:transparent;color:var(--texto);border:1px solid var(--borda);border-radius:10px;padding:10px;font:inherit;font-weight:600;cursor:pointer}
+.aviso-ads button:hover{border-color:var(--ouro)}
 .oferta .acoes small{display:block;color:var(--apoio);font-size:12px;line-height:1.5;margin-top:8px}
 `;
 
@@ -336,6 +403,7 @@ ${c.indexar === false ? '<meta name="robots" content="noindex">' : '<meta name="
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico">
 <style>${ESTILO}</style>
+${ANUNCIOS_NA_CABECA}
 ${ld}
 </head>
 <body>
@@ -347,6 +415,8 @@ ${ld}
 ${corpo}
 </main>
 <footer>GTORei · treinador de poker GTO grátis em português · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></footer>
+${TRILHOS_DE_ANUNCIO}
+${AVISO_DE_ANUNCIOS}
 ${POPUP_DA_OFERTA}
 </body>
 </html>`;

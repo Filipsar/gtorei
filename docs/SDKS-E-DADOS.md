@@ -15,12 +15,15 @@ trocar uma dependência. Mudou SDK ou coleta, atualize aqui e na política.
 | Google Play Billing (`@capgo/native-purchases`) | app | token e número do pedido do PRO | compra | contrato |
 | Google Play Developer API | servidor (`verify-play-purchase`) | token da compra | conferir e confirmar a compra | contrato |
 | Google AdMob (`@capacitor-community/admob`) | app grátis | ID de publicidade, IP, dados técnicos do aparelho | anúncios | consentimento para personalizado; não personalizado sem ele |
+| Google AdSense | site (notícias e área logada, fora da mesa de treino), só para quem não é PRO | cookies de publicidade, IP, dados do navegador, página visitada | anúncios | consentimento para personalizado; não personalizado (legítimo interesse) sem ele |
 | Capacitor App / Browser | app | nada sai: abrir o Chrome e receber o retorno do login | login no app | — |
 
 ## O que conferimos
 
-- **Nenhum rastreador no site**: sem Google Analytics, Tag Manager, Pixel, Hotjar,
-  Clarity, PostHog. Busca por esses nomes em `src/`, `index.html` e `public/` vazia.
+- **Nenhum rastreador de análise no site**: sem Google Analytics, Tag Manager, Pixel, Hotjar,
+  Clarity, PostHog (busca por esses nomes em `src/`, `index.html` e `public/` vazia). Desde 05/11/2026 o site tem o AdSense (`src/lib/anuncios.ts` e
+  `api/_noticias.ts`): não carrega para PRO (`gtorei_sem_anuncio`) nem na mesa de treino, e usa
+  `requestNonPersonalizedAds` sem o "Permitir" do aviso.
 - **Sem telemetria escondida nos plugins**: `@capgo/native-purchases`,
   `@capacitor/*` e `jspdf` não têm endereço de rede próprio no código (só links
   de documentação). O `cloud-auth-js` fala só com `oauth.lovable.app`.

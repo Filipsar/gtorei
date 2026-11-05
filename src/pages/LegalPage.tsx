@@ -47,11 +47,12 @@ const DOCS: Record<DocLegal, { titulo: string; descricao: string; corpo: () => R
           <li><strong>Indicação:</strong> quem convidou quem e se o convite foi validado. Quem convidou vê só o seu apelido e o seu progresso até 50 mãos.</li>
           <li><strong>Análise por IA:</strong> o hand history que você envia. Antes do envio, os apelidos dos outros jogadores são trocados por "Vilão 1", "Vilão 2" etc. Fica guardado no seu histórico só o relatório (veredito e EV de cada mão, leaks e recomendações) e, de cada mão, as suas cartas, o spot, a posição e a stack — o hand history em si não é guardado. São as 50 análises mais recentes, e você apaga qualquer uma quando quiser.</li>
           <li><strong>Compras (app):</strong> o comprovante da compra do PRO no Google Play (token e número do pedido). Não recebemos dados de cartão.</li>
-          <li><strong>Anúncios (só no app grátis):</strong> o Google AdMob usa o ID de publicidade do aparelho e dados técnicos para mostrar e medir anúncios.</li>
+          <li><strong>Anúncios no app grátis:</strong> o Google AdMob usa o ID de publicidade do aparelho e dados técnicos para mostrar e medir anúncios.</li>
+          <li><strong>Anúncios no site:</strong> quem não é PRO vê anúncios do Google AdSense nas notícias e na área logada (fora da mesa de treino). O Google usa cookies, o endereço IP, dados técnicos do navegador e a página visitada para mostrar e medir os anúncios e evitar fraude.</li>
         </ul>
         <p className="mt-2">
           Não coletamos localização, contatos, modelo do aparelho para fins de perfil, nem compramos dados de terceiros.
-          O site não usa ferramentas de análise ou remarketing.
+          O site não usa ferramentas de análise (como Google Analytics). A mesa de treino e quem é PRO não têm anúncios.
         </p>
 
         <H2>2. Para que usamos e com que base legal</H2>
@@ -59,14 +60,15 @@ const DOCS: Record<DocLegal, { titulo: string; descricao: string; corpo: () => R
           <li>Criar e manter a conta, salvar o progresso, ranking, conquistas, desafios e indicação: <em>execução do contrato</em> (art. 7º, V).</li>
           <li>Liberar o PRO e cumprir obrigações fiscais e de consumo: <em>execução do contrato</em> e <em>obrigação legal</em> (art. 7º, II e V).</li>
           <li>Segurança, prevenção de fraude (por exemplo, indicações falsas) e limites de uso: <em>legítimo interesse</em> (art. 7º, IX).</li>
-          <li>Anúncios personalizados no app: <em>consentimento</em> (art. 7º, I), que você pode negar ou retirar a qualquer momento. Sem ele, o app mostra só anúncios não personalizados.</li>
+          <li>Anúncios personalizados (no app e no site): <em>consentimento</em> (art. 7º, I), que você pode negar ou retirar a qualquer momento. Sem ele, os anúncios continuam, mas não personalizados.</li>
+          <li>Anúncios não personalizados (medição e prevenção de fraude): <em>legítimo interesse</em> (art. 7º, IX). O PRO não vê anúncios.</li>
         </ul>
 
         <H2>3. Com quem compartilhamos</H2>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Supabase</strong> (banco de dados e login) e <strong>Lovable</strong> (hospedagem do banco e login com Google).</li>
           <li><strong>Vercel</strong> (hospedagem do site).</li>
-          <li><strong>Google</strong>: login com Google, Gemini (análise por IA, só quando você pede), Google Play (compras) e AdMob (anúncios no app).</li>
+          <li><strong>Google</strong>: login com Google, Gemini (análise por IA, só quando você pede), Google Play (compras), AdMob (anúncios no app) e AdSense (anúncios no site). Com o seu consentimento, o Google pode usar esses dados para personalizar anúncios, conforme a política dele em policies.google.com/technologies/ads.</li>
         </ul>
         <p className="mt-2">
           Esses serviços podem guardar dados fora do Brasil, com as garantias do art. 33 da LGPD. Não vendemos dados pessoais.
@@ -122,7 +124,7 @@ const DOCS: Record<DocLegal, { titulo: string; descricao: string; corpo: () => R
         <p>
           O treino principal é grátis. Alguns modos são liberados para apoiadores (apoio por Pix no site) e para quem
           compra o PRO no app Android (compra única pelo Google Play, sem renovação automática). O preço aparece antes da
-          compra. O app grátis mostra anúncios; o PRO os remove. Reembolsos seguem a{' '}
+          compra. O app grátis e o site mostram anúncios para quem não é PRO; o PRO os remove. Reembolsos seguem a{' '}
           <Link to="/reembolso" className="text-primary underline">Política de Reembolso</Link>.
         </p>
         <H2>5. Programa de indicação</H2>
@@ -170,16 +172,25 @@ const DOCS: Record<DocLegal, { titulo: string; descricao: string; corpo: () => R
     corpo: () => (
       <>
         <p>
-          O site do GTORei <strong>não usa cookies de publicidade, de análise ou de rastreamento</strong>. Ele guarda no
-          navegador (armazenamento local) só o necessário para funcionar:
+          O site do GTORei não usa cookies de análise. Ele guarda no navegador (armazenamento local) o necessário para
+          funcionar:
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong>Sessão de login</strong> (Supabase): mantém você conectado.</li>
           <li><strong>Preferências</strong>: tema, idioma, seções do menu, avisos já fechados, tutorial visto e a dificuldade do treino (com o acerto das últimas 20 mãos, usado só pelo modo automático).</li>
           <li><strong>Convite</strong>: o código do link de indicação, por até 30 dias, até a conta ser criada.</li>
-          <li><strong>Sua escolha sobre esta política.</strong></li>
+          <li><strong>Sua escolha sobre anúncios personalizados</strong> e se a conta é PRO (para não mostrar anúncio a quem é).</li>
         </ul>
         <p className="mt-2">Por serem necessários, esses itens não pedem consentimento (LGPD, art. 7º, V). Você pode apagá-los limpando os dados do site no navegador; isso desconecta a conta.</p>
+        <H2>Anúncios no site</H2>
+        <p>
+          Para quem não é PRO, o site mostra anúncios do Google AdSense nas notícias e na área logada (a mesa de treino
+          fica sem anúncio). O Google
+          coloca cookies de publicidade no navegador para mostrar, limitar a repetição e medir os anúncios. Anúncios{' '}
+          <strong>personalizados</strong> (pelo seu histórico de navegação) só com o seu consentimento; sem ele, o Google
+          mostra anúncios não personalizados, que ainda usam cookies para medição e prevenção de fraude. Saiba como o Google usa esses dados em
+          policies.google.com/technologies/ads.
+        </p>
         <H2>No app Android grátis</H2>
         <p>
           O Google AdMob usa o ID de publicidade do aparelho. Anúncios <strong>personalizados</strong> só com o seu

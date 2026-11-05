@@ -3,7 +3,7 @@
 ## O que é
 
 Treinador de poker GTO gratuito, em português, no ar em https://www.gtorei.com.br com cerca
-de 150 usuários reais. Não há plano pago nem anúncios: o projeto se mantém por doações
+de 150 usuários reais. Não há mensalidade: o projeto se mantém por doações (e, desde 05/11/2026, anúncios do AdSense para quem não é PRO)
 via Pix (`/apoiar`). **Cada push na `main` vai para produção em ~25 segundos** pelo
 Vercel — não existe ambiente de homologação.
 
@@ -366,8 +366,14 @@ um ponto por semana). O link de feedback (Google Forms) saiu do menu e do Mais.
   `src/pages/LegalPage.tsx`. Controlador e contato em `src/data/legal.ts`
   (preenchidos em 22/10/2026: MEI 65.621.196, 3decor.suporte@gmail.com). O texto descreve o que o
   código faz: mudou coleta de dados, SDK ou cobrança, mudar a política e
-  `docs/SDKS-E-DADOS.md` junto. O site não usa rastreador; não acrescentar sem rever a
+  `docs/SDKS-E-DADOS.md` junto. O site não usa rastreador de análise; não acrescentar sem rever a
   política e o aviso de cookies (`src/components/legal/AvisoPrivacidade.tsx`).
+  AdSense (05/11/2026): só para quem não é PRO, nas notícias (`api/_noticias.ts`, que lê as marcas
+  `gtorei_sem_anuncio`, gravada pelo `useSupporter`, e `gtorei_consentimento`) e na área logada
+  (`AnunciosDoSite` no `MainLayout`, `src/lib/anuncios.ts`; não carrega a partir da mesa de treino,
+  `ROTAS_SEM_ANUNCIO`). Sem "Permitir" no aviso, `requestNonPersonalizedAds`. O aviso do site voltou a
+  pedir a escolha (antes só informava). `public/ads.txt` e a meta `google-adsense-account` no
+  `index.html`. Laterais fixas nas notícias esperam o id do bloco em `ADSENSE_SLOT_LATERAL`.
 - Dificuldade do treino (22/10/2026): `src/lib/dificuldade.ts`, controle visível no
   treino. Muda só quais mãos são sorteadas e o multiplicador de XP ganho (Fácil ×0,7 a
   Elite ×1,4, com teto de 30 pontos por mão, o limite de `record_hand_result`). O

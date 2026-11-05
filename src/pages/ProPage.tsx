@@ -14,7 +14,7 @@ import type { ProdutoPro } from '@/lib/nativo/compras';
 // O que o PRO libera hoje. Se mudar o que é de apoiador (MODOS_APOIADOR,
 // CENARIOS_APOIADOR, limite da análise por IA), mudar aqui também.
 const BENEFICIOS = [
-  'Sem anúncios no app',
+  'Sem anúncios no app e no site',
   'Modos Bounty e Aleatório',
   'Cenários Multiway e Simulação',
   'Análise por IA: 30 por dia, em vez de 5',

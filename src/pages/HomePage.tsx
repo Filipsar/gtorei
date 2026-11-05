@@ -52,7 +52,7 @@ const NUMEROS = [
 const FAQ = [
   {
     q: 'O GTORei é gratuito de verdade?',
-    a: 'O treino é. Sem anúncio no site, sem mensalidade e sem pedir cartão: o treino principal, as tabelas de range, o ranking e as ligas são de graça. O projeto se mantém com apoio via Pix. Quem apoia vira PRO e libera os modos extras e a análise de hand history com IA, que tem custo por análise. Também dá para ganhar PRO indicando amigos: 15 indicados valem 7 dias e 100 valem PRO para sempre.',
+    a: 'O treino é. Sem anúncio na mesa de treino, sem mensalidade e sem pedir cartão: o treino principal, as tabelas de range, o ranking e as ligas são de graça. O projeto se mantém com apoio via Pix e anúncios para quem não é PRO. Quem apoia vira PRO, fica sem anúncios e libera os modos extras e a análise de hand history com IA, que tem custo por análise. Também dá para ganhar PRO indicando amigos: 15 indicados valem 7 dias e 100 valem PRO para sempre.',
   },
   {
     q: 'As ranges são calculadas ou copiadas de alguma tabela?',
@@ -621,8 +621,8 @@ export default function HomePage() {
               <Shield className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Política de Privacidade</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Usamos seus dados para manter a conta, o treino, o ranking e a comunidade. Não vendemos dados
-                e não fazemos rastreamento para publicidade no site.
+                Usamos seus dados para manter a conta, o treino, o ranking e a comunidade. Não vendemos dados.
+                O site tem anúncios do Google para quem não é PRO.
               </p>
               <Link to="/privacidade" className="mt-3 inline-block text-sm text-primary underline">Ler a política</Link>
             </Card>
@@ -641,8 +641,8 @@ export default function HomePage() {
               <Cookie className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Cookies</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                O site guarda no navegador só o necessário: login e preferências. Nada de cookies de
-                rastreamento, análise ou remarketing. No app grátis, anúncio personalizado só com sua permissão.
+                O site guarda no navegador o necessário: login e preferências. Sem cookies de análise. No site e
+                no app grátis, anúncio personalizado só com sua permissão.
               </p>
               <Link to="/cookies" className="mt-3 inline-block text-sm text-primary underline">Ler a política</Link>
             </Card>

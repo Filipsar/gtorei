@@ -23,6 +23,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.39.0',
+    date: '05/11/2026',
+    type: 'improvement',
+    title: 'Anúncios para Quem Não É PRO',
+    description: 'Para ajudar a manter o GTORei grátis, o site passa a mostrar anúncios do Google para quem não é PRO, nas notícias e na área logada. A mesa de treino fica sem anúncio, e quem é PRO não vê nenhum. Anúncio personalizado só com a sua permissão, no aviso de privacidade (que aparece de novo para você escolher). As políticas de privacidade e de cookies foram atualizadas.',
+  },
+  {
     version: '1.38.0',
     date: '05/11/2026',
     type: 'feature',

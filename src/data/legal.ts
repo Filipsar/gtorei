@@ -7,7 +7,7 @@ export const CONTROLADOR: string | null = '65.621.196 FILIPE AUGUSTO RUBINI STAH
 export const CONTATO_EMAIL: string | null = '3decor.suporte@gmail.com';
 
 /** Data da versão em vigor das políticas. Mudou o texto, muda a data. */
-export const VIGENCIA = '22/10/2026';
+export const VIGENCIA = '05/11/2026';
 
 /** Versão dos termos aceitos no cadastro (vai para os metadados da conta) */
-export const VERSAO_TERMOS = '2026-10-22';
+export const VERSAO_TERMOS = '2026-11-05';

@@ -6,6 +6,7 @@ import { UpdatesPopup } from '@/components/ui/UpdatesPopup';
 import { DiscordPopup } from '@/components/ui/DiscordPopup';
 import { AgradecimentoPopup } from '@/components/ui/AgradecimentoPopup';
 import { IndiquePopup } from '@/components/ui/IndiquePopup';
+import { AnunciosDoSite } from './AnunciosDoSite';
 import { Menu } from 'lucide-react';
 import { AppShell } from '@/components/app/AppShell';
 import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
@@ -52,6 +53,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <AgradecimentoPopup />
           <IndiquePopup />
           <DiscordPopup />
+          <AnunciosDoSite />
         </main>
       </div>
     </SidebarProvider>
