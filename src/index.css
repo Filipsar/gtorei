@@ -363,3 +363,9 @@
 #root {
   padding-bottom: var(--altura-anuncio, 0px);
 }
+
+/* Bloco do AdSense (BlocoDeAnuncio): sem anúncio para mostrar, o Google marca o
+   <ins> como unfilled e o bloco inteiro some, com o rótulo "Publicidade". */
+.bloco-anuncio:has(ins.adsbygoogle[data-ad-status="unfilled"]) {
+  display: none;
+}

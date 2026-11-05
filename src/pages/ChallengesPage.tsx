@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CalendarCheck, Zap } from 'lucide-react';
+import { BlocoDeAnuncio } from '@/components/layout/BlocoDeAnuncio';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ export default function ChallengesPage() {
             })}
           </div>
         </div>
+        <BlocoDeAnuncio />
       </div>
     </MainLayout>
   );

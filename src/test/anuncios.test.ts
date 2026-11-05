@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { definirAnuncios, ROTAS_SEM_ANUNCIO } from '@/lib/anuncios';
+import { definirAnuncios, ROTAS_SEM_ANUNCIO, SLOT_NOTICIAS } from '@/lib/anuncios';
 
 type Fila = unknown[] & { pauseAdRequests?: number; requestNonPersonalizedAds?: number };
 const fila = () => (window as unknown as { adsbygoogle: Fila }).adsbygoogle;
@@ -39,5 +39,10 @@ describe('AdSense no site', () => {
     expect(fim).toBeGreaterThan(ini);
     const bloco = html.slice(ini, fim);
     expect(bloco.indexOf('pauseAdRequests = 1')).toBeLessThan(bloco.indexOf('adsbygoogle.js?client=ca-pub-7415553208405657'));
+  });
+
+  it('as notícias usam o bloco in-article da conta', () => {
+    const api = readFileSync(join(process.cwd(), 'api/_noticias.ts'), 'utf8');
+    expect(api.match(/export const ADSENSE_SLOT_NOTICIAS = '(\d+)'/)?.[1]).toBe(SLOT_NOTICIAS);
   });
 });

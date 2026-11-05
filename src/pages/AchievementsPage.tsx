@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BlocoDeAnuncio } from '@/components/layout/BlocoDeAnuncio';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -172,6 +173,7 @@ export default function AchievementsPage() {
             </div>
           );
         })}
+        <BlocoDeAnuncio />
       </div>
     </MainLayout>
   );

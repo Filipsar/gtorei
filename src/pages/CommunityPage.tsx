@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,10 @@ import { ThumbsUp, Heart, Trophy, MessageCircle, Send, Trash2, MoreHorizontal, L
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { BlocoDeAnuncio } from '@/components/layout/BlocoDeAnuncio';
+
+/** Um anúncio no meio do feed, depois deste post (e só um, para não poluir) */
+const POST_ANTES_DO_ANUNCIO = 5;
 
 interface Autor {
   username: string;
@@ -372,13 +376,14 @@ export default function CommunityPage() {
           </div>
         ) : (
           <ul className="space-y-4">
-            {posts.map((post) => {
+            {posts.map((post, i) => {
               const autor = autores.get(post.user_id);
               const aberto = abertos.has(post.id) || post.comentarios.length <= COMENTARIOS_ABERTOS;
               const visiveis = aberto ? post.comentarios : post.comentarios.slice(-2);
               const mostrarCaixa = escrevendo.has(post.id) || post.comentarios.length > 0;
               return (
-                <li key={post.id}>
+                <Fragment key={post.id}>
+                <li>
                   <Card>
                     <CardContent className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-2">
@@ -513,6 +518,10 @@ export default function CommunityPage() {
                     </CardContent>
                   </Card>
                 </li>
+                {i === POST_ANTES_DO_ANUNCIO - 1 && posts.length > POST_ANTES_DO_ANUNCIO && (
+                  <li className="list-none"><BlocoDeAnuncio className="my-0" /></li>
+                )}
+                </Fragment>
               );
             })}
           </ul>

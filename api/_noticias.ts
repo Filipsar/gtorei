@@ -24,6 +24,14 @@ export const WPT_GLOBAL_URL = 'https://wptglobal.com/poker-download?referralCode
 // Anúncios automáticos do painel decidem onde entram.
 export const ADSENSE_CLIENTE = 'ca-pub-7415553208405657';
 const ADSENSE_SLOT_LATERAL: string | null = null;
+/** Bloco in-article do AdSense (o mesmo de SLOT_NOTICIAS em src/lib/anuncios.ts) */
+export const ADSENSE_SLOT_NOTICIAS = '2904125157';
+
+// Um bloco por página: na notícia, antes do parágrafo "O que fica para o seu
+// torneio"; na lista, entre os destaques e as últimas. Para o PRO (marca
+// sem-anuncio) o bloco some e não pede anúncio; sem anúncio para mostrar
+// (unfilled), também some.
+const BLOCO_DE_ANUNCIO = `<aside class="bloco-anuncio" aria-label="Publicidade"><p class="rotulo">Publicidade</p><ins class="adsbygoogle" style="display:block; text-align:center;" data-ad-layout="in-article" data-ad-format="fluid" data-ad-client="${ADSENSE_CLIENTE}" data-ad-slot="${ADSENSE_SLOT_NOTICIAS}"></ins><script>if(!document.documentElement.classList.contains('sem-anuncio')){(window.adsbygoogle=window.adsbygoogle||[]).push({});}</script></aside>`;
 
 const ANUNCIOS_NA_CABECA = `<meta name="google-adsense-account" content="${ADSENSE_CLIENTE}">
 <script>
@@ -240,12 +248,15 @@ export function chamada(resumo: string, limite: number): string {
 }
 
 /** Parágrafos separados por linha em branco; quebra simples vira <br> */
-function paragrafos(resumo: string): string {
-  return resumo
+function paragrafos(resumo: string, anuncio = ''): string {
+  const ps = resumo
     .trim()
     .split(/\n\s*\n/)
-    .map((p) => `<p>${escapar(p.trim()).replace(/\n/g, '<br>')}</p>`)
-    .join('\n');
+    .map((p) => `<p>${escapar(p.trim()).replace(/\n/g, '<br>')}</p>`);
+  // O anúncio entra antes do último parágrafo ("O que fica para o seu torneio"),
+  // nunca antes do primeiro: quem abriu a notícia lê o fato antes da propaganda
+  if (anuncio && ps.length >= 2) ps.splice(ps.length - 1, 0, anuncio);
+  return ps.join('\n');
 }
 
 const ESTILO = `
@@ -350,6 +361,9 @@ dialog.oferta::backdrop{background:rgba(0,0,0,.75)}
 .oferta .fechar{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:999px;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 .oferta .acoes{background:var(--cartao);border-radius:14px;margin-top:8px;padding:12px;text-align:center}
 .oferta .acoes .botao{display:block}
+.bloco-anuncio{margin:24px 0;min-height:120px}
+.bloco-anuncio .rotulo{margin:0 0 4px;text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--apoio)}
+.sem-anuncio .bloco-anuncio,.bloco-anuncio:has(ins[data-ad-status="unfilled"]){display:none}
 .trilho{display:none;position:fixed;top:96px;width:160px;height:600px}
 .trilho.esq{left:max(12px,calc(50% - 560px - 184px))}
 .trilho.dir{right:max(12px,calc(50% - 560px - 184px))}
@@ -489,7 +503,7 @@ export function paginaDaNoticia(n: NoticiaPublicada, outras: NoticiaPublicada[])
       : ''
   }
   <div class="resumo">
-${paragrafos(n.resumo)}
+${paragrafos(n.resumo, BLOCO_DE_ANUNCIO)}
   </div>
   <p class="fonte">Matéria original: <a href="${escapar(n.link)}" target="_blank" rel="noopener">${escapar(n.fonte)} ↗</a></p>
 </article>
@@ -601,7 +615,7 @@ export function paginaDaLista(lista: NoticiaPublicada[], pagina: number, extras:
   if (!desta.length) {
     conteudo = '<p>As primeiras notícias chegam em breve.</p>';
   } else if (pagina > 1) {
-    conteudo = `<ul class="lista grade">${desta.map(cartao).join('')}</ul>`;
+    conteudo = `${BLOCO_DE_ANUNCIO}<ul class="lista grade">${desta.map(cartao).join('')}</ul>`;
   } else {
     const relev = (n: NoticiaPublicada) => n.relevancia ?? 1;
     const manchete = desta.reduce((a, b) => (relev(b) > relev(a) ? b : a), desta[0]);
@@ -616,6 +630,7 @@ ${
         .join('')}</div>`
     : ''
 }
+${BLOCO_DE_ANUNCIO}
 ${demais.length ? `<h2 class="secao">Últimas notícias</h2><ul class="lista grade">${demais.map(cartao).join('')}</ul>` : ''}`;
   }
 

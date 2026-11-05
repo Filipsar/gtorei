@@ -1,3 +1,4 @@
+import { BlocoDeAnuncio } from '@/components/layout/BlocoDeAnuncio';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -775,6 +776,7 @@ export default function UpdatesPage() {
             </section>
           ))}
         </div>
+        <BlocoDeAnuncio />
       </div>
     </MainLayout>
   );

@@ -10,6 +10,11 @@
 
 export const ADSENSE_CLIENTE = 'ca-pub-7415553208405657';
 
+/** Bloco responsivo ("Teste Responsivo 1"): fim das páginas de consulta da área logada */
+export const SLOT_RESPONSIVO = '1479150812';
+/** Bloco in-article: dentro das notícias (api/_noticias.ts repete o número) */
+export const SLOT_NOTICIAS = '2904125157';
+
 /** Mesa de treino e páginas de entrada: anúncio ali atrapalha. Ficam pausados */
 export const ROTAS_SEM_ANUNCIO = ['/', '/treinar', '/duelo', '/trilha', '/auth', '/apoiar', '/pro'];
 

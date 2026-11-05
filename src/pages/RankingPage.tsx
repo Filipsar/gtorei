@@ -1,6 +1,7 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { RankingApp } from '@/components/app/RankingApp';
 import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
+import { BlocoDeAnuncio } from '@/components/layout/BlocoDeAnuncio';
 
 /**
  * Ranking por ligas (src/components/app/RankingApp.tsx), igual no app e no
@@ -11,6 +12,7 @@ export default function RankingPage() {
   return (
     <MainLayout>
       <RankingApp site={!usarLayoutDoApp()} />
+      <BlocoDeAnuncio className="mx-auto max-w-6xl px-4 pb-4" />
     </MainLayout>
   );
 }
