@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "app:sync": "vite build && cap sync android"
+    "build:app": "vite build --mode app",
+    "app:sync": "vite build --mode app && cap sync android"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.2.1",

@@ -32,8 +32,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Site (vai dentro do app)
-        run: npm run build
+      - name: Site (vai dentro do app, sem o AdSense)
+        run: npm run build:app
         env:
           VITE_ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
           VITE_ADMOB_INTERSTICIAL_ID: ${{ vars.ADMOB_INTERSTICIAL_ID }}

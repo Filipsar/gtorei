@@ -23,8 +23,27 @@
       content="Treine decisões de poker GTO de graça: ranges pré-flop por posição e stack, push/fold calculado por EV, análise de mãos por IA e ranking. Em português."
     />
     <meta name="author" content="GTORei" />
-    <!-- Conta do AdSense (verificação do site). O script dos anúncios não entra aqui: só nas notícias (api/_noticias.ts), para quem não é PRO -->
+    <!-- ADSENSE:INICIO -->
+    <!-- Google AdSense. O script fica no head para a verificação do site, mas os pedidos de
+         anúncio começam PAUSADOS: quem libera é o AnunciosDoSite (src/lib/anuncios.ts), só na área
+         logada, para quem não é PRO e fora da mesa de treino. Sem "Permitir" no aviso de
+         privacidade, o anúncio sai não personalizado. -->
     <meta name="google-adsense-account" content="ca-pub-7415553208405657" />
+    <script>
+      (function () {
+        var a = (window.adsbygoogle = window.adsbygoogle || []);
+        a.pauseAdRequests = 1;
+        var personalizado = false;
+        try {
+          var c = JSON.parse(localStorage.getItem('gtorei_consentimento') || 'null');
+          personalizado = !!(c && c.versao === 1 && c.anunciosPersonalizados === true);
+        } catch (e) {}
+        if (!personalizado) a.requestNonPersonalizedAds = 1;
+      })();
+    </script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7415553208405657"
+     crossorigin="anonymous"></script>
+    <!-- ADSENSE:FIM (o build do app, vite build --mode app, tira este bloco: AdSense não roda dentro de app) -->
 
     <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />

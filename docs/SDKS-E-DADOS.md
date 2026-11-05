@@ -15,7 +15,7 @@ trocar uma dependência. Mudou SDK ou coleta, atualize aqui e na política.
 | Google Play Billing (`@capgo/native-purchases`) | app | token e número do pedido do PRO | compra | contrato |
 | Google Play Developer API | servidor (`verify-play-purchase`) | token da compra | conferir e confirmar a compra | contrato |
 | Google AdMob (`@capacitor-community/admob`) | app grátis | ID de publicidade, IP, dados técnicos do aparelho | anúncios | consentimento para personalizado; não personalizado sem ele |
-| Google AdSense | site (notícias e área logada, fora da mesa de treino), só para quem não é PRO | cookies de publicidade, IP, dados do navegador, página visitada | anúncios | consentimento para personalizado; não personalizado (legítimo interesse) sem ele |
+| Google AdSense | site: script em todas as páginas (head do index.html, pausado); pede anúncio só nas notícias e na área logada, fora da mesa de treino, para quem não é PRO. Fora do app (build --mode app) | cookies de publicidade, IP, dados do navegador, página visitada | anúncios | consentimento para personalizado; não personalizado (legítimo interesse) sem ele |
 | Capacitor App / Browser | app | nada sai: abrir o Chrome e receber o retorno do login | login no app | — |
 
 ## O que conferimos

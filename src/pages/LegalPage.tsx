@@ -188,7 +188,8 @@ const DOCS: Record<DocLegal, { titulo: string; descricao: string; corpo: () => R
           fica sem anúncio). O Google
           coloca cookies de publicidade no navegador para mostrar, limitar a repetição e medir os anúncios. Anúncios{' '}
           <strong>personalizados</strong> (pelo seu histórico de navegação) só com o seu consentimento; sem ele, o Google
-          mostra anúncios não personalizados, que ainda usam cookies para medição e prevenção de fraude. Saiba como o Google usa esses dados em
+          mostra anúncios não personalizados, que ainda usam cookies para medição e prevenção de fraude. O script do
+          Google é carregado em todas as páginas do site, mas só pede anúncios nesses casos. Saiba como o Google usa esses dados em
           policies.google.com/technologies/ads.
         </p>
         <H2>No app Android grátis</H2>

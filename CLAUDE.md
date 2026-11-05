@@ -275,7 +275,7 @@ um ponto por semana). O link de feedback (Google Forms) saiu do menu e do Mais.
   pelo link direto da loja.
   APK de teste (24/10/2026): JDK 21 e Android SDK em
   `C:\Users\farub\AppData\Local\gtorei-android\` (fora do OneDrive). Com `JAVA_HOME` e
-  `ANDROID_HOME` apontando para `jdk` e `sdk` ali: `npm run build && npx cap sync android
+  `ANDROID_HOME` apontando para `jdk` e `sdk` ali: `npm run build:app && npx cap sync android
   && cd android && ./gradlew.bat assembleDebug -PVERSION_CODE=<AAMMDDHH> -PVERSION_NAME=<x.y.z-teste>`.
   O app empacota o `dist`: mudança no site só chega ao app num APK novo. A chave de debug
   fica em `~/.android/debug.keystore` desta máquina; compilando sempre aqui, a versão nova
@@ -374,6 +374,10 @@ um ponto por semana). O link de feedback (Google Forms) saiu do menu e do Mais.
   `ROTAS_SEM_ANUNCIO`). Sem "Permitir" no aviso, `requestNonPersonalizedAds`. O aviso do site voltou a
   pedir a escolha (antes só informava). `public/ads.txt` e a meta `google-adsense-account` no
   `index.html`. Laterais fixas nas notícias esperam o id do bloco em `ADSENSE_SLOT_LATERAL`.
+  O script está no `<head>` do `index.html` (o AdSense verifica o site por ele) com
+  `pauseAdRequests = 1`; `definirAnuncios` libera e pausa por página. O app empacota o mesmo
+  `index.html`, por isso o APK/AAB sai de `npm run build:app` (`--mode app`), que tira o bloco
+  `ADSENSE:INICIO`..`FIM`: AdSense não pode rodar dentro de app.
 - Dificuldade do treino (22/10/2026): `src/lib/dificuldade.ts`, controle visível no
   treino. Muda só quais mãos são sorteadas e o multiplicador de XP ganho (Fácil ×0,7 a
   Elite ×1,4, com teto de 30 pontos por mão, o limite de `record_hand_result`). O
