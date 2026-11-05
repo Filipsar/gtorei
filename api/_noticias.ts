@@ -11,6 +11,13 @@ import { join } from 'node:path';
 
 export const SITE = 'https://www.gtorei.com.br';
 
+// Links de indicação nas salas: os mesmos de src/data/salasParceiras.ts (a
+// pasta api/ não importa de src/; o teste salasParceiras.test.ts confere).
+export const GGPOKER_URL = 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM';
+export const WPT_GLOBAL_URL = 'https://wptglobal.com/poker-download?referralCode=79F94E';
+const AVISO_PARCEIROS =
+  'Links de indicação: o GTORei pode receber comissão se você se cadastrar, sem custo para você. Só para maiores de 18 anos. Jogue com responsabilidade.';
+
 /** Lista fixa: a função só busca estes endereços (nada vem de fora) */
 export const FONTES = [
   { nome: 'PokerNews Brasil', url: 'https://br.pokernews.com/rss.php' },
@@ -273,6 +280,23 @@ main.largo{max-width:1120px}
 footer{border-top:1px solid var(--borda);color:var(--apoio);font-size:14px;text-align:center;padding:24px 16px}
 footer a{color:var(--apoio)}
 a:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
+.parceiros{background:var(--cartao);border:1px solid var(--borda);border-radius:16px;padding:16px;margin:32px 0}
+.lateral .parceiros{margin:0}
+.parceiros h2{font-size:17px;margin:0 0 6px}
+.parceiros p{color:var(--apoio);font-size:14px;margin:0 0 12px}
+.parceiros .salas{display:grid;gap:8px}
+.parceiros .salas a{display:flex;justify-content:space-between;align-items:center;background:#242424;border:1px solid var(--borda);border-radius:10px;padding:10px 12px;font-weight:700;text-decoration:none}
+.parceiros .salas a:hover{border-color:var(--ouro)}
+.parceiros .salas a span{color:var(--ouro);font-size:13px;font-weight:600}
+.parceiros small{display:block;color:var(--apoio);font-size:12px;line-height:1.5;margin-top:10px}
+dialog.oferta{border:0;padding:0;background:transparent;max-width:min(92vw,420px)}
+dialog.oferta::backdrop{background:rgba(0,0,0,.75)}
+.oferta a.arte{display:block}
+.oferta img{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:14px}
+.oferta .fechar{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:999px;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.oferta .acoes{background:var(--cartao);border-radius:14px;margin-top:8px;padding:12px;text-align:center}
+.oferta .acoes .botao{display:block}
+.oferta .acoes small{display:block;color:var(--apoio);font-size:12px;line-height:1.5;margin-top:8px}
 `;
 
 interface Cabeca {
@@ -323,9 +347,49 @@ ${ld}
 ${corpo}
 </main>
 <footer>GTORei · treinador de poker GTO grátis em português · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></footer>
+${POPUP_DA_OFERTA}
 </body>
 </html>`;
 }
+
+const SALAS_PARCEIRAS = `<aside class="parceiros">
+  <h2>Onde jogar</h2>
+  <p>Leve o treino para a mesa nas salas parceiras do GTORei.</p>
+  <div class="salas">
+    <a href="${WPT_GLOBAL_URL}" target="_blank" rel="sponsored noopener noreferrer">WPT Global <span>Oferta de boas-vindas →</span></a>
+    <a href="${GGPOKER_URL}" target="_blank" rel="sponsored noopener noreferrer">GGPoker <span>Criar conta →</span></a>
+  </div>
+  <small>${AVISO_PARCEIROS}</small>
+</aside>`;
+
+// Pop-up da oferta da WPT Global: uma vez por dia por navegador, 2 s depois de
+// abrir. Sem storage (aba anônima com cookies negados), não abre: melhor que
+// abrir a cada página. Esc e o X fecham (é um <dialog> nativo).
+const POPUP_DA_OFERTA = `<dialog class="oferta" id="oferta" aria-label="Oferta de boas-vindas da WPT Global">
+  <button class="fechar" type="button" aria-label="Fechar">×</button>
+  <a class="arte" href="${WPT_GLOBAL_URL}" target="_blank" rel="sponsored noopener noreferrer"><img src="/parceiros/wpt-oferta.webp" alt="WPT Global: oferta de boas-vindas para conta nova" width="1126" height="2000" loading="lazy"></a>
+  <div class="acoes">
+    <a class="botao" href="${WPT_GLOBAL_URL}" target="_blank" rel="sponsored noopener noreferrer">Quero a oferta na WPT Global</a>
+    <small>Condições no site da WPT Global. ${AVISO_PARCEIROS}</small>
+  </div>
+</dialog>
+<script>
+(function(){
+  var d=document.getElementById('oferta');
+  if(!d||typeof d.showModal!=='function')return;
+  var hoje=new Date().toISOString().slice(0,10),chave='gtorei_oferta_wpt_dia';
+  try{if(localStorage.getItem(chave)===hoje)return;}catch(e){return;}
+  var fechar=function(){d.close();};
+  d.querySelector('.fechar').addEventListener('click',fechar);
+  d.addEventListener('click',function(e){if(e.target===d)fechar();});
+  d.querySelectorAll('a').forEach(function(a){a.addEventListener('click',fechar);});
+  setTimeout(function(){
+    try{localStorage.setItem(chave,hoje);}catch(e){return;}
+    d.querySelector('img').loading='eager';
+    d.showModal();
+  },2000);
+})();
+</script>`;
 
 const CHAMADA_PARA_TREINAR = `<aside class="chamada">
   <h2>Treine as decisões que decidem torneios</h2>
@@ -360,6 +424,7 @@ ${paragrafos(n.resumo)}
   <p class="fonte">Matéria original: <a href="${escapar(n.link)}" target="_blank" rel="noopener">${escapar(n.fonte)} ↗</a></p>
 </article>
 ${CHAMADA_PARA_TREINAR}
+${SALAS_PARCEIRAS}
 ${
   mais.length
     ? `<section aria-labelledby="mais"><h2 id="mais">Mais notícias</h2><ul class="lista">${mais
@@ -498,6 +563,7 @@ ${conteudo}
 <aside class="lateral" aria-label="Destaques do mês">
 ${pagina === 1 ? quadroDePremios(extras.premios ?? []) : ''}
 ${CHAMADA_PARA_TREINAR}
+${SALAS_PARCEIRAS}
 </aside>
 </div>`;
   return documento(

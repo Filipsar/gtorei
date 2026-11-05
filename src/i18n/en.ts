@@ -34,6 +34,7 @@ export const en: Translations = {
     updates: 'Updates',
     support: 'Support',
     ggpoker: 'GGPoker',
+    wptGlobal: 'WPT Global',
     settings: 'Settings',
     logout: 'Logout',
     collapse: 'Collapse',

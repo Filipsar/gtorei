@@ -32,6 +32,7 @@ export const pt = {
     updates: 'Atualizações',
     support: 'Apoie',
     ggpoker: 'GGPoker',
+    wptGlobal: 'WPT Global',
     settings: 'Configurações',
     logout: 'Sair',
     collapse: 'Recolher',

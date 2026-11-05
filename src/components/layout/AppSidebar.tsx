@@ -26,6 +26,7 @@ import { SeloPro } from '@/components/ui/SeloPro';
 import { useLanguage } from '@/contexts/LanguageContext';
 import gtoreiLogo from '@/assets/gtorei-logo.png';
 import { tour, tourFeito, tourNoMenu } from '@/lib/tour';
+import { GGPOKER_URL, WPT_GLOBAL_URL, REL_PATROCINADO } from '@/data/salasParceiras';
 
 
 
@@ -128,12 +129,8 @@ export function AppSidebar() {
           ? [{ title: 'Seja PRO', url: '/pro', icon: Crown }]
           : [
               { title: t.sidebar.support, url: '/apoiar', icon: HandHeart },
-              {
-                title: t.sidebar.ggpoker,
-                url: 'https://signup.ggpass.com?qtag1=RFBR3103784&lang=pt-br&brand-id=GGPCOM',
-                icon: ExternalLink,
-                external: true,
-              },
+              { title: t.sidebar.ggpoker, url: GGPOKER_URL, icon: ExternalLink, external: true },
+              { title: t.sidebar.wptGlobal, url: WPT_GLOBAL_URL, icon: ExternalLink, external: true },
             ]),
         ...(user?.email === ADMIN_EMAIL
           ? [{ title: 'Admin', url: '/admin', icon: ShieldCheck }]
@@ -187,7 +184,7 @@ export function AppSidebar() {
             <a
               href={item.url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel={REL_PATROCINADO}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-sidebar-accent"
             >
               <item.icon className="h-5 w-5 shrink-0 text-sidebar-foreground" />

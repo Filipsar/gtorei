@@ -35,6 +35,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { RangePreview, VerdictPreview } from '@/components/home/HomePreviews';
 import { UltimasNoticias } from '@/components/home/UltimasNoticias';
+import { SalasParceiras } from '@/components/home/SalasParceiras';
 import { EloBadge } from '@/components/app/EloBadge';
 import { ELOS, ELO_REI } from '@/data/elos';
 
@@ -506,6 +507,8 @@ export default function HomePage() {
 
       {/* NOTÍCIAS — a porta de entrada do Google para /noticias */}
       <UltimasNoticias />
+
+      <SalasParceiras />
 
 
       {/* PERGUNTAS — o mesmo texto vai no FAQPage lá em cima; se mudar aqui, mudar lá */}

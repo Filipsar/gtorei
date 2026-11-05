@@ -23,6 +23,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.38.0',
+    date: '05/11/2026',
+    type: 'feature',
+    title: 'Onde Jogar: GGPoker e WPT Global',
+    description: 'Para levar o treino para a mesa: links de cadastro nas salas parceiras do GTORei, a GGPoker e a WPT Global (com a oferta de boas-vindas para conta nova), no menu lateral, na página inicial e nas notícias. São links de indicação: o GTORei pode receber comissão, sem custo para você. Só para maiores de 18 anos.',
+  },
+  {
     version: '1.37.1',
     date: '04/11/2026',
     type: 'improvement',
