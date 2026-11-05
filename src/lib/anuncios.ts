@@ -14,6 +14,10 @@ export const ADSENSE_CLIENTE = 'ca-pub-7415553208405657';
 export const SLOT_RESPONSIVO = '1479150812';
 /** Bloco in-article: dentro das notícias (api/_noticias.ts repete o número) */
 export const SLOT_NOTICIAS = '2904125157';
+/** Lateral 160x600 ("Lateral anúncios"): à direita da área logada e dos dois lados nas notícias */
+export const SLOT_LATERAL = '4504981437';
+/** Largura mínima da tela para a lateral não apertar o conteúdo */
+export const LARGURA_DA_LATERAL = 1500;
 
 /** Mesa de treino e páginas de entrada: anúncio ali atrapalha. Ficam pausados */
 export const ROTAS_SEM_ANUNCIO = ['/', '/treinar', '/duelo', '/trilha', '/auth', '/apoiar', '/pro'];

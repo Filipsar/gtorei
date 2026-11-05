@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { definirAnuncios, ROTAS_SEM_ANUNCIO, SLOT_NOTICIAS } from '@/lib/anuncios';
+import { definirAnuncios, ROTAS_SEM_ANUNCIO, SLOT_LATERAL, SLOT_NOTICIAS } from '@/lib/anuncios';
 
 type Fila = unknown[] & { pauseAdRequests?: number; requestNonPersonalizedAds?: number };
 const fila = () => (window as unknown as { adsbygoogle: Fila }).adsbygoogle;
@@ -48,6 +48,6 @@ describe('AdSense no site', () => {
 
   it('as notícias têm as laterais 160x600 da conta', () => {
     const api = readFileSync(join(process.cwd(), 'api/_noticias.ts'), 'utf8');
-    expect(api.match(/export const ADSENSE_SLOT_LATERAL: string \| null = '(\d+)'/)?.[1]).toBe('4504981437');
+    expect(api.match(/export const ADSENSE_SLOT_LATERAL: string \| null = '(\d+)'/)?.[1]).toBe(SLOT_LATERAL);
   });
 });

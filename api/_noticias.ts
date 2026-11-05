@@ -22,6 +22,7 @@ export const WPT_GLOBAL_URL = 'https://wptglobal.com/poker-download?referralCode
 // personalizado (requestNonPersonalizedAds). Laterais fixas de 160x600 ("Lateral
 // anúncios"), uma de cada lado, só em tela de 1500px para cima.
 export const ADSENSE_CLIENTE = 'ca-pub-7415553208405657';
+/** Lateral 160x600 (o mesmo de SLOT_LATERAL em src/lib/anuncios.ts) */
 export const ADSENSE_SLOT_LATERAL: string | null = '4504981437';
 /** Bloco in-article do AdSense (o mesmo de SLOT_NOTICIAS em src/lib/anuncios.ts) */
 export const ADSENSE_SLOT_NOTICIAS = '2904125157';

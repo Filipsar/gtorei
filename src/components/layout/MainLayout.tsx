@@ -7,6 +7,7 @@ import { DiscordPopup } from '@/components/ui/DiscordPopup';
 import { AgradecimentoPopup } from '@/components/ui/AgradecimentoPopup';
 import { IndiquePopup } from '@/components/ui/IndiquePopup';
 import { AnunciosDoSite } from './AnunciosDoSite';
+import { LateralDeAnuncio } from './BlocoDeAnuncio';
 import { Menu } from 'lucide-react';
 import { AppShell } from '@/components/app/AppShell';
 import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
@@ -46,8 +47,12 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
 
           {/* Page content */}
-          <div id="conteudo" tabIndex={-1} className="flex-1 overflow-auto focus:outline-none">
-            {children}
+          <div className="flex flex-1 min-w-0">
+            <div id="conteudo" tabIndex={-1} className="flex-1 min-w-0 overflow-auto focus:outline-none">
+              {children}
+            </div>
+            {/* Anúncio 160x600 à direita, só em tela larga e para quem não é PRO */}
+            <LateralDeAnuncio />
           </div>
           <UpdatesPopup />
           <AgradecimentoPopup />
