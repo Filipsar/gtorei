@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Instagram, ChevronLeft, ChevronRight, X, Smartphone, Trophy } from 'lucide-react';
+import { Heart, Instagram, ChevronLeft, ChevronRight, X, Smartphone, Trophy, MessageCircle } from 'lucide-react';
 import { EloBadge } from '@/components/app/EloBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { introPendente } from '@/lib/testeDeNivel';
@@ -12,9 +12,12 @@ import { TESTE_ANDROID_ABERTO } from '@/data/appAndroid';
 import { ehApp } from '@/lib/nativo/plataforma';
 import { cn } from '@/lib/utils';
 import { marcarPopupNestaVisita, PAGINAS_SEM_POPUP } from '@/lib/avisoDoDiscord';
+import { useSupporter } from '@/hooks/useSupporter';
+import { marcarAgradecimentoVisto, whatsappSemPro } from '@/lib/agradecimento';
 
 const STORAGE_KEY = 'gtorei_last_update_seen';
-const CURRENT_VERSION = '1.26.0';
+// 1.37.1: reabre para todo mundo ver o agradecimento às doações (primeiro slide)
+const CURRENT_VERSION = '1.37.1';
 const INSTAGRAM_URL = 'https://www.instagram.com/gtorei/';
 const DONATE_URL = '/apoiar';
 
@@ -30,6 +33,7 @@ type Slide = {
 
 export function UpdatesPopup() {
   const { user } = useAuth();
+  const { isSupporter } = useSupporter();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -74,6 +78,8 @@ export function UpdatesPopup() {
     // visita para o aviso do Discord não abrir logo depois deste
     const t = setTimeout(() => {
       marcarPopupNestaVisita();
+      // O agradecimento vai como slide aqui: o pop-up próprio não repete depois
+      if (!ehApp()) marcarAgradecimentoVisto(user.id);
       setOpen(true);
     }, 800);
     return () => clearTimeout(t);
@@ -91,6 +97,30 @@ export function UpdatesPopup() {
   };
 
   const slides: Slide[] = [
+    // Agradecimento às doações (só no site: no app o PRO é a compra do Google Play)
+    ...(!ehApp()
+      ? [
+          {
+            icon: <Heart className="h-10 w-10 fill-current" />,
+            iconBg: 'bg-destructive/20 text-destructive',
+            title: 'Obrigado a quem doou!',
+            titleClass: 'text-primary',
+            description: isSupporter
+              ? 'São as doações que mantêm o GTORei no ar e grátis para todo mundo. O seu PRO já está liberado. Bom treino!'
+              : 'São as doações que mantêm o GTORei no ar e grátis para todo mundo. Quem doou já está com o PRO liberado na conta. Doou e o PRO não apareceu? Fale comigo no WhatsApp que eu libero.',
+            cta: isSupporter ? undefined : (
+              <div className="mt-4 w-full flex justify-center">
+                <Button asChild className="bg-[#0F7A36] text-white hover:bg-[#0B6029]">
+                  <a href={whatsappSemPro()} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Falar no WhatsApp
+                  </a>
+                </Button>
+              </div>
+            ),
+          },
+        ]
+      : []),
     // Dentro do app o convite não faz sentido: quem vê já instalou
     ...(TESTE_ANDROID_ABERTO && !ehApp()
       ? [
