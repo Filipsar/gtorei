@@ -19,11 +19,10 @@ export const WPT_GLOBAL_URL = 'https://wptglobal.com/poker-download?referralCode
 // PRO. A página não tem o login (é HTML do servidor), então lê duas marcas que o
 // site grava no mesmo navegador: gtorei_sem_anuncio (useSupporter, conta PRO) e
 // gtorei_consentimento (aviso de privacidade). Sem "Permitir", o anúncio sai não
-// personalizado (requestNonPersonalizedAds). Laterais fixas só depois de criar o
-// bloco de anúncio no AdSense e pôr o id em ADSENSE_SLOT_LATERAL; até lá, os
-// Anúncios automáticos do painel decidem onde entram.
+// personalizado (requestNonPersonalizedAds). Laterais fixas de 160x600 ("Lateral
+// anúncios"), uma de cada lado, só em tela de 1500px para cima.
 export const ADSENSE_CLIENTE = 'ca-pub-7415553208405657';
-const ADSENSE_SLOT_LATERAL: string | null = null;
+export const ADSENSE_SLOT_LATERAL: string | null = '4504981437';
 /** Bloco in-article do AdSense (o mesmo de SLOT_NOTICIAS em src/lib/anuncios.ts) */
 export const ADSENSE_SLOT_NOTICIAS = '2904125157';
 
@@ -369,6 +368,7 @@ dialog.oferta::backdrop{background:rgba(0,0,0,.75)}
 .trilho.dir{right:max(12px,calc(50% - 560px - 184px))}
 @media (min-width:1500px){.trilho{display:block}}
 .sem-anuncio .trilho{display:none!important}
+.trilho:has(ins[data-ad-status="unfilled"]){display:none!important}
 .aviso-ads{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:12px}
 .aviso-ads[hidden]{display:none}
 .aviso-ads p{max-width:640px;margin:0 auto;background:var(--cartao);border:1px solid var(--borda);border-bottom:0;border-radius:12px 12px 0 0;padding:14px 16px 8px;font-size:14px;color:var(--apoio)}

@@ -373,7 +373,7 @@ um ponto por semana). O link de feedback (Google Forms) saiu do menu e do Mais.
   (`AnunciosDoSite` no `MainLayout`, `src/lib/anuncios.ts`; não carrega a partir da mesa de treino,
   `ROTAS_SEM_ANUNCIO`). Sem "Permitir" no aviso, `requestNonPersonalizedAds`. O aviso do site voltou a
   pedir a escolha (antes só informava). `public/ads.txt` e a meta `google-adsense-account` no
-  `index.html`. Laterais fixas nas notícias esperam o id do bloco em `ADSENSE_SLOT_LATERAL`.
+  `index.html`. Laterais fixas 160x600 nas notícias (`ADSENSE_SLOT_LATERAL`, só a partir de 1500px).
   O script está no `<head>` do `index.html` (o AdSense verifica o site por ele) com
   `pauseAdRequests = 1`; `definirAnuncios` libera e pausa por página. O app empacota o mesmo
   `index.html`, por isso o APK/AAB sai de `npm run build:app` (`--mode app`), que tira o bloco
