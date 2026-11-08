@@ -357,10 +357,8 @@ a:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
 dialog.oferta{border:0;padding:0;background:transparent;max-width:min(92vw,420px)}
 dialog.oferta::backdrop{background:rgba(0,0,0,.75)}
 .oferta a.arte{display:block}
-.oferta img{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:14px}
+.oferta img{display:block;width:100%;height:auto;max-height:88vh;object-fit:contain;border-radius:14px}
 .oferta .fechar{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:999px;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
-.oferta .acoes{background:var(--cartao);border-radius:14px;margin-top:8px;padding:12px;text-align:center}
-.oferta .acoes .botao{display:block}
 .bloco-anuncio{margin:24px 0;min-height:120px}
 .bloco-anuncio .rotulo{margin:0 0 4px;text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--apoio)}
 .sem-anuncio .bloco-anuncio,.bloco-anuncio:has(ins[data-ad-status="unfilled"]){display:none}
@@ -378,7 +376,6 @@ dialog.oferta::backdrop{background:rgba(0,0,0,.75)}
 .aviso-ads div{max-width:640px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--cartao);border:1px solid var(--borda);border-top:0;border-radius:0 0 12px 12px;padding:0 16px 14px}
 .aviso-ads button{background:transparent;color:var(--texto);border:1px solid var(--borda);border-radius:10px;padding:10px;font:inherit;font-weight:600;cursor:pointer}
 .aviso-ads button:hover{border-color:var(--ouro)}
-.oferta .acoes small{display:block;color:var(--apoio);font-size:12px;line-height:1.5;margin-top:8px}
 `;
 
 interface Cabeca {
@@ -453,10 +450,6 @@ const SALAS_PARCEIRAS = `<aside class="parceiros">
 const POPUP_DA_OFERTA = `<dialog class="oferta" id="oferta" aria-label="Oferta de boas-vindas da WPT Global">
   <button class="fechar" type="button" aria-label="Fechar">×</button>
   <a class="arte" href="${WPT_GLOBAL_URL}" target="_blank" rel="sponsored noopener noreferrer"><img src="/parceiros/wpt-oferta.webp" alt="WPT Global: oferta de boas-vindas para conta nova" width="1126" height="2000" loading="lazy"></a>
-  <div class="acoes">
-    <a class="botao" href="${WPT_GLOBAL_URL}" target="_blank" rel="sponsored noopener noreferrer">Quero a oferta na WPT Global</a>
-    <small>Condições no site da WPT Global. ${AVISO_PARCEIROS}</small>
-  </div>
 </dialog>
 <script>
 (function(){
