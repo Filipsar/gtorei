@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
-// Onde os jogadores erram no Cash (beta), pela função admin_cash_erros
-// (migration 20261031140000). Só números agregados: nenhum jogador aparece.
+// Onde os jogadores erram: Cash (beta), pela função admin_cash_erros, e treino de
+// torneio, pela admin_treino_erros (migrations 20261031140000 e 20261108120000).
+// Só números agregados: nenhum jogador aparece.
 
 interface Linha {
   chave: string;
@@ -23,12 +24,28 @@ interface Resumo {
   por_cenario: Linha[];
   por_posicao: Linha[];
   por_vilao: Linha[];
+  /** Só no treino de torneio (admin_treino_erros) */
+  por_modo?: Linha[];
+  por_stack?: Linha[];
   maos_mais_erradas: Linha[];
   trocas: Linha[];
 }
 
-const NOMES: Record<string, string> = { openRaise: 'Open raise', vsOpenRaise: 'Vs open raise', vs3bet: 'Vs 3-bet' };
-const traduz = (s: string) => s.replace(/openRaise|vsOpenRaise|vs3bet/g, (m) => NOMES[m] ?? m);
+const NOMES: Record<string, string> = {
+  openRaise: 'Open raise',
+  vsOpenRaise: 'Vs open raise',
+  vsOpenShove: 'Vs all-in',
+  vs3bet: 'Vs 3-bet',
+  multiway: 'Multiway',
+  '8max': 'Mesa de 8',
+  threehand: '3-handed',
+  hu: 'Heads-up',
+  bounty: 'Bounty',
+  outro: 'Sem modo gravado',
+  allin: 'all-in',
+};
+const traduz = (s: string) =>
+  s.replace(/\b(openRaise|vsOpenRaise|vsOpenShove|vs3bet|multiway|8max|threehand|hu|bounty|outro|allin)\b/g, (m) => NOMES[m] ?? m);
 
 const PERIODOS = [
   { dias: 7, rotulo: '7 dias' },
@@ -70,8 +87,28 @@ function Tabela({ titulo, linhas, extra }: { titulo: string; linhas: Linha[]; ex
   );
 }
 
-export function AdminCash() {
+const MODOS_DO_TREINO = [
+  { valor: null, rotulo: 'Todos' },
+  { valor: '8max', rotulo: 'Mesa de 8' },
+  { valor: 'threehand', rotulo: '3-handed' },
+  { valor: 'hu', rotulo: 'Heads-up' },
+  { valor: 'bounty', rotulo: 'Bounty' },
+] as const;
+
+type Rpc = (f: string, a: object) => Promise<{ data: Resumo | null; error: { message: string } | null }>;
+
+interface PainelProps {
+  funcao: string;
+  migration: string;
+  titulo: string;
+  descricao: string;
+  /** Filtro por modo de jogo (só no treino de torneio) */
+  comModos?: boolean;
+}
+
+function PainelDeErros({ funcao, migration, titulo, descricao, comModos }: PainelProps) {
   const [dias, setDias] = useState(30);
+  const [modo, setModo] = useState<string | null>(null);
   const [dados, setDados] = useState<Resumo | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -80,27 +117,25 @@ export function AdminCash() {
     setDados(null);
     setErro(null);
     const desde = new Date(Date.now() - dias * 86400000).toISOString();
-    void (supabase.rpc as unknown as (f: string, a: object) => Promise<{ data: Resumo | null; error: { message: string } | null }>)(
-      'admin_cash_erros',
-      { _desde: desde },
-    ).then(({ data, error }) => {
+    const args = comModos ? { _desde: desde, _modo: modo } : { _desde: desde };
+    void (supabase.rpc as unknown as Rpc)(funcao, args).then(({ data, error }) => {
       if (cancelado) return;
-      if (error) setErro(error.message.includes('function') ? 'Aplique a migration 20261031140000_cash_erros.sql.' : error.message);
+      if (error) setErro(error.message.includes('function') ? `Aplique a migration ${migration}.` : error.message);
       else setDados(data);
     });
     return () => {
       cancelado = true;
     };
-  }, [dias]);
+  }, [dias, modo, funcao, migration, comModos]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Cash (beta): onde os jogadores erram</h2>
-          <p className="text-sm text-muted-foreground">Mãos do modo Cash. Acerto = melhor jogada ou jogada correta.</p>
+          <h2 className="text-lg font-semibold">{titulo}</h2>
+          <p className="text-sm text-muted-foreground">{descricao}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {PERIODOS.map((p) => (
             <Button key={p.dias} size="sm" variant={dias === p.dias ? 'default' : 'outline'} onClick={() => setDias(p.dias)}>
               {p.rotulo}
@@ -108,6 +143,15 @@ export function AdminCash() {
           ))}
         </div>
       </div>
+      {comModos && (
+        <div className="flex flex-wrap gap-2">
+          {MODOS_DO_TREINO.map((m) => (
+            <Button key={m.rotulo} size="sm" variant={modo === m.valor ? 'secondary' : 'ghost'} onClick={() => setModo(m.valor)}>
+              {m.rotulo}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {erro ? (
         <p className="text-sm text-destructive">{erro}</p>
@@ -132,18 +176,45 @@ export function AdminCash() {
             ))}
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
-            <Tabela titulo="Por cenário" linhas={dados.por_cenario} extra={(l) => `EV perdido médio: ${l.ev_perdido ?? 0} BB`} />
-            <Tabela titulo="Erros mais comuns" linhas={dados.trocas} />
+            <Tabela titulo="Por cenário (pior primeiro)" linhas={dados.por_cenario} extra={(l) => `EV perdido médio: ${l.ev_perdido ?? 0} BB`} />
+            <Tabela titulo="Erros mais comuns" linhas={dados.trocas.map((l) => ({ ...l, chave: traduz(l.chave) }))} />
+            {dados.por_stack && <Tabela titulo="Por stack (pior primeiro)" linhas={dados.por_stack} />}
+            {dados.por_modo && !modo && <Tabela titulo="Por modo de jogo" linhas={dados.por_modo} />}
             <Tabela titulo="Por posição (pior primeiro)" linhas={dados.por_posicao} />
             <Tabela titulo="Por vilão (pior primeiro)" linhas={dados.por_vilao} />
           </div>
           <Tabela
             titulo="Mãos que mais erram (5 ou mais jogadas)"
             linhas={dados.maos_mais_erradas}
-            extra={(l) => `Certo: ${l.certo} · o que mais jogam: ${l.mais_jogado}`}
+            extra={(l) => `Certo: ${traduz(l.certo ?? '')} · o que mais jogam: ${traduz(l.mais_jogado ?? '')}`}
           />
         </>
       )}
     </div>
+  );
+}
+
+/** Cash (beta), pela função admin_cash_erros */
+export function AdminCash() {
+  return (
+    <PainelDeErros
+      funcao="admin_cash_erros"
+      migration="20261031140000_cash_erros.sql"
+      titulo="Cash (beta): onde os jogadores erram"
+      descricao="Mãos do modo Cash. Acerto = melhor jogada ou jogada correta."
+    />
+  );
+}
+
+/** Treino de torneio (tudo menos Cash e Simulação), pela função admin_treino_erros */
+export function AdminTreino() {
+  return (
+    <PainelDeErros
+      funcao="admin_treino_erros"
+      migration="20261108120000_admin_treino_erros.sql"
+      titulo="Treino: onde os jogadores erram"
+      descricao="Mãos do treino de torneio, sem Cash e sem Simulação. Acerto = melhor jogada ou jogada correta. Só números somados: nenhum jogador aparece."
+      comModos
+    />
   );
 }

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity, Smartphone, Newspaper, Spade } from 'lucide-react';
+import { Loader2, Search, Download, Users, Clock, Zap, Target, Mail, Copy, ChevronDown, FileText, TrendingUp, UserPlus, Trophy, Activity, Smartphone, Newspaper, Spade, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +25,7 @@ import { MonthlyComparison } from '@/components/admin/MonthlyComparison';
 import { ReferralLevel5 } from '@/components/admin/ReferralLevel5';
 import { AppTeste } from '@/components/admin/AppTeste';
 import { AdminNoticias } from '@/components/admin/AdminNoticias';
-import { AdminCash } from '@/components/admin/AdminCash';
+import { AdminCash, AdminTreino } from '@/components/admin/AdminCash';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -77,7 +77,7 @@ const columnLabels: Record<ColumnKey, string> = {
   created_at: 'Cadastro',
 };
 
-type TabKey = 'jogadores' | 'dashboard' | 'app' | 'noticias' | 'cash';
+type TabKey = 'jogadores' | 'dashboard' | 'treino' | 'app' | 'noticias' | 'cash';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -370,7 +370,7 @@ export default function AdminPage() {
   };
 
   const tabLabel =
-    activeTab === 'jogadores' ? 'Jogadores' : activeTab === 'app' ? 'App Android' : activeTab === 'noticias' ? 'Notícias' : activeTab === 'cash' ? 'Cash (beta)' : 'Dashboard';
+    activeTab === 'jogadores' ? 'Jogadores' : activeTab === 'app' ? 'App Android' : activeTab === 'noticias' ? 'Notícias' : activeTab === 'cash' ? 'Cash (beta)' : activeTab === 'treino' ? 'Erros no treino' : 'Dashboard';
 
   return (
     <MainLayout>
@@ -389,6 +389,9 @@ export default function AdminPage() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('dashboard')}>
                 <Activity className="h-4 w-4 mr-2" /> Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('treino')}>
+                <Crosshair className="h-4 w-4 mr-2" /> Erros no treino
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActiveTab('app')}>
                 <Smartphone className="h-4 w-4 mr-2" /> App Android
@@ -436,6 +439,8 @@ export default function AdminPage() {
           <AdminNoticias />
         ) : activeTab === 'cash' ? (
           <AdminCash />
+        ) : activeTab === 'treino' ? (
+          <AdminTreino />
         ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
