@@ -581,7 +581,7 @@ export function PokerTable({
           let stackToShow: number | undefined;
           if (isHero) {
             stackToShow = heroStack;
-          } else if (isVillain && villainStack) {
+          } else if (isVillain && villainStack !== undefined) {
             stackToShow = villainStack;
           } else if (extra) {
             stackToShow = extra.stack;
@@ -590,7 +590,10 @@ export function PokerTable({
           }
           // Aposta na frente do tamanho do stack: ele não tem mais nada atrás
           const aposta = activeBets.find((b) => b.position === pos)?.amount;
-          const allIn = stackToShow !== undefined && aposta !== undefined && aposta >= stackToShow;
+          // ...ou já sem fichas depois de um all-in pago (o stack zerado caía no valor
+          // de antes da mão e o assento parecia ter fichas)
+          const semFichas = (isHero || isVillain) && !hasFolded && stackToShow !== undefined && stackToShow <= 0.05;
+          const allIn = stackToShow !== undefined && ((aposta !== undefined && aposta >= stackToShow) || semFichas);
 
           return (
             <div

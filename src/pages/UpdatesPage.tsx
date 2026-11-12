@@ -24,6 +24,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.39.1',
+    date: '12/11/2026',
+    type: 'fix',
+    title: 'All-in na Simulação e Assentos da Mesa',
+    description: 'Na Simulação, quando um all-in é pago, as cartas que faltam viram de uma vez e a mão vai para o showdown. Antes aparecia só o flop e a mão continuava pedindo ação, como se os dois ainda tivessem fichas. Na mesa, quem falou antes de quem abriu agora aparece como fold: os assentos ficavam acesos como se ainda fossem jogar.',
+  },
+  {
     version: '1.39.0',
     date: '05/11/2026',
     type: 'improvement',

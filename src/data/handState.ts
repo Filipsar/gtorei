@@ -338,6 +338,33 @@ export function initializeHandState(
     }
   }
   
+  // Quando a vez chega ao herói, quem falou antes de quem abriu já desistiu, e
+  // quem está entre os dois também (o SB incluído, se o herói é o BB). Contra
+  // 3-bet, todos os outros já saíram. Antes só os do meio eram marcados, e os
+  // assentos de antes da abertura ficavam acesos como se ainda fossem jogar.
+  const abriu = scenario === 'openRaise' || scenario === 'vs3bet' ? heroPosition : villainPosition;
+  const indiceDeQuemAbriu = abriu ? positionOrder.indexOf(abriu) : -1;
+  const indiceDoVilao = villainPosition ? positionOrder.indexOf(villainPosition) : -1;
+  const pagou = (pos: Position) => actions.some((a) => a.position === pos && a.action === 'call');
+  const foldsDeAntes: ActionEntry[] = [];
+  positionOrder.forEach((pos, i) => {
+    if (pos === heroPosition || pos === villainPosition) return;
+    if (foldedPositions.includes(pos) || pagou(pos)) return;
+    if (indiceDeQuemAbriu >= 0 && i < indiceDeQuemAbriu) {
+      foldsDeAntes.push({ position: pos, action: 'fold' });
+      foldedPositions.push(pos);
+      return;
+    }
+    const entreOsDois = indiceDoVilao >= 0 && i > indiceDoVilao && i < heroIndex;
+    const depoisDo3bet = scenario === 'vs3bet' && indiceDoVilao >= 0 && i > heroIndex;
+    if (entreOsDois || depoisDo3bet) {
+      actions.push({ position: pos, action: 'fold' });
+      foldedPositions.push(pos);
+    }
+  });
+  // Na ordem em que aconteceu: depois dos blinds, antes da abertura
+  actions.splice(2, 0, ...foldsDeAntes);
+
   // Gerar cartas do villain (serão reveladas no showdown)
   const deck = generateDeck();
   const usedCards = heroCards;
@@ -533,12 +560,18 @@ export function processHeroAction(
   
   if (action === 'call') {
     // Calcular quanto o herói precisa pagar
-    const amountToCall = Math.max(
-      ...state.activeBets.map(b => b.amount),
-      0
+    const amountToCall = Math.min(
+      Math.max(...state.activeBets.map(b => b.amount), 0),
+      state.heroStack
     );
     newState.pot = state.pot + amountToCall;
     newState.heroStack = state.heroStack - amountToCall;
+    // Na simulação a abertura do vilão sai do stack dele. Sem isso ele chegava
+    // ao flop com mais fichas que o herói, e pagar o all-in dele não fechava a mão.
+    if (state.isSimulation && state.villainStack !== undefined) {
+      const abertura = state.activeBets.find(b => b.position === state.villainPosition)?.amount ?? 0;
+      newState.villainStack = Math.max(0, state.villainStack - abertura);
+    }
     
     // Em cenários VS ou simulação, após call, lidamos o flop
     if (scenario !== 'openRaise') {
@@ -652,7 +685,10 @@ export function processPostflopAction(
       newState.villainMemory,
     );
     
-    if (decision.action === 'call') {
+    // Com o herói já all-in, ou com o vilão sem fichas para passar da aposta,
+    // não existe aumento: o "raise" dele é um call
+    const semComoAumentar = newState.heroStack <= 0.05 || (state.villainStack || 0) <= betSize;
+    if (decision.action === 'call' || (decision.action === 'raise' && semComoAumentar)) {
       const callAmount = Math.min(betSize, state.villainStack || 0);
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'call', amount: callAmount }];
       newState.villainStack = (state.villainStack || 0) - callAmount;
@@ -754,15 +790,27 @@ export function processPostflopAction(
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'fold', true);
       return newState;
     } else {
-      // Villain re-raises → all-in scenario, simplify to call
-      const reraiseAmt = Math.min(state.villainStack || 0, newState.pot);
+      // Villain re-raises → all-in com tudo o que ele tem
+      const reraiseAmt = state.villainStack || 0;
+      // O que falta o herói pôr para pagar: o total do vilão na rua menos o
+      // que o herói já pôs no raise, até o stack dele
+      const apostaAnterior = state.activeBets.find(b => b.position === state.villainPosition)?.amount ?? 0;
+      const falta = Math.min(Math.max(0, apostaAnterior + reraiseAmt - raiseSize), newState.heroStack);
       newState.apostaDaRua = Math.max(newState.apostaDaRua ?? 0, reraiseAmt);
       newState.actions = [...newState.actions, { position: state.villainPosition!, action: 'allin', amount: reraiseAmt }];
       newState.pot += reraiseAmt;
       newState.villainStack = 0;
-      newState.lastVillainAction = `All-in ${reraiseAmt.toFixed(1)}BB`;
-      newState.villainAction = { action: 'All-in', amount: reraiseAmt };
       newState.villainMemory = updateMemory(newState.villainMemory, state.street, 'allin', true, reraiseAmt);
+      if (falta <= 0.05) {
+        // O all-in dele não passa do raise do herói: é um call, e a mão acaba
+        newState.lastVillainAction = 'Call All-in';
+        return runoutToShowdown(newState);
+      }
+      // As fichas que o herói paga ao dar call (antes ficava o raise do
+      // próprio herói ali, e o call saía de graça com a mão seguindo)
+      newState.activeBets = [{ position: state.villainPosition!, amount: falta }];
+      newState.lastVillainAction = `All-in ${reraiseAmt.toFixed(1)}BB`;
+      newState.villainAction = { action: 'All-in', amount: falta };
       newState.awaitingPostflopAction = true;
       return newState;
     }
@@ -866,13 +914,24 @@ function simulateVillainResponse(
     ];
     newState.lastVillainAction = 'Call';
 
-    // Update villain stack for the call
-    const callAmount = Math.max(...state.activeBets.map(b => b.amount), 0);
-    newState.villainStack = (state.villainStack || effectiveStack) - callAmount;
+    // Ele iguala a aposta do herói até onde o stack dele alcança
+    const apostaDoHeroi = Math.max(...state.activeBets.map(b => b.amount), 0);
+    const jaPos = state.activeBets.find(b => b.position === state.villainPosition)?.amount ?? 0;
+    const stackDoVilao = state.villainStack ?? apostaDoHeroi;
+    const igualado = Math.min(apostaDoHeroi, stackDoVilao);
+    newState.villainStack = stackDoVilao - igualado;
 
-    // O pote pré-flop já conta a aposta dele, então aqui não há ficha a mover:
-    // a pausa é só para a tela mostrar que ele pagou antes de vir o flop.
-    return pausarParaMostrar(newState);
+    // O que o herói pôs além do que o vilão cobre volta para ele
+    const sobra = apostaDoHeroi - igualado;
+    if (sobra > 0) {
+      newState.pot = state.pot - sobra;
+      newState.heroStack = state.heroStack + sobra;
+    }
+
+    // O pote já conta a abertura dele; o que ele completa para pagar entra
+    // quando a rua vira (antes não entrava, e o pote do all-in ficava menor).
+    // A pausa é para a tela mostrar que ele pagou antes de vir o flop.
+    return pausarParaMostrar(newState, Math.max(0, igualado - jaPos));
   } else {
     newState.actions = [
       ...state.actions,
@@ -919,8 +978,21 @@ export function avancarRua(state: HandState): HandState {
   return dealNextStreet(comFichas);
 }
 
+/** Herói ou vilão principal sem fichas atrás (margem para o arredondamento de 0,1 BB) */
+function alguemAllIn(state: HandState): boolean {
+  if (state.heroStack <= 0.05) return true;
+  return state.villainStack !== undefined && state.villainStack <= 0.05;
+}
+
 // Lidar próxima street
 function dealNextStreet(state: HandState): HandState {
+  // Alguém ficou sem fichas (all-in pago): não há mais o que apostar, então as
+  // cartas que faltam viram de uma vez e a mão vai para o showdown. Antes o
+  // flop vinha e a mão seguia pedindo ação, como se os dois ainda tivessem fichas.
+  if (state.isSimulation && alguemAllIn(state)) {
+    return runoutToShowdown(state);
+  }
+
   // Antes de virar a rua, cada adversário extra paga o que entrou nela ou sai
   const comExtras = resolverExtras(state);
   const newState = { ...comExtras };

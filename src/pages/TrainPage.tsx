@@ -810,8 +810,11 @@ export default function TrainPage() {
         // Ele pagou o pré-flop: mostra o call antes de o flop vir
         setPhase('transitioning');
         setTimeout(() => {
-          setHandState(avancarRua(newState));
-          setTimeout(() => setPhase('postflop'), 500);
+          const seguinte = avancarRua(newState);
+          setHandState(seguinte);
+          // All-in pago: as cartas viram de uma vez e a mão vai para a revisão
+          if (seguinte.isHandComplete) setTimeout(() => setPhase('review'), 1800);
+          else setTimeout(() => setPhase('postflop'), 500);
         }, 1100);
       } else {
         setPhase('transitioning');
@@ -931,8 +934,11 @@ export default function TrainPage() {
       } else if (newState.aguardandoAvanco) {
         setPhase('transitioning');
         setTimeout(() => {
-          setHandState(avancarRua(newState));
-          setTimeout(() => setPhase('postflop'), 500);
+          const seguinte = avancarRua(newState);
+          setHandState(seguinte);
+          // All-in pago: as cartas viram de uma vez e a mão vai para a revisão
+          if (seguinte.isHandComplete) setTimeout(() => setPhase('review'), 1800);
+          else setTimeout(() => setPhase('postflop'), 500);
         }, 1100);
       } else {
         // Show transitioning state with delay before showing postflop actions
@@ -998,8 +1004,11 @@ export default function TrainPage() {
         // O vilão fechou a rua pagando ou dando check. A mão fica parada com a
         // ação e as fichas dele na mesa; só depois a carta seguinte vira.
         setTimeout(() => {
-          setHandState(avancarRua(newState));
-          setTimeout(() => setPhase('postflop'), 500);
+          const seguinte = avancarRua(newState);
+          setHandState(seguinte);
+          // All-in pago: as cartas viram de uma vez e a mão vai para a revisão
+          if (seguinte.isHandComplete) setTimeout(() => setPhase('review'), 1800);
+          else setTimeout(() => setPhase('postflop'), 500);
         }, 1100);
       } else if (newState.awaitingPostflopAction) {
         // Villain bet, hero must respond — add another delay
