@@ -317,10 +317,18 @@ interface PaginaDoCommons {
 
 const normal = (s: string) => palavras(s).join(' ');
 
+/** Palavras que ligam a foto ao poker: no nome do arquivo, na descrição ou nas categorias */
+const SINAL_DE_POKER = /(^|[^a-z])(poker|p[oóô]quer|wsop|wpt|ept|bsop|pokerstars|ggpoker|pokergo)([^a-z]|$)/i;
+
 /**
  * A primeira foto da busca que é mesmo do jogador (todas as partes do nome
- * no nome do arquivo) e tem licença que permite usar com crédito. Licença
- * "não comercial" ou "sem derivação" fica de fora.
+ * no nome do arquivo e sinal de poker no arquivo, na descrição ou nas
+ * categorias) e tem licença que permite usar com crédito. Licença "não
+ * comercial" ou "sem derivação" fica de fora.
+ *
+ * O sinal de poker entrou em 12/11/2026: a busca do Commons devolve resultado
+ * aproximado, e a notícia do Quan Zhou (Triton ONE) saiu com a foto de uma
+ * ilustradora de nome parecido. Só o nome no arquivo não prova quem é.
  */
 export function escolherFotoDoCommons(
   resposta: { query?: { pages?: Record<string, PaginaDoCommons> } },
@@ -335,6 +343,10 @@ export function escolherFotoDoCommons(
     const arquivo = normal(p.title ?? '');
     if (!partes.every((parte) => arquivo.split(' ').includes(parte))) continue;
     const meta = info.extmetadata ?? {};
+    const contexto = [p.title, meta.ObjectName?.value, meta.ImageDescription?.value, meta.Categories?.value]
+      .map((t) => textoPuro(t ?? ''))
+      .join(' | ');
+    if (!SINAL_DE_POKER.test(contexto)) continue;
     const licenca = textoPuro(meta.LicenseShortName?.value ?? '');
     if (!/^(cc0|cc[ -]by(-sa)?( \d(\.\d)?)?|public domain|domínio público)/i.test(licenca)) continue;
     if (/\bnc\b|\bnd\b|non-?commercial|no ?deriv/i.test(licenca)) continue;

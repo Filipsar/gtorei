@@ -125,4 +125,35 @@ describe('foto do Wikimedia Commons', () => {
     expect(escolherFotoDoCommons(resposta, 'Hun Wei Lee')).toBeNull();
     expect(escolherFotoDoCommons({}, 'Hun Wei Lee')).toBeNull();
   });
+
+  // 12/11/2026: a notícia do Quan Zhou (Triton ONE) saiu com a foto de uma
+  // ilustradora de nome parecido. Os dados são os que o Commons devolveu.
+  it('homônimo sem ligação com poker não serve, mesmo com o nome no arquivo', () => {
+    const homonimo = pagina(1, 'File:Quan Zhou Wu.jpg', 'CC BY 4.0');
+    Object.assign(homonimo.imageinfo[0].extmetadata, {
+      ObjectName: { value: 'Quan Zhou Wu' },
+      ImageDescription: { value: 'Ilustradora española' },
+      Categories: { value: 'Self-published work|Quan Zhou Wu' },
+    });
+    expect(escolherFotoDoCommons({ query: { pages: { a: homonimo } } }, 'Quan Zhou')).toBeNull();
+  });
+
+  it('aceita quando o poker aparece só na descrição ou nas categorias', () => {
+    const naCategoria = pagina(1, 'File:Sam Soverel 2019.jpg', 'CC BY 3.0');
+    Object.assign(naCategoria.imageinfo[0].extmetadata, { Categories: { value: 'Poker players from the United States' } });
+    expect(escolherFotoDoCommons({ query: { pages: { a: naCategoria } } }, 'Sam Soverel')?.url).toBe(
+      'https://upload.wikimedia.org/thumb/1.jpg',
+    );
+
+    const naDescricao = pagina(2, 'File:Joe McKeehen.jpg', 'CC BY 2.0');
+    Object.assign(naDescricao.imageinfo[0].extmetadata, { ImageDescription: { value: '<p>Winner of the 2015 WSOP Main Event</p>' } });
+    expect(escolherFotoDoCommons({ query: { pages: { a: naDescricao } } }, 'Joe McKeehen')?.url).toBe(
+      'https://upload.wikimedia.org/thumb/2.jpg',
+    );
+
+    // "ept" dentro de outra palavra não conta
+    const outraPalavra = pagina(3, 'File:Joe McKeehen.jpg', 'CC BY 2.0');
+    Object.assign(outraPalavra.imageinfo[0].extmetadata, { ImageDescription: { value: 'Photo accepted in September' } });
+    expect(escolherFotoDoCommons({ query: { pages: { a: outraPalavra } } }, 'Joe McKeehen')).toBeNull();
+  });
 });
