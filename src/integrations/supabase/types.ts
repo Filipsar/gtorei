@@ -716,6 +716,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           banner_url: string | null
+          conquistas_destaque: string[]
           consecutive_errors: number
           created_at: string
           hands_played: number
@@ -731,6 +732,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           banner_url?: string | null
+          conquistas_destaque?: string[]
           consecutive_errors?: number
           created_at?: string
           hands_played?: number
@@ -746,6 +748,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           banner_url?: string | null
+          conquistas_destaque?: string[]
           consecutive_errors?: number
           created_at?: string
           hands_played?: number
@@ -867,6 +870,7 @@ export type Database = {
       training_sessions: {
         Row: {
           accuracy: number
+          aleatorio: boolean
           created_at: string
           ended_at: string | null
           hands_played: number
@@ -880,6 +884,7 @@ export type Database = {
         }
         Insert: {
           accuracy?: number
+          aleatorio?: boolean
           created_at?: string
           ended_at?: string | null
           hands_played?: number
@@ -893,6 +898,7 @@ export type Database = {
         }
         Update: {
           accuracy?: number
+          aleatorio?: boolean
           created_at?: string
           ended_at?: string | null
           hands_played?: number
@@ -1105,6 +1111,10 @@ export type Database = {
           validos: number
         }[]
       }
+      admin_treino_erros: {
+        Args: { _desde?: string; _modo?: string }
+        Returns: Json
+      }
       apply_ranking_delta: {
         Args: { _correct: number; _hands: number; _uid: string; _xp: number }
         Returns: undefined
@@ -1149,6 +1159,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      insignias_de_indicacao: {
+        Args: { _ids: string[] }
+        Returns: {
+          nivel: number
+          user_id: string
+        }[]
+      }
       is_supporter: { Args: { _uid?: string }; Returns: boolean }
       lookup_hand: {
         Args: { _code: string }
@@ -1166,6 +1183,12 @@ export type Database = {
           stack: number
           user_action: string
           villain_position: string
+        }[]
+      }
+      pros_entre: {
+        Args: { _ids: string[] }
+        Returns: {
+          user_id: string
         }[]
       }
       purge_old_hand_codes: { Args: never; Returns: number }
