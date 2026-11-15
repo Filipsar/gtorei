@@ -118,6 +118,15 @@ torneio e o `vsOpenShove` acima de 20 BB. Draws do pós-flop (OESD, dupla gutsho
 gutshot, flush, com outs e chance exata) em `src/data/draws.ts`, usado pela análise
 (`postflopAnalysis.ts`, que compara o draw com o preço do call) e pelo vilão.
 
+Desde 15/11/2026 o **all-in direto só existe onde solver usa**: abrir de all-in até 20 BB
+(`ABRE_ALLIN_ATE`; o SB empurrava 35% das mãos com 30 BB) e 3-bet all-in por cima da
+abertura até 30 BB (`JAM_ATE`; o BB ia all-in com AA em 60 BB). Na rodada das respostas
+(`RESPOSTAS` no script) quem abre só abre pequeno (até 14 BB a resposta era calculada
+contra uma range vazia), o pote de 3-bet usa realização por SPR com bônus de iniciativa
+(`fatia3`) e a realização pesa desde stack curto. Achado olhando os erros dos jogadores no
+admin: "erro" concentrado num spot pode ser a range errada. `allInSoOndeExiste.test.ts`
+segura as três coisas. Contra all-in, "Raise" e "All-in" contam como pagar (`handleAction`).
+
 ### Tailwind
 
 `grid-cols-13` não existe no padrão — a matriz 13x13 usa

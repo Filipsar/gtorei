@@ -604,9 +604,14 @@ export default function TrainPage() {
   }, [user, dificuldade, refreshProfile, isSupporter]);
 
   // Handle action
-  const handleAction = useCallback((action: ActionType) => {
+  const handleAction = useCallback((acaoEscolhida: ActionType) => {
     if (!handState || !currentHandId) return;
-    tocar(somDaJogada(action));
+    tocar(somDaJogada(acaoEscolhida));
+    // Contra um all-in, "Raise" e "All-in" são o mesmo que pagar: não há mais o
+    // que aumentar. Antes, quem apertava All-in para pagar levava erro (17 mãos
+    // de 9 jogadores em dez dias).
+    const action: ActionType =
+      scenario === 'vsOpenShove' && (acaoEscolhida === 'allin' || acaoEscolhida === 'raise') ? 'call' : acaoEscolhida;
 
     // Na lição, mão repetida é comum (o spot é fixo) e conta do mesmo jeito
     if (isHandAlreadyPlayedState && !preset) {

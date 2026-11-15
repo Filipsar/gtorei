@@ -24,6 +24,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.40.0',
+    date: '15/11/2026',
+    type: 'improvement',
+    title: 'Ranges Revistas: All-in Só Onde Faz Sentido',
+    description: 'Revisamos as ranges olhando onde os jogadores mais erravam, e parte dos erros era da range, não de quem jogava. Contra a abertura com 35 BB ou mais, o 3-bet agora é pequeno (antes o treino pedia all-in até com AA em 60 BB). Com stack curto, a resposta à abertura passou a ser calculada contra as mãos que de fato abrem. O small blind não abre mais de all-in com 25 BB ou mais: abre de raise. E, contra um all-in, apertar "All-in" ou "Raise" para pagar conta como call. Vale para o treino, o simulado e as tabelas.',
+  },
+  {
     version: '1.39.1',
     date: '12/11/2026',
     type: 'fix',

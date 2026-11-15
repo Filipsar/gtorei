@@ -136,6 +136,32 @@ const tamanho4bet = (T, S) => (CASH && T && 2.2 * T < 0.4 * S ? 2.2 * T : null);
 // squeeze: quem paga fora do BB perde o call se alguém atrás der 3-bet, com a
 // chance tirada da frequência de 3-bet de quem fala depois (ver pSqueeze).
 const TODOS_PAGAM = CASH || !!process.env.TODOS_PAGAM;
+// Rodada de onde saem as respostas à abertura do app (vsOpenRaise). Desde
+// 15/11/2026 ela tem quatro regras só dela, porque os erros dos jogadores no
+// treino mostraram respostas que nenhum solver dá (ver RESPOSTAS mais abaixo):
+//   1. quem abre só abre pequeno (sem all-in direto). Até 14 BB o modelo só
+//      empurrava, a range de "abriu pequeno" ficava vazia e a resposta a ela
+//      era calculada contra equity de 50% para toda mão: o BB "pagava" 81% e
+//      empurrava 19% contra o botão com 10 BB sem enfrentar range nenhuma;
+//   2. acima de JAM_ATE BB não existe 3-bet all-in direto quando o 3-bet
+//      pequeno cabe. Sem pós-flop resolvido, empurrar 40 ou 60 BB por cima de
+//      2,2 BB ganhava do 3-bet pequeno: o BB ia all-in com AA e mais 28 mãos
+//      contra o botão em 60 BB, e o SB com 43;
+//   3. no pote de 3-bet a realização depende do SPR (como no pote de 4-bet do
+//      cash) e quem deu o 3-bet leva um bônus de iniciativa. Com ~1,5 pote
+//      atrás em 40 BB, posição vale pouco; o desconto cheio de "fora de
+//      posição" fazia AA realizar 85% no pote de 3-bet;
+//   4. a realização começa a pesar desde stack curto (rampa de 0 a 17 BB em
+//      vez de 8 a 20): o BB defendia 100% contra o UTG de 8 a 14 BB.
+const RESPOSTAS = TODOS_PAGAM && !CASH;
+const JAM_ATE = 30;       // BB: até aqui o 3-bet all-in direto concorre com o pequeno
+const INICIATIVA = 1.08;  // multiplica a realização de quem deu o 3-bet pequeno
+// Abrir de all-in só existe até aqui (15/11/2026). As outras posições já paravam
+// sozinhas perto de 25 BB, mas o SB, que no modelo não tem o limp, empurrava
+// 35% das mãos com 30 BB (QQ e JJ entre elas) e 23% com 40 BB (até 98o): fora
+// de posição, abrir pequeno realiza mal e o all-in ganhava a conta. Nenhum
+// solver abre de all-in com 30 BB ou mais.
+const ABRE_ALLIN_ATE = 20;
 const podePagarAbertura = (vilao) => CASH || vilao === 'BB' || (TODOS_PAGAM && vilao !== 'SB');
 
 // ── Realização de equity ──────────────────────────────────────────────────
@@ -162,13 +188,22 @@ const JOGAB = HANDS.map(jogabilidade);
 // O efeito da realização chega ao máximo em 20 BB: num pote de BTN contra BB
 // com 30 BB a relação stack/pote ainda é ~5, e lixo fora de posição realiza
 // mal. Com a rampa até 38 BB, o BB defendia 95% contra o botão em 30 BB.
-const profundidade = (S) => Math.min(1, Math.max(0, (S - 8) / 12));
+const profundidade = (S) => Math.min(1, Math.max(0, RESPOSTAS ? S / 17 : (S - 8) / 12));
 function realizacao(i, emPosicao, S) {
   const alvo = JOGAB[i] * (emPosicao ? REAL_EM_POSICAO : REAL_FORA);
   return 1 - (1 - alvo) * profundidade(S);
 }
 // Fatia do pote que a mão i leva indo ao flop com equity eq
 const fatia = (eq, i, emPosicao, S) => Math.min(1, eq * realizacao(i, emPosicao, S));
+// Pote de 3-bet pequeno pago, na rodada das respostas (regra 3 lá em cima):
+// realização por SPR, com bônus de iniciativa para quem deu o 3-bet. Nas outras
+// rodadas continua a realização comum.
+function fatia3(eq, i, emPosicao, S, pote, atras, agressor) {
+  if (!RESPOSTAS) return fatia(eq, i, emPosicao, S);
+  const d = Math.min(1, Math.max(0, (atras / pote - 1) / 4));
+  const alvo = JOGAB[i] * (emPosicao ? REAL_EM_POSICAO : REAL_FORA) * (agressor ? INICIATIVA : 1);
+  return Math.min(1, eq * (1 - (1 - alvo) * d * profundidade(S)));
+}
 // Pote de 4-bet pago (cash): com ~1,7 pote atrás a mão quase sempre termina em
 // all-in no flop, e posição e jogabilidade valem pouco. A realização vai a 1
 // conforme o SPR cai (cheia a partir de SPR 5). Sem isto o vilão em posição
@@ -295,8 +330,8 @@ function resolver(modo, S) {
   const est = {};
   for (const p of herois) {
     est[p] = {
-      R: S <= 10 ? new Float64Array(N) : topo(0.2), // abre pequeno
-      J: S <= 10 ? topo(0.25) : new Float64Array(N), // all-in
+      R: S <= 10 && !RESPOSTAS ? new Float64Array(N) : topo(0.2), // abre pequeno
+      J: S <= 10 && !RESPOSTAS ? topo(0.25) : new Float64Array(N), // all-in
       evR: new Float64Array(N), evJ: new Float64Array(N),
       vs: {},
     };
@@ -378,7 +413,7 @@ function resolver(modo, S) {
           // contra o 3-bet pequeno
           let melhor3 = 0;
           if (c.T) {
-            const evC3 = fatia(c.eqTR[i], i, c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
+            const evC3 = fatia3(c.eqTR[i], i, c.ip, S, 2 * c.T + c.morto, S - c.T, false) * semRake(2 * c.T + c.morto) - c.T;
             // No cash com 100 BB o 4-bet é pequeno e o all-in fica para o 5-bet: com o
             // 4-bet all-in disponível o modelo empurrava AA a A5s 100% (a range que
             // paga o all-in sai apertada demais sem pós-flop resolvido)
@@ -402,9 +437,14 @@ function resolver(modo, S) {
         evR += segue * (POTE_INICIAL - ph);
 
         const evF = -ph;
-        const a = alvo([evF, evR, evJ]);
+        // Sem all-in direto: na rodada das respostas (regra 1) e, em qualquer
+        // rodada de torneio, acima de ABRE_ALLIN_ATE
+        const semAllIn = RESPOSTAS || (!CASH && S > ABRE_ALLIN_ATE);
+        const a = alvo([evF, evR, semAllIn ? NUNCA : evJ]);
         alvoR[i] = a[1]; alvoJ[i] = a[2];
-        e.evR[i] = evR - evF; e.evJ[i] = evJ - evF;
+        // Sem a opção de all-in, o EV dele não quer dizer nada (ninguém responde a
+        // uma range vazia) e sai zerado para a tela não mostrar um número solto
+        e.evR[i] = evR - evF; e.evJ[i] = semAllIn ? 0 : evJ - evF;
       }
       gap += aproxima(e.R, alvoR) + aproxima(e.J, alvoJ); nos += 2;
       ctx.forEach((c, k) => {
@@ -445,10 +485,11 @@ function resolver(modo, S) {
           const evC = podePagarAbertura(c.v) ? (1 - c.sq) * (fatia(eqR[i], i, !c.ip, S) * semRake(2 * r + c.morto) - r) + c.sq * -r : NUNCA;
           // Cash com 100 BB: o 3-bet é pequeno; 3-bet all-in só existe quando o pequeno não cabe
           // (com ele, AA e KK dos blinds iam all-in 91-100% e o resto do cálculo entortava)
-          const evU = CASH && c.T ? NUNCA : (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * semRake(2 * S + c.morto) - S);
+          // Rodada das respostas: acima de JAM_ATE o all-in direto sai (regra 2)
+          const evU = (CASH && c.T) || (RESPOSTAS && c.T && S > JAM_ATE) ? NUNCA : (1 - pcu) * (r + c.morto) + pcu * (eqCU[i] * semRake(2 * S + c.morto) - S);
           let ev3 = NUNCA;
           if (c.T) {
-            const evPago3 = fatia(eqC3[i], i, !c.ip, S) * semRake(2 * c.T + c.morto) - c.T;
+            const evPago3 = fatia3(eqC3[i], i, !c.ip, S, 2 * c.T + c.morto, S - c.T, true) * semRake(2 * c.T + c.morto) - c.T;
             const evPagaJ4 = eqJ4[i] * semRake(2 * S + c.morto) - S;
             alvoC4[i] = alvo([-c.T, evPagaJ4])[1];
             let melhorContra4 = 0;
