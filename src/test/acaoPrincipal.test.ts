@@ -65,7 +65,8 @@ describe('ação principal', () => {
       if (buracos.length) quebradas.push(`${rotulo}: ${buracos.map((x) => x.hand).join(', ')} foldam acima de ${h[ultimaQueContinua].hand}`);
     }
     expect(quebradas).toEqual([]);
-  }, 15_000);
+  // Sozinho leva ~1,5 s; com a suíte inteira rodando junto já passou de 15 s
+  }, 60_000);
 
   it('mão com fold até 50% e jogo de EV positivo nunca sai fold, na tabela ou interpolada', () => {
     // Pega o empate 50/50, que antes virava fold no heurístico e jogo no
