@@ -8,6 +8,7 @@ import { AgradecimentoPopup } from '@/components/ui/AgradecimentoPopup';
 import { IndiquePopup } from '@/components/ui/IndiquePopup';
 import { AnunciosDoSite } from './AnunciosDoSite';
 import { LateralDeAnuncio } from './BlocoDeAnuncio';
+import { MetaDoApp } from './MetaDoApp';
 import { Menu } from 'lucide-react';
 import { AppShell } from '@/components/app/AppShell';
 import { usarLayoutDoApp } from '@/lib/nativo/plataforma';
@@ -45,6 +46,9 @@ export function MainLayout({ children }: MainLayoutProps) {
               <span className="text-foreground">Rei</span>
             </span>
           </header>
+
+          {/* Meta de doações para lançar o app (só no site) */}
+          <MetaDoApp />
 
           {/* Page content */}
           <div className="flex flex-1 min-w-0">

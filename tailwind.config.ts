@@ -305,8 +305,26 @@ export default {
           "15%": { opacity: "1" },
           "100%": { opacity: "0", transform: "translateY(180px) rotate(540deg)" },
         },
+        // Meta do app: o rei fala balançando de leve, e a barra enche com um brilho passando
+        "rei-fala": {
+          "0%, 100%": { transform: "translateY(0) rotate(0)" },
+          "25%": { transform: "translateY(-6%) rotate(-4deg)" },
+          "50%": { transform: "translateY(0) rotate(0)" },
+          "75%": { transform: "translateY(-3%) rotate(3deg)" },
+        },
+        "meta-enche": {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
+        "meta-brilho": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(250%)" },
+        },
       },
       animation: {
+        "rei-fala": "rei-fala 2.4s ease-in-out infinite",
+        "meta-enche": "meta-enche 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both",
+        "meta-brilho": "meta-brilho 2.6s ease-in-out 1.6s infinite",
         "rei-comemora": "rei-sobe 0.45s cubic-bezier(0.22, 1, 0.36, 1) both, rei-comemora 0.9s ease-in-out 0.45s 3",
         "confete": "confete 2.4s linear infinite",
         "rei-sobe": "rei-sobe 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
