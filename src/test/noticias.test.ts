@@ -7,6 +7,8 @@ import {
   paginaDaLista,
   paginaDaNoticia,
   sitemap,
+  NOTICIAS_NO_INDICE,
+  NOTICIAS_COM_ANUNCIO,
   type NoticiaPublicada,
 } from '../../api/_noticias';
 import { MINIMO_DO_RESUMO, lerImportacao, slugDaNoticia } from '@/lib/noticias';
@@ -87,7 +89,7 @@ describe('páginas das notícias', () => {
     expect(html).toContain(`<figure class="capa"><img src="${imagem}"`);
     expect(html).toContain('<figcaption>Foto: &lt;PokerGO&gt;</figcaption>');
     expect(html).toContain(`<meta property="og:image" content="${imagem}">`);
-    expect(html).toContain('max-image-preview:large');
+    if (NOTICIAS_NO_INDICE) expect(html).toContain('max-image-preview:large');
     expect(html).toContain(`"image":["${imagem}"]`);
     expect(paginaDaLista([n], 1)).toContain('class="miniatura"');
     // Sem imagem: nem capa, e o compartilhamento usa a do site
@@ -96,17 +98,32 @@ describe('páginas das notícias', () => {
     expect(sem).toContain('og-gtorei.png');
   });
 
-  it('lista vazia não é indexada; com notícias, é', () => {
-    expect(paginaDaLista([], 1)).toContain('<meta name="robots" content="noindex">');
+  it('lista vazia não é indexada; com notícias, só se as notícias estão no índice', () => {
+    expect(paginaDaLista([], 1)).toContain('<meta name="robots" content="noindex, follow">');
     const cheia = paginaDaLista([noticia()], 1);
-    expect(cheia).not.toContain('noindex');
     expect(cheia).toContain('Notícias de poker');
+    if (NOTICIAS_NO_INDICE) expect(cheia).not.toContain('noindex');
+    else expect(cheia).toContain('<meta name="robots" content="noindex, follow">');
   });
 
-  it('sitemap traz a lista e cada notícia', () => {
+  it('sitemap traz a lista e cada notícia, só com as notícias no índice', () => {
     const xml = sitemap([noticia()]);
+    if (!NOTICIAS_NO_INDICE) {
+      expect(xml).not.toContain('<loc>');
+      return;
+    }
     expect(xml).toContain('<loc>https://www.gtorei.com.br/noticias</loc>');
     expect(xml).toContain('<loc>https://www.gtorei.com.br/noticias/bsop-lanca-ferramenta-a1b2c3</loc>');
+  });
+
+  // 19/11/2026: AdSense recusou o site por conteúdo de baixo valor; notícia
+  // fora do índice também não pode levar anúncio
+  it('fora do índice, as notícias não carregam nada do AdSense', () => {
+    if (NOTICIAS_COM_ANUNCIO) return;
+    for (const html of [paginaDaNoticia(noticia(), []), paginaDaLista([noticia(), noticia()], 1)]) {
+      expect(html).not.toContain('adsbygoogle');
+      expect(html).not.toContain('google-adsense-account');
+    }
   });
 
   it('escapa e corta no fim da palavra', () => {

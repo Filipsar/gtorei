@@ -77,7 +77,7 @@ const App = () => (
             {/* No app, conteúdo digital só se vende pelo Google Play (regra da loja): o Pix vira o PRO */}
             <Route path="/apoiar" element={ehApp() ? <Navigate to="/pro" replace /> : <DonatePage />} />
             <Route path="/treinar" element={<ProtectedRoute><TrainPage /></ProtectedRoute>} />
-            <Route path="/tabelas" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
+            <Route path="/tabelas" element={<TablesPage />} />
             <Route path="/analise" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
             <Route path="/autoanalise" element={<ProtectedRoute><AutoAnalysisPage /></ProtectedRoute>} />
             <Route path="/analise-ia" element={<ProtectedRoute><AIAnalysisPage /></ProtectedRoute>} />

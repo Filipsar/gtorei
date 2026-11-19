@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { SEO } from '@/components/seo/SEO';
 import { cn } from '@/lib/utils';
 import { RANKS, POSITIONS, STACK_SIZES, getRange, type Position, type Scenario, type GameMode, type HandData, type ActionType } from '@/data/gtoRanges';
 import { Switch } from '@/components/ui/switch';
@@ -19,7 +20,7 @@ import {
 // ============================================================
 
 const COLOR_PALETTES: { id: string; label: string; colors: Record<ActionType, string> }[] = [
-  { id: 'wizard', label: 'GTO Wizard', colors: { fold: '#3B9EBF', call: '#4CAF50', raise: '#E91E63', allin: '#C62828' } },
+  { id: 'wizard', label: 'Rosa e azul', colors: { fold: '#3B9EBF', call: '#4CAF50', raise: '#E91E63', allin: '#C62828' } },
   { id: 'classic', label: 'Clássico', colors: { fold: '#64748b', call: '#3b82f6', raise: '#22c55e', allin: '#ef4444' } },
   { id: 'sunset', label: 'Pôr do Sol', colors: { fold: '#78716c', call: '#f59e0b', raise: '#f97316', allin: '#dc2626' } },
   { id: 'neon', label: 'Neon', colors: { fold: '#4b5563', call: '#a855f7', raise: '#22d3ee', allin: '#f43f5e' } },
@@ -499,6 +500,11 @@ export default function TablesPage() {
 
   return (
     <MainLayout>
+      <SEO
+        title="Tabelas de Range de Poker GTO (Torneio e Cash) — GTORei"
+        description="Tabelas de range pré-flop calculadas pelo GTORei: abertura, resposta ao raise, 3-bet e all-in por posição e stack, de 8 a 100 BB, com ante. Grátis e em português."
+        path="/tabelas"
+      />
       <div className="flex flex-col h-full min-h-0">
         {/* FILTER BAR */}
         <div className="border-b border-border bg-card px-4 py-3">
@@ -753,7 +759,67 @@ export default function TablesPage() {
             </div>
           </div>
         </div>
+
+        <ComoLerAsTabelas />
       </div>
     </MainLayout>
+  );
+}
+
+/**
+ * Texto da página pública (19/11/2026): explica de onde as ranges saem e como
+ * ler a tabela. É conteúdo próprio do GTORei, o que o AdSense e o Google
+ * precisam ver para entender o site sem fazer login.
+ */
+function ComoLerAsTabelas() {
+  return (
+    <article className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="text-lg font-semibold text-foreground">Como estas ranges são calculadas</h2>
+      <p>
+        Nenhuma tabela aqui foi copiada de outro site ou programa. Cada range sai do próprio motor do GTORei: partimos
+        da equidade de cada uma das 169 mãos contra todas as outras, calculada por simulação, e repetimos a conta da
+        melhor resposta de cada jogador até que ninguém ganhe mudando de estratégia. É o mesmo princípio de um solver
+        de pré-flop, com as simplificações descritas abaixo.
+      </p>
+      <p>
+        Nos torneios a conta usa ante de 1 big blind, que é o formato das salas online. A abertura considera três
+        opções (largar, abrir pequeno ou ir all-in) e a resposta considera pagar, dar 3-bet pequeno ou, em stack de
+        re-steal, 3-bet all-in. No cash 6-max (beta) a conta é sem ante, com 100 BB e rake de 5% com teto de 3 BB.
+      </p>
+
+      <h2 className="pt-2 text-lg font-semibold text-foreground">Como ler a tabela</h2>
+      <ul className="list-disc space-y-1.5 pl-5">
+        <li>
+          A diagonal tem os pares. Acima dela ficam as mãos do mesmo naipe (suited) e abaixo, as de naipes diferentes
+          (offsuit).
+        </li>
+        <li>
+          A cor mostra a ação. Uma casa dividida em duas cores é uma mão que mistura: com ela, a melhor estratégia é
+          fazer cada ação numa parte das vezes.
+        </li>
+        <li>
+          A porcentagem de cada ação no painel ao lado é contada em combinações: um par tem 6, uma mão suited tem 4 e
+          uma offsuit tem 12. Por isso uma faixa pequena da tabela pode valer muito na conta.
+        </li>
+        <li>Toque numa mão para ver a frequência de cada ação e, na abertura, quanto cada uma vale em big blinds.</li>
+      </ul>
+
+      <h2 className="pt-2 text-lg font-semibold text-foreground">O que o modelo simplifica</h2>
+      <p>
+        O pós-flop não é resolvido mão a mão: quando a mão vai ao flop, cada jogador leva a sua equidade multiplicada
+        por quanto aquela mão costuma realizar, que depende da posição, de ser suited ou conectada e do tamanho dos
+        stacks. Por isso a largura das ranges fica na faixa de um solver, mas a fronteira de uma mão ou outra pode
+        mudar. Mesa final usa ICM e o bounty muda o preço do call; os dois têm ajuste próprio.
+      </p>
+
+      <h2 className="pt-2 text-lg font-semibold text-foreground">Ver não é o mesmo que decorar</h2>
+      <p>
+        A tabela mostra o que fazer; o treino é onde isso vira reflexo. No{' '}
+        <a href="/treinar" className="text-primary underline underline-offset-2">treino</a> você recebe uma mão por vez,
+        decide e vê na hora a resposta e o porquê. Se está começando agora, o{' '}
+        <a href="/iniciante" className="text-primary underline underline-offset-2">Guia do Iniciante</a> explica
+        posição, ranges e as primeiras mãos para abrir.
+      </p>
+    </article>
   );
 }

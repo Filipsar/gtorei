@@ -7,6 +7,12 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://www.gtorei.com.br/tabelas</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.gtorei.com.br/iniciante</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>

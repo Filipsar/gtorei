@@ -1,8 +1,7 @@
-# As rotas abaixo exigem login: para o robô todas devolvem a mesma casca do SPA,
+# As rotas abaixo exigem login (a /tabelas é pública desde 19/11/2026): para o robô todas devolvem a mesma casca do SPA,
 # então indexá-las só geraria páginas finas e duplicadas.
 User-agent: *
 Disallow: /treinar
-Disallow: /tabelas
 Disallow: /analise
 Disallow: /autoanalise
 Disallow: /analise-ia
@@ -24,5 +23,5 @@ Allow: /
 
 Sitemap: https://www.gtorei.com.br/sitemap.xml
 
-# Notícias (páginas geradas no servidor, api/noticias.ts)
-Sitemap: https://www.gtorei.com.br/sitemap-noticias.xml
+# Notícias fora do índice desde 19/11/2026 (NOTICIAS_NO_INDICE em api/_noticias.ts):
+# o sitemap delas sai vazio e não é citado aqui.

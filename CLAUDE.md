@@ -383,6 +383,11 @@ um ponto por semana). O link de feedback (Google Forms) saiu do menu e do Mais.
   `ROTAS_SEM_ANUNCIO`). Sem "Permitir" no aviso, `requestNonPersonalizedAds`. O aviso do site voltou a
   pedir a escolha (antes só informava). `public/ads.txt` e a meta `google-adsense-account` no
   `index.html`. Lateral 160x600 (`SLOT_LATERAL`, só a partir de 1500px): dos dois lados nas notícias e à direita na área logada (`LateralDeAnuncio` no `MainLayout`).
+  Em 19/11/2026 o AdSense recusou o site por "conteúdo de baixo valor". O revisor não faz login e
+  via 9 páginas públicas e 60 notícias resumidas por IA de outros sites. Resposta: notícias com
+  `noindex`, fora do sitemap e sem anúncio (`NOTICIAS_NO_INDICE` e `NOTICIAS_COM_ANUNCIO` em
+  `api/_noticias.ts`) e `/tabelas` pública (sem `ProtectedRoute`, com texto próprio sobre o método
+  e no sitemap). Antes de pedir nova revisão, conteúdo público e original é o que conta.
   O script está no `<head>` do `index.html` (o AdSense verifica o site por ele) com
   `pauseAdRequests = 1`; `definirAnuncios` libera e pausa por página. O app empacota o mesmo
   `index.html`, por isso o APK/AAB sai de `npm run build:app` (`--mode app`), que tira o bloco

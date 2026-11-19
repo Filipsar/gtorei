@@ -27,13 +27,22 @@ export const ADSENSE_SLOT_LATERAL: string | null = '4504981437';
 /** Bloco in-article do AdSense (o mesmo de SLOT_NOTICIAS em src/lib/anuncios.ts) */
 export const ADSENSE_SLOT_NOTICIAS = '2904125157';
 
+// Notícias fora do Google e sem anúncio (19/11/2026). O AdSense recusou o site
+// por "conteúdo de baixo valor": as notícias são resumos, feitos por IA, de
+// matérias de outros sites, e eram a maior parte das páginas públicas. Até elas
+// terem comentário próprio, saem do índice (noindex, fora do sitemap) e não
+// carregam anúncio. Continuam no ar para quem chega pelo site. Para voltar,
+// basta trocar as duas constantes.
+export const NOTICIAS_NO_INDICE = false;
+export const NOTICIAS_COM_ANUNCIO = false;
+
 // Um bloco por página: na notícia, antes do parágrafo "O que fica para o seu
 // torneio"; na lista, entre os destaques e as últimas. Para o PRO (marca
 // sem-anuncio) o bloco some e não pede anúncio; sem anúncio para mostrar
 // (unfilled), também some.
-const BLOCO_DE_ANUNCIO = `<aside class="bloco-anuncio" aria-label="Publicidade"><p class="rotulo">Publicidade</p><ins class="adsbygoogle" style="display:block; text-align:center;" data-ad-layout="in-article" data-ad-format="fluid" data-ad-client="${ADSENSE_CLIENTE}" data-ad-slot="${ADSENSE_SLOT_NOTICIAS}"></ins><script>if(!document.documentElement.classList.contains('sem-anuncio')){(window.adsbygoogle=window.adsbygoogle||[]).push({});}</script></aside>`;
+const BLOCO_DE_ANUNCIO = !NOTICIAS_COM_ANUNCIO ? '' : `<aside class="bloco-anuncio" aria-label="Publicidade"><p class="rotulo">Publicidade</p><ins class="adsbygoogle" style="display:block; text-align:center;" data-ad-layout="in-article" data-ad-format="fluid" data-ad-client="${ADSENSE_CLIENTE}" data-ad-slot="${ADSENSE_SLOT_NOTICIAS}"></ins><script>if(!document.documentElement.classList.contains('sem-anuncio')){(window.adsbygoogle=window.adsbygoogle||[]).push({});}</script></aside>`;
 
-const ANUNCIOS_NA_CABECA = `<meta name="google-adsense-account" content="${ADSENSE_CLIENTE}">
+const ANUNCIOS_NA_CABECA = !NOTICIAS_COM_ANUNCIO ? '' : `<meta name="google-adsense-account" content="${ADSENSE_CLIENTE}">
 <script>
 (function(){
   try{if(localStorage.getItem('gtorei_sem_anuncio')==='1'){document.documentElement.classList.add('sem-anuncio');return;}}catch(e){}
@@ -49,7 +58,7 @@ const ANUNCIOS_NA_CABECA = `<meta name="google-adsense-account" content="${ADSEN
 </script>`;
 
 /** Uma coluna de anúncio de cada lado do texto, em tela larga (só com o bloco criado no AdSense) */
-const TRILHOS_DE_ANUNCIO = ADSENSE_SLOT_LATERAL
+const TRILHOS_DE_ANUNCIO = NOTICIAS_COM_ANUNCIO && ADSENSE_SLOT_LATERAL
   ? ['esq', 'dir']
       .map(
         (lado) => `<aside class="trilho ${lado}" aria-label="Publicidade"><ins class="adsbygoogle" style="display:block;width:160px;height:600px" data-ad-client="${ADSENSE_CLIENTE}" data-ad-slot="${ADSENSE_SLOT_LATERAL}"></ins></aside>`,
@@ -61,7 +70,7 @@ const TRILHOS_DE_ANUNCIO = ADSENSE_SLOT_LATERAL
 // Escolha sobre anúncio personalizado para quem chega direto do Google na
 // notícia: a mesma chave e o mesmo formato do aviso do site (consentimento.ts).
 // Botões do mesmo tamanho; nada escolhido sem a pessoa escolher.
-const AVISO_DE_ANUNCIOS = `<section class="aviso-ads" id="aviso-ads" role="region" aria-label="Privacidade e cookies" hidden>
+const AVISO_DE_ANUNCIOS = !NOTICIAS_COM_ANUNCIO ? '' : `<section class="aviso-ads" id="aviso-ads" role="region" aria-label="Privacidade e cookies" hidden>
   <p><b>Anúncios personalizados</b><br>O site mostra anúncios do Google AdSense para quem não é PRO. Com sua permissão, eles podem ser personalizados com cookies do Google. Sem ela, os anúncios continuam, mas genéricos. <a href="/cookies">Saiba mais</a>.</p>
   <div><button type="button" data-escolha="0">Não permitir</button><button type="button" data-escolha="1">Permitir</button></div>
 </section>
@@ -404,7 +413,7 @@ function documento(c: Cabeca, corpo: string): string {
 <title>${escapar(c.titulo)}</title>
 <meta name="description" content="${escapar(c.descricao)}">
 <link rel="canonical" href="${canonica}">
-${c.indexar === false ? '<meta name="robots" content="noindex">' : '<meta name="robots" content="max-image-preview:large">'}
+${c.indexar === false || !NOTICIAS_NO_INDICE ? '<meta name="robots" content="noindex, follow">' : '<meta name="robots" content="max-image-preview:large">'}
 <meta property="og:type" content="${c.tipo ?? 'website'}">
 <meta property="og:site_name" content="GTORei">
 <meta property="og:locale" content="pt_BR">
@@ -665,7 +674,10 @@ export function paginaNaoEncontrada(): string {
   );
 }
 
-export function sitemap(lista: NoticiaPublicada[]): string {
+export function sitemap(listaCompleta: NoticiaPublicada[]): string {
+  // Fora do índice (NOTICIAS_NO_INDICE): sitemap vazio, sem pedir ao Google
+  // para visitar páginas marcadas como noindex
+  const lista = NOTICIAS_NO_INDICE ? listaCompleta : [];
   const urls = [
     lista.length ? `<url><loc>${SITE}/noticias</loc><lastmod>${lista[0].atualizada_em ?? lista[0].publicada_em}</lastmod></url>` : '',
     ...lista.map((n) => `<url><loc>${SITE}/noticias/${n.slug}</loc><lastmod>${n.atualizada_em ?? n.publicada_em}</lastmod></url>`),
