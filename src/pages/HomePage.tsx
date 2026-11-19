@@ -197,7 +197,9 @@ export default function HomePage() {
           </div>
           <nav className="hidden md:flex items-center gap-7 text-sm text-muted-foreground">
             <a href="#recursos" className="hover:text-foreground transition-colors">Recursos</a>
-            <a href="#modos" className="hover:text-foreground transition-colors">Modos</a>
+            {/* Páginas públicas com conteúdo próprio (19/11/2026): sem login */}
+            <Link to="/aprender" className="hover:text-foreground transition-colors">Aprender</Link>
+            <Link to="/tabelas" className="hover:text-foreground transition-colors">Tabelas</Link>
             <a href="#como-funciona" className="hover:text-foreground transition-colors">Como funciona</a>
             <a href="#comunidade" className="hover:text-foreground transition-colors">Comunidade</a>
             {/* Página do servidor (api/noticias.ts): link comum, sem o roteador do SPA */}
@@ -671,6 +673,8 @@ export default function HomePage() {
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <a href="/noticias" className="hover:text-foreground transition-colors">Notícias de poker</a>
             <Link to="/iniciante" className="hover:text-foreground transition-colors">Guia do iniciante</Link>
+            <Link to="/aprender" className="hover:text-foreground transition-colors">Aprender poker</Link>
+            <Link to="/tabelas" className="hover:text-foreground transition-colors">Tabelas de range</Link>
             <Link to="/atualizacoes" className="hover:text-foreground transition-colors">Atualizações</Link>
             <Link to="/apoiar" className="hover:text-foreground transition-colors">Apoiar</Link>
             <Link to="/privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
