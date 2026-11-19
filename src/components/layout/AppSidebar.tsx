@@ -53,7 +53,9 @@ interface SecaoNav {
    fechadas no navegador. */
 function lerSecoesFechadas(): string[] {
   try {
-    const guardado = JSON.parse(localStorage.getItem(CHAVE_SECOES) ?? '[]');
+    // Sem nada guardado, a seção "Mais" já vem fechada: é onde ficam os itens
+    // de uso raro (enxugada do menu, 19/11/2026)
+    const guardado = JSON.parse(localStorage.getItem(CHAVE_SECOES) ?? '["mais"]');
     return Array.isArray(guardado) ? guardado.filter((id) => typeof id === 'string') : [];
   } catch {
     // Armazenamento bloqueado ou conteúdo inválido: abre tudo
@@ -82,15 +84,18 @@ export function AppSidebar() {
   const { t } = useLanguage();
   const app = ehApp();
 
+  // Menu enxugado em 19/11/2026: de 20 itens visíveis para 11, mais a seção
+  // "Mais", que chega fechada. Nenhum destino sumiu: o Guia do Iniciante virou o
+  // primeiro cartão de Aprender, o Perfil abre pelo cartão do jogador no topo e
+  // o uso raro (indicação, busca, novidades, apoio, salas) foi para "Mais".
   const secoes: SecaoNav[] = [
     {
       id: 'treino',
       label: t.sidebar.sectionTraining,
       itens: [
         { title: t.sidebar.train, url: '/treinar', icon: Zap },
-        { title: t.sidebar.tables, url: '/tabelas', icon: TableProperties },
         { title: t.sidebar.challenges, url: '/desafios', icon: CalendarCheck },
-        { title: t.sidebar.beginner, url: '/iniciante', icon: BookOpen },
+        { title: t.sidebar.tables, url: '/tabelas', icon: TableProperties },
         { title: t.sidebar.classes, url: '/aprender', icon: GraduationCap },
       ],
     },
@@ -109,19 +114,20 @@ export function AppSidebar() {
       itens: [
         { title: t.sidebar.ranking, url: '/ranking', icon: Trophy },
         { title: t.sidebar.achievements, url: '/conquistas', icon: Award },
-        { title: t.sidebar.referral, url: '/indicar', icon: Gift },
         { title: t.sidebar.community, url: '/comunidade', icon: Users },
         // No app o dist vai empacotado e não tem as funções do servidor
         ...(app ? [] : [{ title: t.sidebar.news, url: '/noticias', icon: Newspaper, servidor: true }]),
-        { title: t.sidebar.search, url: '/buscar', icon: Search },
-        { title: t.sidebar.profile, url: '/perfil', icon: User },
       ],
     },
     {
       id: 'mais',
       label: t.sidebar.sectionMore,
       itens: [
+        { title: t.sidebar.referral, url: '/indicar', icon: Gift },
+        { title: t.sidebar.search, url: '/buscar', icon: Search },
         { title: t.sidebar.updates, url: '/atualizacoes', icon: Bell },
+        // Sem login o cartão do jogador não aparece; aí o Guia fica à mão aqui
+        ...(user ? [] : [{ title: t.sidebar.beginner, url: '/iniciante', icon: BookOpen }]),
         // No app Android: o PRO no lugar do Pix (conteúdo digital só pelo
         // Google Play) e sem o link de cadastro na GGPoker, porque a Play Store
         // recusa app que leve a site de aposta com dinheiro real
@@ -246,7 +252,12 @@ export function AppSidebar() {
           </div>
 
           {!collapsed && user &&
-          <div className="mt-4 p-3 rounded-lg bg-sidebar-accent">
+          <NavLink
+            to="/perfil"
+            aria-label="Abrir meu perfil"
+            className="mt-4 block rounded-lg bg-sidebar-accent p-3 transition-colors hover:ring-1 hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            activeClassName="ring-1 ring-primary"
+          >
               <div className="flex items-center gap-3">
                 {profile?.avatar_url ?
               profile.avatar_url.length <= 4 ?
@@ -273,7 +284,7 @@ export function AppSidebar() {
                   </p>
                 </div>
               </div>
-            </div>
+            </NavLink>
           }
         </SidebarHeader>
 

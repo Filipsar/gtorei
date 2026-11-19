@@ -37,6 +37,21 @@ export default function AprenderPage() {
           </p>
         </header>
 
+        {/* O Guia do Iniciante saiu do menu lateral em 19/11/2026 e mora aqui */}
+        <Link
+          to="/iniciante"
+          className="group flex items-center gap-4 rounded-xl border border-primary/40 bg-primary/5 p-5 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <BookOpen className="h-8 w-8 shrink-0 text-primary" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-foreground">Começando agora? Guia do Iniciante</span>
+            <span className="block text-sm text-muted-foreground">
+              Como funciona uma mão, por que a posição importa e quais mãos abrir de cada lugar, com quiz no fim.
+            </span>
+          </span>
+          <ArrowRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </Link>
+
         <ol className="grid gap-3 sm:grid-cols-2">
           {ARTIGOS.map((a) => (
             <li key={a.slug}>
