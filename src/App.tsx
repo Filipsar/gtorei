@@ -37,6 +37,8 @@ const ProfilePage = lazyPage(() => import("./pages/ProfilePage"));
 const SearchPage = lazyPage(() => import("./pages/SearchPage"));
 const CommunityPage = lazyPage(() => import("./pages/CommunityPage"));
 const BeginnerGuidePage = lazyPage(() => import("./pages/BeginnerGuidePage"));
+const AprenderPage = lazyPage(() => import("./pages/AprenderPage"));
+const AprenderArtigoPage = lazyPage(() => import("./pages/AprenderArtigoPage"));
 const AdminPage = lazyPage(() => import("./pages/AdminPage"));
 const ReferralPage = lazyPage(() => import("./pages/ReferralPage"));
 const ChallengesPage = lazyPage(() => import("./pages/ChallengesPage"));
@@ -89,6 +91,8 @@ const App = () => (
             <Route path="/buscar" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/comunidade" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
             <Route path="/iniciante" element={<BeginnerGuidePage />} />
+            <Route path="/aprender" element={<AprenderPage />} />
+            <Route path="/aprender/:slug" element={<AprenderArtigoPage />} />
             <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
             <Route path="/indicar" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/desafios" element={<ProtectedRoute><ChallengesPage /></ProtectedRoute>} />

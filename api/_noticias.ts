@@ -438,12 +438,14 @@ ${corpo}
 <footer>GTORei · treinador de poker GTO grátis em português · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></footer>
 ${TRILHOS_DE_ANUNCIO}
 ${AVISO_DE_ANUNCIOS}
-${POPUP_DA_OFERTA}
 </body>
 </html>`;
 }
 
-const SALAS_PARCEIRAS = `<aside class="parceiros">
+// Salas parceiras e pop-up da oferta: fora das notícias desde 19/11/2026. Sala de
+// aposta é categoria restrita no AdSense, e as páginas públicas são o que o revisor
+// vê; os links ficam só no menu de quem está logado. Exportados para voltar fácil.
+export const SALAS_PARCEIRAS = `<aside class="parceiros">
   <h2>Onde jogar</h2>
   <p>Leve o treino para a mesa nas salas parceiras do GTORei.</p>
   <div class="salas">
@@ -456,7 +458,7 @@ const SALAS_PARCEIRAS = `<aside class="parceiros">
 // Pop-up da oferta da WPT Global: uma vez por dia por navegador, 2 s depois de
 // abrir. Sem storage (aba anônima com cookies negados), não abre: melhor que
 // abrir a cada página. Esc e o X fecham (é um <dialog> nativo).
-const POPUP_DA_OFERTA = `<dialog class="oferta" id="oferta" aria-label="Oferta de boas-vindas da WPT Global">
+export const POPUP_DA_OFERTA = `<dialog class="oferta" id="oferta" aria-label="Oferta de boas-vindas da WPT Global">
   <button class="fechar" type="button" aria-label="Fechar">×</button>
   <a class="arte" href="${WPT_GLOBAL_URL}" target="_blank" rel="sponsored noopener noreferrer"><img src="/parceiros/wpt-oferta.webp" alt="WPT Global: oferta de boas-vindas para conta nova" width="1126" height="2000" loading="lazy"></a>
 </dialog>
@@ -511,7 +513,7 @@ ${paragrafos(n.resumo, BLOCO_DE_ANUNCIO)}
   <p class="fonte">Matéria original: <a href="${escapar(n.link)}" target="_blank" rel="noopener">${escapar(n.fonte)} ↗</a></p>
 </article>
 ${CHAMADA_PARA_TREINAR}
-${SALAS_PARCEIRAS}
+
 ${
   mais.length
     ? `<section aria-labelledby="mais"><h2 id="mais">Mais notícias</h2><ul class="lista">${mais
@@ -651,7 +653,7 @@ ${conteudo}
 <aside class="lateral" aria-label="Destaques do mês">
 ${pagina === 1 ? quadroDePremios(extras.premios ?? []) : ''}
 ${CHAMADA_PARA_TREINAR}
-${SALAS_PARCEIRAS}
+
 </aside>
 </div>`;
   return documento(

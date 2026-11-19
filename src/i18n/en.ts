@@ -30,7 +30,7 @@ export const en: Translations = {
     beginner: 'Beginner',
     challenges: 'Challenges',
     referral: 'Invite friends',
-    classes: 'Classes',
+    classes: 'Learn',
     updates: 'Updates',
     support: 'Support',
     ggpoker: 'GGPoker',

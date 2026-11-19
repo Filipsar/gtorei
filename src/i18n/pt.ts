@@ -28,7 +28,7 @@ export const pt = {
     beginner: 'Iniciante',
     challenges: 'Desafios',
     referral: 'Indique e ganhe',
-    classes: 'Aulas',
+    classes: 'Aprender',
     updates: 'Atualizações',
     support: 'Apoie',
     ggpoker: 'GGPoker',

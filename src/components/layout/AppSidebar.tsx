@@ -91,7 +91,7 @@ export function AppSidebar() {
         { title: t.sidebar.tables, url: '/tabelas', icon: TableProperties },
         { title: t.sidebar.challenges, url: '/desafios', icon: CalendarCheck },
         { title: t.sidebar.beginner, url: '/iniciante', icon: BookOpen },
-        { title: t.sidebar.classes, url: '#aulas', icon: GraduationCap, locked: true },
+        { title: t.sidebar.classes, url: '/aprender', icon: GraduationCap },
       ],
     },
     {
@@ -129,8 +129,15 @@ export function AppSidebar() {
           ? [{ title: 'Seja PRO', url: '/pro', icon: Crown }]
           : [
               { title: t.sidebar.support, url: '/apoiar', icon: HandHeart },
-              { title: t.sidebar.ggpoker, url: GGPOKER_URL, icon: ExternalLink, external: true },
-              { title: t.sidebar.wptGlobal, url: WPT_GLOBAL_URL, icon: ExternalLink, external: true },
+              // Salas parceiras só para quem está logado (19/11/2026): sala de
+              // aposta é categoria restrita no AdSense, e quem revisa o site não
+              // faz login
+              ...(user
+                ? [
+                    { title: t.sidebar.ggpoker, url: GGPOKER_URL, icon: ExternalLink, external: true },
+                    { title: t.sidebar.wptGlobal, url: WPT_GLOBAL_URL, icon: ExternalLink, external: true },
+                  ]
+                : []),
             ]),
         ...(user?.email === ADMIN_EMAIL
           ? [{ title: 'Admin', url: '/admin', icon: ShieldCheck }]
