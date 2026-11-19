@@ -24,6 +24,13 @@ const UPCOMING: string[] = [
 
 const UPDATES: UpdateNote[] = [
   {
+    version: '1.41.0',
+    date: '19/11/2026',
+    type: 'feature',
+    title: 'Aprender, Tabelas Abertas e Menu Mais Enxuto',
+    description: 'Nova página Aprender, com sete artigos sobre as decisões que mais custam fichas no torneio (abertura, resposta ao raise, 3-bet, 4-bet, all-in, ICM e pós-flop), com tabelas tiradas do próprio motor de ranges. As Tabelas de range agora abrem sem login, com um texto explicando como são calculadas. O menu lateral ficou mais curto: o que se usa menos foi para a seção "Mais", o Perfil abre pelo seu cartão no topo e o Guia do Iniciante mora dentro de Aprender. E uma faixa no topo mostra quanto falta da meta de doações para lançar o app na Play Store.',
+  },
+  {
     version: '1.40.0',
     date: '15/11/2026',
     type: 'improvement',
